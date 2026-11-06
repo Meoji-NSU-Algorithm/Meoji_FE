@@ -1,4 +1,5 @@
 import { api } from './client'
+import { tokenStorage } from '../auth/tokenStorage'
 import type { ProfileUpdate, User } from './types'
 
 // ===== MOCK: 프로필 수정 =====
@@ -14,9 +15,17 @@ function readOverride(id: number): ProfileUpdate {
   }
 }
 
-export async function getMe(): Promise<User> {
-  const me = await api.get<User>('/users/me')
-  return { ...me, ...readOverride(me.id) } // MOCK 병합
+// 같은 토큰으로 동시에 들어온 /users/me 요청은 하나를 공유한다. 끝나면(성공/실패) 비운다.
+const inflightMe = new Map<string | null, Promise<User>>()
+
+export function getMe(): Promise<User> {
+  const token = tokenStorage.getAccessToken()
+  let pending = inflightMe.get(token)
+  if (!pending) {
+    pending = api.get<User>('/users/me').finally(() => inflightMe.delete(token))
+    inflightMe.set(token, pending)
+  }
+  return pending.then((me) => ({ ...me, ...readOverride(me.id) })) // MOCK 병합
 }
 
 /** MOCK: 서버에 저장되지 않는다. */
