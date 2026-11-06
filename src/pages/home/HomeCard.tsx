@@ -1,7 +1,7 @@
 import { EventCard as Card } from '../../components'
 import type { EventCardVariant } from '../../components'
 import type { EventCard } from '../../api/types'
-import { toCardData } from './utils'
+import { toCardData } from '../events/cardData'
 import { useEventActions } from './useEventActions'
 
 interface Props {

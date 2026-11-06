@@ -1,5 +1,4 @@
 import type { EventCard } from '../../api/types'
-import type { EventCardData } from '../../components'
 
 export const pad = (n: number) => String(n).padStart(2, '0')
 export const ymd = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
@@ -110,20 +109,3 @@ export const TAG_PROMOS = [
 
 /** 카테고리 스트립 항목. categoryName 은 BE categories 의 name 과 매칭해 category_id 링크를 만든다. */
 export const CATEGORY_NAMES = ['축제', '전시', '공연', '체험', '계절행사']
-
-export function toCardData(e: EventCard, extra: Partial<EventCardData> = {}): EventCardData {
-  return {
-    id: e.id,
-    title: e.title,
-    category: e.category ?? '',
-    sido: e.sido ?? '',
-    start_date: e.start_date ?? '',
-    end_date: e.end_date ?? '',
-    venue_name: e.venue_name ?? '',
-    image_url: e.image_url,
-    price: e.price,
-    is_free: e.is_free,
-    view_count: e.view_count,
-    ...extra,
-  }
-}

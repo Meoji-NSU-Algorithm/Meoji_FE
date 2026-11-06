@@ -1,25 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { EmptyState, ErrorState, EventCard, Spinner, useToast } from '../components'
-import type { EventCardData } from '../components'
 import { useBookmarks, useToggleBookmark } from '../api/hooks'
 import { bookmarkToCard } from '../api/bookmarks'
-import { errorMessage } from '../api/errors'
 import type { EventCard as EventCardType } from '../api/types'
+import { errorMessage } from '../api/errors'
+import { toCardData } from './events/cardData'
 import { MyShell } from './my/MyShell'
 
 type Sort = 'upcoming' | 'recent'
-
-function toCardData(e: EventCardType): EventCardData {
-  return {
-    ...e,
-    category: e.category ?? '',
-    sido: e.sido ?? '',
-    start_date: e.start_date ?? '',
-    end_date: e.end_date ?? e.start_date ?? '',
-    venue_name: e.venue_name ?? '',
-  }
-}
 
 function Content() {
   const navigate = useNavigate()
