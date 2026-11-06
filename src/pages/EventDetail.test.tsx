@@ -157,6 +157,33 @@ describe('리뷰 사진', () => {
     expect(screen.queryByAltText('첨부 사진 1')).not.toBeInTheDocument()
   })
 
+  it('업로드 시간이 지난 사진으로 등록하면 안내하고 새 사진을 비운다', async () => {
+    server.use(
+      http.get('*/api/events/1', () => ok(emptyEvent)),
+      http.post('*/api/reviews/images', () => ok({ key: 'old-key', url: 'https://img.test/n.png' }, 201)),
+      http.post('*/api/reviews', () => fail(400, 'REVIEW_IMAGE_NOT_UPLOADED')),
+    )
+    renderAt('/events/1')
+    await userEvent.upload(await screen.findByTestId('review-image-input'), png())
+    await screen.findByAltText('첨부 사진 1')
+    await userEvent.click(screen.getByRole('radio', { name: '4점' }))
+    await userEvent.type(screen.getByLabelText('리뷰 내용'), '좋아요')
+    await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
+    expect(await screen.findByText('사진 업로드 시간이 지났어요. 사진을 다시 올려 주세요.')).toBeInTheDocument()
+    expect(screen.queryByAltText('첨부 사진 1')).not.toBeInTheDocument()
+  })
+
+  it('미첨부 사진이 한도에 이르면 업로드 429 문구를 보여준다', async () => {
+    server.use(
+      http.get('*/api/events/1', () => ok(emptyEvent)),
+      http.post('*/api/reviews/images', () => fail(429, 'REVIEW_IMAGE_UPLOAD_LIMIT')),
+    )
+    renderAt('/events/1')
+    await userEvent.upload(await screen.findByTestId('review-image-input'), png())
+    expect(await screen.findByText(/리뷰에 붙이지 않은 사진이 너무 많아요/)).toBeInTheDocument()
+    expect(screen.queryByAltText('첨부 사진 1')).not.toBeInTheDocument()
+  })
+
   it('최대 5장까지만 올린다', async () => {
     let n = 0
     server.use(
