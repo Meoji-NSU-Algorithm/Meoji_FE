@@ -17,7 +17,7 @@ import { tokenStorage } from '../../auth'
 
 const ev = (id: number, over = {}) => ({
   id, title: `행사${id}`, category_id: 1, category: '축제', sido_code: '44', sido: '충남',
-  start_date: '2099-01-01', end_date: '2099-01-02', venue_name: '장소', thumbnail_url: null, price: null, is_free: true, ...over,
+  start_date: '2099-01-01', end_date: '2099-01-02', venue_name: '장소', image_url: null, price: null, is_free: true, ...over,
 })
 
 function setup(path: string, strict = false) {
@@ -92,6 +92,41 @@ describe('KakaoCallback', () => {
     expect(screen.getByText('카카오 계정을 확인하고 있어요')).toBeInTheDocument()
     expect(await screen.findByText('거의 다 됐어요!')).toBeInTheDocument()
     expect(calls).toBe(1)
+    tokenStorage.clear()
+  })
+
+  const consents = (terms: string | null) => ({
+    terms_agreed_at: terms, privacy_agreed_at: terms, marketing_agreed: false, marketing_agreed_at: null,
+  })
+
+  it('기존 사용자라도 terms_agreed_at 이 null 이면 약관 화면으로 보낸다', async () => {
+    server.use(
+      http.post('*/api/auth/kakao', () => ok({ access_token: 'a', refresh_token: 'r', is_new_user: false })),
+      http.get('*/api/users/me/consents', () => ok(consents(null))),
+    )
+    setup('/auth/kakao/callback?code=old')
+    expect(await screen.findByText('거의 다 됐어요!')).toBeInTheDocument()
+    tokenStorage.clear()
+  })
+
+  it('동의를 마쳤으면 신규 여부와 관계없이 홈으로 보낸다', async () => {
+    server.use(
+      http.post('*/api/auth/kakao', () => ok({ access_token: 'a', refresh_token: 'r', is_new_user: true })),
+      http.get('*/api/users/me/consents', () => ok(consents('2026-01-01T00:00:00Z'))),
+    )
+    setup('/auth/kakao/callback?code=agreed')
+    await waitFor(() => expect(screen.queryByText('카카오 계정을 확인하고 있어요')).not.toBeInTheDocument())
+    expect(screen.queryByText('거의 다 됐어요!')).not.toBeInTheDocument()
+    tokenStorage.clear()
+  })
+
+  it('동의 조회가 실패하면 is_new_user 로 판단한다', async () => {
+    server.use(
+      http.post('*/api/auth/kakao', () => ok({ access_token: 'a', refresh_token: 'r', is_new_user: true })),
+      http.get('*/api/users/me/consents', () => fail(500, 'COMMON_INTERNAL_ERROR')),
+    )
+    setup('/auth/kakao/callback?code=failconsent')
+    expect(await screen.findByText('거의 다 됐어요!')).toBeInTheDocument()
     tokenStorage.clear()
   })
 

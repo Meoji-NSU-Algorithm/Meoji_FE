@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { consumeReturnTo, useAuth } from '../auth'
+import { getConsents } from '../api/users'
 import { useToast } from '../components'
 import { AuthScreen, Wordmark, centerBg } from './home/AuthScreen'
 import { WarningIcon } from './home/icons'
@@ -9,7 +10,18 @@ import { WarningIcon } from './home/icons'
  * 인가 코드는 1회용이다. StrictMode(개발)에서 effect가 두 번 돌아도 같은 코드로
  * 요청이 한 번만 나가도록 코드별 Promise를 모듈 단위로 공유한다.
  */
-const inflight = new Map<string, Promise<{ isNewUser: boolean }>>()
+const inflight = new Map<string, Promise<{ needsTerms: boolean }>>()
+
+/** 로그인 후 약관 동의 여부로 분기한다. 조회가 실패하면 is_new_user 값으로 대신 판단한다. */
+async function login(code: string, loginWithKakaoCode: (c: string) => Promise<{ isNewUser: boolean }>) {
+  const { isNewUser } = await loginWithKakaoCode(code)
+  try {
+    const consents = await getConsents()
+    return { needsTerms: consents.terms_agreed_at === null }
+  } catch {
+    return { needsTerms: isNewUser }
+  }
+}
 
 export default function KakaoCallback() {
   const [params] = useSearchParams()
@@ -25,13 +37,13 @@ export default function KakaoCallback() {
     let active = true
     let p = inflight.get(code)
     if (!p) {
-      p = loginWithKakaoCode(code)
+      p = login(code, loginWithKakaoCode)
       inflight.set(code, p)
     }
     p.then(
-      ({ isNewUser }) => {
+      ({ needsTerms }) => {
         if (!active) return
-        if (isNewUser) {
+        if (needsTerms) {
           navigate('/auth/terms', { replace: true })
         } else {
           navigate(consumeReturnTo() || '/', { replace: true })

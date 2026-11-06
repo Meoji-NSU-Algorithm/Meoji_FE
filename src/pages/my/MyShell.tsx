@@ -24,7 +24,7 @@ function Profile() {
       </div>
       <dl className="flex gap-7 pl-6">
         <div className="text-center">
-          <dd className="text-[20px] font-black leading-[30px] text-ink">{bookmarks.data?.length ?? 0}</dd>
+          <dd className="text-[20px] font-black leading-[30px] text-ink">{bookmarks.data?.totalCount ?? 0}</dd>
           <dt className="text-[12px] leading-[18px] text-ink-muted">찜한 행사</dt>
         </div>
         <div className="text-center">
@@ -37,7 +37,7 @@ function Profile() {
           to="/my/profile"
           className="flex h-11 items-center rounded-[12px] border border-line bg-surface px-[18px] text-[14px] font-bold text-ink"
         >
-          프로필 편집
+          프로필 보기
         </Link>
         <button
           type="button"
@@ -56,7 +56,7 @@ export function MyShell({ tab, children }: { tab: MyTab; children: React.ReactNo
   const bookmarks = useBookmarks()
   const reviews = useMyReviews()
   const tabs: Array<{ key: MyTab; label: string; to: string; count?: number }> = [
-    { key: 'bookmarks', label: '내 찜', to: '/my/bookmarks', count: bookmarks.data?.length },
+    { key: 'bookmarks', label: '내 찜', to: '/my/bookmarks', count: bookmarks.data?.totalCount },
     { key: 'reviews', label: '내가 쓴 리뷰', to: '/my/reviews', count: reviews.data?.length },
   ]
   return (
@@ -85,6 +85,11 @@ export function MyShell({ tab, children }: { tab: MyTab; children: React.ReactNo
           })}
         </nav>
         {children}
+        <div className="mt-12 border-t border-line pb-2 pt-5">
+          <Link to="/my/withdraw" className="text-[13px] text-ink-subtle underline">
+            회원 탈퇴
+          </Link>
+        </div>
       </LoginRequired>
     </div>
   )

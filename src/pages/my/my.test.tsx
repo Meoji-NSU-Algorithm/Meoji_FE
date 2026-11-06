@@ -1,4 +1,4 @@
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -29,12 +29,14 @@ const hooks = vi.hoisted(() => ({
   deleteReview: vi.fn(),
   updateProfile: vi.fn(),
   toggle: vi.fn(),
+  useEvent: vi.fn(),
 }))
 vi.mock('../../api/hooks', () => ({
   useBookmarks: () => ({ data: hooks.bookmarks, isLoading: false, isError: false }),
   useMyReviews: () => ({ data: hooks.reviews, isLoading: false, isError: false }),
   useToggleBookmark: () => ({ mutate: hooks.toggle }),
-  useEvent: () => ({ data: { title: '천안 축제', end_date: '2000-01-01', is_permanent: false, thumbnail_url: null } }),
+  useEvent: hooks.useEvent,
+  useUploadReviewImage: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateReview: () => ({ mutate: hooks.updateReview, isError: false, isPending: false }),
   useDeleteReview: () => ({ mutate: hooks.deleteReview, isError: false, isPending: false }),
   useUpdateProfile: () => ({ mutate: hooks.updateProfile, isError: false, isPending: false }),
@@ -46,11 +48,6 @@ const wrap = (ui: React.ReactNode) =>
       <ToastProvider>{ui}</ToastProvider>
     </MemoryRouter>,
   )
-
-const card = (id: number, title: string, start: string) => ({
-  id, title, category_id: 1, category: '공연', sido_code: '44', sido: '충남',
-  start_date: start, end_date: start, venue_name: '장소', thumbnail_url: null, price: null, is_free: true,
-})
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -69,22 +66,35 @@ describe('로그인 가드', () => {
 })
 
 describe('MyBookmarks', () => {
+  const list = (...events: ReturnType<typeof item>[]) => ({ totalCount: events.length, events }) as unknown as unknown[]
+  const item = (id: number, title: string, start: string) => ({
+    id, title, imageUrl: null, startDate: start, endDate: start, priceType: 'FREE' as const,
+  })
   it('비어 있으면 빈 상태를 보여준다', () => {
+    hooks.bookmarks = list()
     wrap(<MyBookmarks />)
     expect(screen.getByText('아직 찜한 행사가 없어요')).toBeInTheDocument()
   })
   it('다가오는 순으로 정렬하고 하트로 해제한다', async () => {
-    hooks.bookmarks = [card(1, '나중 행사', '2026-12-01'), card(2, '먼저 행사', '2026-11-01')]
+    hooks.bookmarks = list(item(1, '나중 행사', '2026-12-01'), item(2, '먼저 행사', '2026-11-01'))
     wrap(<MyBookmarks />)
     const titles = screen.getAllByRole('link', { name: /행사$/ }).map((a) => a.textContent)
     expect(titles[0]).toBe('먼저 행사')
     await userEvent.click(screen.getAllByRole('button', { name: '찜 해제' })[0])
-    expect(hooks.toggle).toHaveBeenCalledWith(expect.objectContaining({ bookmarked: true }), expect.anything())
+    expect(hooks.toggle).toHaveBeenCalledWith(
+      expect.objectContaining({ bookmarked: true, event: expect.objectContaining({ id: 2, image_url: null }) }),
+      expect.anything(),
+    )
   })
 })
 
 describe('MyReviews', () => {
-  const review = { id: 7, user_id: 1, event_id: 3, rating: 4.5, content: '좋았어요', created_at: '2026-10-23T01:00:00', updated_at: '' }
+  const review = {
+    id: 7, user_id: 1, event_id: 3, rating: 4.5, content: '좋았어요', created_at: '2026-10-23T01:00:00', updated_at: '',
+    author: { id: 1, nickname: '안민영', profile_image: null },
+    images: [{ key: 'k1', url: 'https://img.test/1.jpg' }],
+    event: { id: 3, title: '천안 축제', image_url: null, end_date: '2000-01-01' },
+  }
 
   it('행사명과 종료 표시를 보여준다', () => {
     hooks.reviews = [review]
@@ -92,6 +102,13 @@ describe('MyReviews', () => {
     expect(screen.getAllByText('천안 축제').length).toBeGreaterThan(0)
     expect(screen.getByText('종료된 행사')).toBeInTheDocument()
     expect(screen.getByText('좋았어요')).toBeInTheDocument()
+    expect(hooks.useEvent).not.toHaveBeenCalled()
+  })
+  it('내장 event 로 표시하며 진행 중 행사는 종료 표시가 없고 사진을 보여준다', () => {
+    hooks.reviews = [{ ...review, event: { ...review.event, end_date: '2999-01-01' } }]
+    wrap(<MyReviews />)
+    expect(screen.queryByText('종료된 행사')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '리뷰 사진 1 크게 보기' })).toBeInTheDocument()
   })
   it('수정은 별점 0.5 이상, 내용 1자 이상일 때만 저장된다', async () => {
     hooks.reviews = [review]
@@ -105,7 +122,7 @@ describe('MyReviews', () => {
     expect(save).toBeEnabled()
     await userEvent.click(save)
     expect(hooks.updateReview).toHaveBeenCalledWith(
-      { id: 7, eventId: 3, rating: 4.5, content: '다시 씀' },
+      { id: 7, eventId: 3, rating: 4.5, content: '다시 씀', images: ['k1'] },
       expect.anything(),
     )
   })
@@ -118,24 +135,30 @@ describe('MyReviews', () => {
   })
 })
 
-describe('MyProfile', () => {
-  it('닉네임이 2자 미만이면 저장할 수 없다', async () => {
-    wrap(<MyProfile />)
-    const input = screen.getByLabelText('이름')
-    await userEvent.clear(input)
-    await userEvent.type(input, '가')
-    expect(screen.getByRole('alert')).toHaveTextContent('2자 이상')
-    expect(screen.getByRole('button', { name: '저장' })).toBeDisabled()
+describe('회원 탈퇴 링크', () => {
+  it('내 찜/내가 쓴 리뷰 하단에 있다', () => {
+    hooks.bookmarks = { totalCount: 0, events: [] } as unknown as unknown[]
+    hooks.reviews = []
+    for (const Page of [MyBookmarks, MyReviews]) {
+      const { unmount } = wrap(<Page />)
+      expect(screen.getByRole('link', { name: '회원 탈퇴' })).toHaveAttribute('href', '/my/withdraw')
+      unmount()
+    }
   })
-  it('변경 후 저장하면 updateProfile 을 호출한다', async () => {
+})
+
+describe('MyProfile', () => {
+  it('카카오 프로필을 읽기 전용으로 보여준다', () => {
     wrap(<MyProfile />)
-    const input = screen.getByLabelText('이름')
-    await userEvent.clear(input)
-    await userEvent.type(input, '새이름')
-    await userEvent.click(screen.getByRole('button', { name: '저장' }))
-    await waitFor(() =>
-      expect(hooks.updateProfile).toHaveBeenCalledWith({ nickname: '새이름', profile_image: null }, expect.anything()),
-    )
+    expect(screen.getByText('안민영')).toBeInTheDocument()
+    expect(screen.getByText('a@b.c')).toBeInTheDocument()
+    expect(screen.getByText(/카카오 프로필과 연동돼요/)).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '저장' })).not.toBeInTheDocument()
+  })
+  it('회원 탈퇴 링크가 없다', () => {
+    wrap(<MyProfile />)
+    expect(screen.queryByRole('link', { name: '회원 탈퇴' })).not.toBeInTheDocument()
   })
 })
 

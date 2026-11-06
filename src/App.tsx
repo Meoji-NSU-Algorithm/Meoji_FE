@@ -16,6 +16,8 @@ const Terms = lazy(() => import('./pages/Terms'))
 const MyBookmarks = lazy(() => import('./pages/MyBookmarks'))
 const MyReviews = lazy(() => import('./pages/MyReviews'))
 const MyProfile = lazy(() => import('./pages/MyProfile'))
+const MyWithdraw = lazy(() => import('./pages/MyWithdraw'))
+const MyWithdrawDone = lazy(() => import('./pages/MyWithdrawDone'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 export default function App() {
@@ -35,7 +37,10 @@ export default function App() {
             <Route path="my/bookmarks" element={<MyBookmarks />} />
             <Route path="my/reviews" element={<MyReviews />} />
             <Route path="my/profile" element={<MyProfile />} />
+            <Route path="my/withdraw" element={<MyWithdraw />} />
           </Route>
+          {/* 탈퇴 직후에는 이미 로그아웃 상태이므로 가드 밖에 둔다. */}
+          <Route path="my/withdraw/done" element={<MyWithdrawDone />} />
           <Route path="auth/login" element={<Login />} />
           <Route path="auth/kakao/callback" element={<KakaoCallback />} />
           <Route path="auth/terms" element={<Terms />} />
