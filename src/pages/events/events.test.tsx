@@ -105,6 +105,31 @@ describe('EventList', () => {
     expect(await within(filters).findByRole('button', { name: '충남', pressed: true })).toBeInTheDocument()
   })
 
+  it('평점이 있는 카드는 별점과 리뷰 수를, 리뷰가 없는 카드는 조회수만 보여준다', async () => {
+    server.use(
+      http.get('*/api/events', () =>
+        ok({
+          total_count: 2,
+          page: 1,
+          size: 12,
+          events: [
+            card(1, { view_count: 32000, average_rating: 4.7, review_count: 128 }),
+            card(2, { view_count: 5, average_rating: 0, review_count: 0 }),
+          ],
+        }),
+      ),
+    )
+    renderPage(<EventList />, '/events')
+    await screen.findByRole('link', { name: '행사1' })
+    const first = screen.getByRole('link', { name: '행사1' }).closest('article')!
+    expect(within(first).getByText('4.7')).toBeInTheDocument()
+    expect(within(first).getByText('(128)')).toBeInTheDocument()
+    expect(within(first).getByText(/조회 3.2만/)).toBeInTheDocument()
+    const second = screen.getByRole('link', { name: '행사2' }).closest('article')!
+    expect(within(second).queryByText(/\(0\)/)).not.toBeInTheDocument()
+    expect(within(second).getByText(/조회 5/)).toBeInTheDocument()
+  })
+
   it('결과가 없으면 B2 빈 상태와 필터 초기화를 보여준다', async () => {
     server.use(http.get('*/api/events', () => ok({ total_count: 0, page: 1, size: 12, events: [] })))
     renderPage(<EventList />, '/events?q=구름빵')
