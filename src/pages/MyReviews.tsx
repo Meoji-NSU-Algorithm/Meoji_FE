@@ -1,8 +1,12 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, ErrorState, Modal, RatingStars, Spinner, useToast } from '../components'
-import { useDeleteReview, useEvent, useMyReviews, useUpdateReview } from '../api/hooks'
-import type { Review } from '../api/types'
+import { errorMessage } from '../api/errors'
+import { useDeleteReview, useMyReviews, useUpdateReview } from '../api/hooks'
+import type { MyReview } from '../api/types'
+import { ReviewImagePicker } from './detail/ReviewImagePicker'
+import { ReviewPhotos } from './detail/ReviewPhotos'
+import { useReviewImages } from './detail/useReviewImages'
 import { MyShell } from './my/MyShell'
 
 const MAX_CONTENT = 1000
@@ -19,14 +23,10 @@ const todayStr = () => {
 
 const btn = 'h-8 rounded-md border border-line px-3 text-[12px] text-ink'
 
-/**
- * BE 의 /reviews/my 는 event_id 만 주므로 행사명/썸네일은 행사별 상세 조회(useEvent)로 보강한다.
- * (BE 요청: 리뷰 응답에 event {id,title,thumbnail_url,end_date} 포함)
- */
-function ReviewRow({ review, onEdit, onDelete }: { review: Review; onEdit: () => void; onDelete: () => void }) {
-  const { data: event, isError } = useEvent(review.event_id)
-  const title = event?.title ?? (isError ? '삭제되었거나 볼 수 없는 행사' : '행사 정보를 불러오는 중')
-  const ended = !!event?.end_date && !event.is_permanent && event.end_date < todayStr()
+function ReviewRow({ review, onEdit, onDelete }: { review: MyReview; onEdit: () => void; onDelete: () => void }) {
+  const event = review.event
+  const title = event?.title ?? '삭제되었거나 볼 수 없는 행사'
+  const ended = !!event?.end_date && event.end_date.slice(0, 10) < todayStr()
   return (
     <li className="grid grid-cols-[96px_1fr_auto] gap-4 border-b border-line py-5">
       <Link
@@ -34,7 +34,7 @@ function ReviewRow({ review, onEdit, onDelete }: { review: Review; onEdit: () =>
         aria-label={`${title} 상세 보기`}
         className="size-24 overflow-hidden rounded-card bg-gradient-to-br from-[#e8461c] to-[#f7a04b]"
       >
-        {event?.thumbnail_url && <img src={event.thumbnail_url} alt="" className="size-full object-cover" />}
+        {event?.image_url && <img src={event.image_url} alt="" className="size-full object-cover" />}
       </Link>
       <div className="min-w-0">
         <div className="flex items-center gap-2">
@@ -54,6 +54,7 @@ function ReviewRow({ review, onEdit, onDelete }: { review: Review; onEdit: () =>
           </span>
         </div>
         <p className="whitespace-pre-line break-words pt-2 text-[14px] leading-[23.8px] text-ink">{review.content}</p>
+        <ReviewPhotos images={review.images ?? []} />
       </div>
       <div className="flex items-start gap-[6px]">
         <button type="button" className={btn} onClick={onEdit}>
@@ -67,17 +68,18 @@ function ReviewRow({ review, onEdit, onDelete }: { review: Review; onEdit: () =>
   )
 }
 
-function EditModal({ review, onClose }: { review: Review; onClose: () => void }) {
+function EditModal({ review, onClose }: { review: MyReview; onClose: () => void }) {
   const toast = useToast()
   const update = useUpdateReview()
   const [rating, setRating] = useState(review.rating)
   const [content, setContent] = useState(review.content)
+  const pics = useReviewImages(review.images ?? [])
   const trimmed = content.trim()
-  const valid = rating >= 0.5 && trimmed.length >= 1 && trimmed.length <= MAX_CONTENT
+  const valid = rating >= 0.5 && trimmed.length >= 1 && trimmed.length <= MAX_CONTENT && !pics.uploading
 
   const submit = () =>
     update.mutate(
-      { id: review.id, eventId: review.event_id, rating, content: trimmed },
+      { id: review.id, eventId: review.event_id, rating, content: trimmed, images: pics.keys },
       {
         onSuccess: () => {
           toast.show({ message: '리뷰를 수정했어요' })
@@ -101,9 +103,12 @@ function EditModal({ review, onClose }: { review: Review; onClose: () => void })
         <p className="self-end text-[12px] text-ink-subtle">
           {content.length}/{MAX_CONTENT}
         </p>
+        <div className="w-full">
+          <ReviewImagePicker state={pics} />
+        </div>
         {update.isError && (
           <p role="alert" className="text-[13px] text-primary-ink">
-            수정하지 못했어요. 잠시 후 다시 시도해 주세요
+            {errorMessage(update.error)}
           </p>
         )}
         <div className="flex w-full gap-2">
@@ -124,7 +129,7 @@ function EditModal({ review, onClose }: { review: Review; onClose: () => void })
   )
 }
 
-function DeleteModal({ review, onClose }: { review: Review; onClose: () => void }) {
+function DeleteModal({ review, onClose }: { review: MyReview; onClose: () => void }) {
   const toast = useToast()
   const del = useDeleteReview()
   return (
@@ -132,7 +137,7 @@ function DeleteModal({ review, onClose }: { review: Review; onClose: () => void 
       <p className="pt-2 text-center text-[14px] text-ink-muted">삭제한 리뷰는 되돌릴 수 없어요</p>
       {del.isError && (
         <p role="alert" className="pt-3 text-center text-[13px] text-primary-ink">
-          삭제하지 못했어요. 잠시 후 다시 시도해 주세요
+          {errorMessage(del.error)}
         </p>
       )}
       <div className="flex gap-2 pt-6">
@@ -164,8 +169,8 @@ function DeleteModal({ review, onClose }: { review: Review; onClose: () => void 
 
 function Content() {
   const { data, isLoading, isError, refetch } = useMyReviews()
-  const [editing, setEditing] = useState<Review | null>(null)
-  const [deleting, setDeleting] = useState<Review | null>(null)
+  const [editing, setEditing] = useState<MyReview | null>(null)
+  const [deleting, setDeleting] = useState<MyReview | null>(null)
 
   if (isLoading)
     return (

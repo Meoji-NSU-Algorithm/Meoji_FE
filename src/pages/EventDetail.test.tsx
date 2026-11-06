@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -10,7 +10,6 @@ import { ToastProvider } from '../components'
 import { fail, ok } from '../mocks/handlers'
 import { server } from '../mocks/server'
 import EventDetail from './EventDetail'
-import Directions from './Directions'
 
 vi.mock('../lib/kakaoMaps', () => ({ loadKakaoMaps: () => Promise.reject(new Error('no sdk')) }))
 
@@ -38,7 +37,6 @@ function renderAt(path: string, loggedIn = true) {
           <MemoryRouter initialEntries={[path]}>
             <Routes>
               <Route path="/events/:id" element={<EventDetail />} />
-              <Route path="/events/:id/directions" element={<Directions />} />
             </Routes>
           </MemoryRouter>
         </ToastProvider>
@@ -54,8 +52,8 @@ const baseEvent = {
   fee_text: null, image_url: null, latitude: 36.8, longitude: 127.1, organizer: null, contact_phone: null,
   homepage_url: null, is_permanent: false, review_count: 2, average_rating: 4.5,
   reviews: [
-    { id: 1, user_id: 7, event_id: 1, rating: 4, content: '내 리뷰', created_at: '2026-10-23T00:00:00', updated_at: '' },
-    { id: 2, user_id: 9, event_id: 1, rating: 5, content: '남의 리뷰', created_at: '2026-10-22T00:00:00', updated_at: '' },
+    { id: 1, user_id: 7, author: { id: 7, nickname: '민지', profile_image: null }, images: [{ key: 'k1', url: 'https://img.test/1.jpg' }], event_id: 1, rating: 4, content: '내 리뷰', created_at: '2026-10-23T00:00:00', updated_at: '' },
+    { id: 2, user_id: 9, author: { id: 9, nickname: '수진', profile_image: 'https://img.test/a.png' }, images: [], event_id: 1, rating: 5, content: '남의 리뷰', created_at: '2026-10-22T00:00:00', updated_at: '' },
   ],
 }
 
@@ -72,12 +70,13 @@ describe('EventDetail', () => {
     expect(await screen.findByText('행사를 찾을 수 없어요')).toBeInTheDocument()
   })
 
-  it('내 리뷰만 수정/삭제 가능하고 타인은 익명 라벨, 사진 추가는 비활성', async () => {
+  it('내 리뷰만 수정/삭제 가능하고 타인은 author 닉네임으로 표시', async () => {
     server.use(http.get('*/api/events/1', () => ok(baseEvent)))
     renderAt('/events/1')
     expect(await screen.findByText('내 리뷰')).toBeInTheDocument()
     expect(screen.getByText('민지')).toBeInTheDocument()
-    expect(screen.getByText('방문자')).toBeInTheDocument()
+    expect(screen.getByText('수진')).toBeInTheDocument()
+    expect(screen.queryByText('방문자')).not.toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: '수정' })).toHaveLength(1)
     expect(screen.getAllByRole('button', { name: '삭제' })).toHaveLength(1)
     await waitFor(() => expect(screen.getByTestId('mini-map-fallback')).toBeInTheDocument())
@@ -106,8 +105,7 @@ describe('EventDetail', () => {
     await userEvent.click(await screen.findByRole('radio', { name: '4점' }))
     await userEvent.type(screen.getByLabelText('리뷰 내용'), '좋아요')
     await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('이미 이 행사에 리뷰를 남기셨어요')
-    expect(screen.getByRole('button', { name: /사진 추가/ })).toBeDisabled()
+    expect(await screen.findByRole('alert')).toHaveTextContent('이미 이 행사에 리뷰를 작성했어요')
   })
 
   it('길찾기 링크는 directions 로 이동한다', async () => {
@@ -118,26 +116,120 @@ describe('EventDetail', () => {
   })
 })
 
-describe('Directions', () => {
-  it('위치 권한이 없으면 출발지 변경(D2)이 열리고, 선택하면 경로를 보여준다', async () => {
+const emptyEvent = { ...baseEvent, reviews: [], review_count: 0, average_rating: null }
+const png = (n = 'a.png') => new File(['x'], n, { type: 'image/png' })
+
+describe('리뷰 사진', () => {
+  it('리뷰 사진을 보여주고 누르면 크게 본다', async () => {
     server.use(http.get('*/api/events/1', () => ok(baseEvent)))
-    Object.defineProperty(navigator, 'geolocation', {
-      configurable: true,
-      value: { getCurrentPosition: (_ok: unknown, err: (e: unknown) => void) => err({ code: 1 }) },
-    })
-    renderAt('/events/1/directions')
-    expect(await screen.findByTestId('origin-picker')).toBeInTheDocument()
+    renderAt('/events/1')
+    await userEvent.click(await screen.findByRole('button', { name: '리뷰 사진 1 크게 보기' }))
+    expect(within(screen.getByRole('dialog', { name: '리뷰 사진 크게 보기' })).getByAltText('리뷰 사진')).toHaveAttribute('src', 'https://img.test/1.jpg')
   })
 
-  it('현재 위치가 있으면 모의 경로를 보여주고 도보 탭은 D3 를 보여준다', async () => {
-    server.use(http.get('*/api/events/1', () => ok(baseEvent)))
-    Object.defineProperty(navigator, 'geolocation', {
-      configurable: true,
-      value: { getCurrentPosition: (cb: (p: unknown) => void) => cb({ coords: { latitude: 36.9, longitude: 127.2 } }) },
-    })
-    renderAt('/events/1/directions')
-    expect(await screen.findByText('경로 안내')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('tab', { name: /도보/ }))
-    await waitFor(() => expect(screen.getByTestId('no-route')).toBeInTheDocument())
+  it('선택 즉시 업로드하고 key 를 리뷰 등록에 실어 보낸다', async () => {
+    let body: any
+    server.use(
+      http.get('*/api/events/1', () => ok(emptyEvent)),
+      http.post('*/api/reviews/images', () => ok({ key: 'new-key', url: 'https://img.test/n.png' }, 201)),
+      http.post('*/api/reviews', async ({ request }) => {
+        body = await request.json()
+        return ok({}, 201)
+      }),
+    )
+    renderAt('/events/1')
+    await userEvent.upload(await screen.findByTestId('review-image-input'), png())
+    expect(await screen.findByAltText('첨부 사진 1')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('radio', { name: '4점' }))
+    await userEvent.type(screen.getByLabelText('리뷰 내용'), '좋아요')
+    await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
+    await waitFor(() => expect(body).toMatchObject({ event_id: 1, images: ['new-key'] }))
+  })
+
+  it('첨부한 사진은 삭제할 수 있다', async () => {
+    server.use(
+      http.get('*/api/events/1', () => ok(emptyEvent)),
+      http.post('*/api/reviews/images', () => ok({ key: 'k', url: 'https://img.test/n.png' }, 201)),
+    )
+    renderAt('/events/1')
+    await userEvent.upload(await screen.findByTestId('review-image-input'), png())
+    await userEvent.click(await screen.findByRole('button', { name: '첨부 사진 1 삭제' }))
+    expect(screen.queryByAltText('첨부 사진 1')).not.toBeInTheDocument()
+  })
+
+  it('최대 5장까지만 올린다', async () => {
+    let n = 0
+    server.use(
+      http.get('*/api/events/1', () => ok(emptyEvent)),
+      http.post('*/api/reviews/images', () => {
+        n += 1
+        return ok({ key: `k${n}`, url: `https://img.test/${n}.png` }, 201)
+      }),
+    )
+    renderAt('/events/1')
+    const input = await screen.findByTestId('review-image-input')
+    await userEvent.upload(input, [png('1.png'), png('2.png'), png('3.png'), png('4.png'), png('5.png'), png('6.png')])
+    await waitFor(() => expect(screen.getByAltText('첨부 사진 5')).toBeInTheDocument())
+    expect(n).toBe(5)
+    expect(screen.getByRole('alert')).toHaveTextContent('최대 5장')
+    expect(screen.getByRole('button', { name: /사진 추가/ })).toBeDisabled()
+  })
+
+  it('형식/용량이 맞지 않으면 업로드하지 않는다', async () => {
+    let n = 0
+    server.use(
+      http.get('*/api/events/1', () => ok(emptyEvent)),
+      http.post('*/api/reviews/images', () => {
+        n += 1
+        return ok({ key: 'k', url: 'u' }, 201)
+      }),
+    )
+    renderAt('/events/1')
+    const input = await screen.findByTestId('review-image-input')
+    await userEvent.upload(input, new File(['x'], 'a.gif', { type: 'image/gif' }), { applyAccept: false })
+    expect(await screen.findByRole('alert')).toHaveTextContent('jpg, png, webp')
+    const big = new File(['x'], 'b.png', { type: 'image/png' })
+    Object.defineProperty(big, 'size', { value: 11 * 1024 * 1024 })
+    await userEvent.upload(input, big)
+    expect(await screen.findByRole('alert')).toHaveTextContent('10MB')
+    expect(n).toBe(0)
+  })
+
+  it('업로드 에러 코드를 문구로 바꿔 보여준다', async () => {
+    server.use(
+      http.get('*/api/events/1', () => ok(emptyEvent)),
+      http.post('*/api/reviews/images', () => fail(503, 'REVIEW_IMAGE_STORAGE_UNAVAILABLE')),
+    )
+    renderAt('/events/1')
+    await userEvent.upload(await screen.findByTestId('review-image-input'), png())
+    expect(await screen.findByRole('alert')).toHaveTextContent('이미지 저장소를 잠시 사용할 수 없어요')
+  })
+
+  it('수정 시 전체 images 배열을 보낸다(교체 의미)', async () => {
+    let body: any
+    server.use(
+      http.get('*/api/events/1', () => ok(baseEvent)),
+      http.put('*/api/reviews/1', async ({ request }) => {
+        body = await request.json()
+        return ok({})
+      }),
+    )
+    renderAt('/events/1')
+    await userEvent.click(await screen.findByRole('button', { name: '수정' }))
+    await userEvent.click(screen.getByRole('button', { name: '첨부 사진 1 삭제' }))
+    await userEvent.click(screen.getByRole('button', { name: '수정 완료' }))
+    await waitFor(() => expect(body).toMatchObject({ rating: 4, content: '내 리뷰', images: [] }))
+  })
+
+  it('REVIEW_IMAGE_ALREADY_ATTACHED 등 등록 에러를 문구로 매핑한다', async () => {
+    server.use(
+      http.get('*/api/events/1', () => ok(emptyEvent)),
+      http.post('*/api/reviews', () => fail(409, 'REVIEW_IMAGE_ALREADY_ATTACHED')),
+    )
+    renderAt('/events/1')
+    await userEvent.click(await screen.findByRole('radio', { name: '4점' }))
+    await userEvent.type(screen.getByLabelText('리뷰 내용'), '좋아요')
+    await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('다른 리뷰에 쓰인 이미지')
   })
 })

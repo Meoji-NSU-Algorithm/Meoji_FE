@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { ApiError } from '../../api/client'
+import { errorMessage } from '../../api/errors'
 import { useCreateReview, useDeleteReview, useUpdateReview } from '../../api/hooks'
 import type { Review } from '../../api/types'
 import { useAuth, useRequireLogin } from '../../auth'
 import { EmptyState, Modal, RatingStars, useToast } from '../../components'
-import { CameraIcon } from './icons'
+import { ReviewImagePicker } from './ReviewImagePicker'
+import { ReviewPhotos } from './ReviewPhotos'
+import { useReviewImages } from './useReviewImages'
 
-/** BE 리뷰에는 작성자 정보가 없어 타인은 익명 라벨로 표시한다. (docs/backend-requests.md 3번) */
+/** review.author 가 없을 때만 쓰는 대체 라벨 */
 export const ANONYMOUS_LABEL = '방문자'
 
 const MAX_CONTENT = 1000
@@ -29,6 +31,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
   const create = useCreateReview()
   const update = useUpdateReview()
   const remove = useDeleteReview()
+  const pics = useReviewImages()
 
   const mine = isLoggedIn && user ? reviews.find((r) => r.user_id === user.id) : undefined
   const [rating, setRating] = useState(0)
@@ -41,6 +44,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
     setEditingId(r.id)
     setRating(r.rating)
     setContent(r.content)
+    pics.reset(r.images ?? [])
     setError(null)
   }
 
@@ -49,20 +53,15 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
     if (!content.trim()) return setError('후기를 입력해 주세요.')
     setError(null)
     create.mutate(
-      { event_id: eventId, rating, content: content.trim() },
+      { event_id: eventId, rating, content: content.trim(), images: pics.keys },
       {
         onSuccess: () => {
           setRating(0)
           setContent('')
+          pics.reset()
           toast.show({ message: '리뷰를 등록했어요' })
         },
-        onError: (e) => {
-          if (e instanceof ApiError && e.code === 'REVIEW_ALREADY_EXISTS') {
-            setError('이미 이 행사에 리뷰를 남기셨어요. 작성한 리뷰를 수정해 주세요.')
-          } else {
-            setError(e instanceof Error && e.message ? e.message : '리뷰를 등록하지 못했어요.')
-          }
-        },
+        onError: (e) => setError(errorMessage(e)),
       },
     )
   }
@@ -73,15 +72,16 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
     if (!content.trim()) return setError('후기를 입력해 주세요.')
     setError(null)
     update.mutate(
-      { id: editingId, eventId, rating, content: content.trim() },
+      { id: editingId, eventId, rating, content: content.trim(), images: pics.keys },
       {
         onSuccess: () => {
           setEditingId(null)
           setRating(0)
           setContent('')
+          pics.reset()
           toast.show({ message: '리뷰를 수정했어요' })
         },
-        onError: (e) => setError(e instanceof Error && e.message ? e.message : '리뷰를 수정하지 못했어요.'),
+        onError: (e) => setError(errorMessage(e)),
       },
     )
   }
@@ -97,14 +97,14 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
         },
         onError: (e) => {
           setDeleteTarget(null)
-          toast.show({ message: e instanceof Error && e.message ? e.message : '리뷰를 삭제하지 못했어요' })
+          toast.show({ message: errorMessage(e) })
         },
       },
     )
   }
 
   const average = averageRating ?? 0
-  const formDisabled = create.isPending
+  const formDisabled = create.isPending || pics.uploading
 
   return (
     <section className="pt-14" aria-label="리뷰">
@@ -144,16 +144,8 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
               {error}
             </p>
           )}
-          <div className="flex items-center justify-between pt-3">
-            {/* BE에 사진 업로드 API가 없어 비활성화한다. */}
-            <button
-              type="button"
-              disabled
-              title="사진 첨부는 준비 중이에요"
-              className="inline-flex h-10 cursor-not-allowed items-center gap-[6px] rounded-[10px] border border-dashed border-[#d5cfcb] px-[14px] text-[13px] text-ink-disabled"
-            >
-              <CameraIcon size={18} /> 사진 추가 (준비 중)
-            </button>
+          <div className="flex items-start justify-between pt-3">
+            <ReviewImagePicker state={pics} />
             <button
               type="button"
               disabled={formDisabled}
@@ -172,14 +164,19 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
         <ul className="mt-2">
           {reviews.map((r) => {
             const own = !!user && r.user_id === user.id
-            const name = own ? (user?.nickname ?? ANONYMOUS_LABEL) : ANONYMOUS_LABEL
+            const name = r.author?.nickname || (own ? user?.nickname : undefined) || ANONYMOUS_LABEL
+            const avatar = r.author?.profile_image ?? null
             const editing = editingId === r.id
             return (
               <li key={r.id} className="border-b border-line py-5" data-testid="review-item">
                 <div className="flex items-center gap-[10px]">
-                  <span className="flex size-9 items-center justify-center rounded-full bg-primary-tint text-[13px] font-bold text-primary-ink" aria-hidden="true">
-                    {name.slice(0, 1)}
-                  </span>
+                  {avatar ? (
+                    <img src={avatar} alt="" className="size-9 rounded-full object-cover" />
+                  ) : (
+                    <span className="flex size-9 items-center justify-center rounded-full bg-primary-tint text-[13px] font-bold text-primary-ink" aria-hidden="true">
+                      {name.slice(0, 1)}
+                    </span>
+                  )}
                   <div className="min-w-0 flex-1">
                     <p className="text-[14px] font-bold leading-[21px] text-ink">{name}</p>
                     <p className="flex h-[18px] items-center gap-[6px] text-[12px] text-ink-subtle">
@@ -209,17 +206,23 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
                         {error}
                       </p>
                     )}
+                    <div className="pt-2">
+                      <ReviewImagePicker state={pics} />
+                    </div>
                     <div className="flex justify-end gap-2 pt-2">
-                      <button type="button" onClick={() => { setEditingId(null); setError(null) }} className="h-10 rounded-card border border-line px-4 text-[14px] font-bold text-ink">
+                      <button type="button" onClick={() => { setEditingId(null); setError(null); pics.reset() }} className="h-10 rounded-card border border-line px-4 text-[14px] font-bold text-ink">
                         취소
                       </button>
-                      <button type="button" disabled={update.isPending} onClick={submitEdit} className="h-10 rounded-card bg-primary px-4 text-[14px] font-bold text-white disabled:opacity-60">
+                      <button type="button" disabled={update.isPending || pics.uploading} onClick={submitEdit} className="h-10 rounded-card bg-primary px-4 text-[14px] font-bold text-white disabled:opacity-60">
                         수정 완료
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <p className="whitespace-pre-wrap pt-[10px] text-[14px] leading-[23.8px] text-ink">{r.content}</p>
+                  <>
+                    <p className="whitespace-pre-wrap pt-[10px] text-[14px] leading-[23.8px] text-ink">{r.content}</p>
+                    <ReviewPhotos images={r.images ?? []} />
+                  </>
                 )}
               </li>
             )
