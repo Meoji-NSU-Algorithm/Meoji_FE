@@ -5,11 +5,10 @@ import { MinusIcon, PlusIcon } from '../detail/icons'
 interface Props {
   from: { lat: number; lng: number; label: string } | null
   to: { lat: number; lng: number; label: string }
-  path?: Array<[number, number]>
 }
 
 /** D1 지도. SDK/키 실패 시 Figma의 정적 회색 지도 + 라벨 카드로 대체한다. */
-export function RouteMap({ from, to, path }: Props) {
+export function RouteMap({ from, to }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
   const [failed, setFailed] = useState(false)
@@ -23,6 +22,7 @@ export function RouteMap({ from, to, path }: Props) {
         const dest = new kakao.maps.LatLng(to.lat, to.lng)
         const map = mapRef.current ?? new kakao.maps.Map(ref.current, { center: dest, level: 6 })
         mapRef.current = map
+        map.relayout()
         const bounds = new kakao.maps.LatLngBounds()
         bounds.extend(dest)
         const label = (pos: any, text: string, bg: string) => {
@@ -34,22 +34,31 @@ export function RouteMap({ from, to, path }: Props) {
           o.setMap(map)
           overlays.push(o)
         }
+        const pin = (pos: any) => {
+          const m = new kakao.maps.Marker({ position: pos })
+          m.setMap(map)
+          overlays.push(m)
+        }
+        pin(dest)
         label(dest, `도착 · ${to.label}`, '#f0562c')
         if (from) {
           const start = new kakao.maps.LatLng(from.lat, from.lng)
           bounds.extend(start)
+          pin(start)
           label(start, `출발 · ${from.label}`, '#2a2320')
-          if (path?.length) {
+          // BE 는 경로 좌표를 주지 않으므로 출발-도착을 잇는 점선은 방향 참고용일 뿐 실제 경로가 아니다.
+          {
             const line = new kakao.maps.Polyline({
-              path: path.map(([la, ln]) => new kakao.maps.LatLng(la, ln)),
-              strokeWeight: 5,
-              strokeColor: '#2563eb',
-              strokeOpacity: 0.85,
+              path: [start, dest],
+              strokeWeight: 3,
+              strokeColor: '#9a928c',
+              strokeOpacity: 0.7,
+              strokeStyle: 'dash',
             })
             line.setMap(map)
             overlays.push(line)
           }
-          map.setBounds(bounds)
+          map.setBounds(bounds, 80, 80, 80, 80)
         } else {
           map.setCenter(dest)
         }
@@ -61,7 +70,7 @@ export function RouteMap({ from, to, path }: Props) {
       cancelled = true
       overlays.forEach((o) => o.setMap(null))
     }
-  }, [from, to.lat, to.lng, to.label, path])
+  }, [from, to.lat, to.lng, to.label])
 
   return (
     <div
@@ -76,6 +85,14 @@ export function RouteMap({ from, to, path }: Props) {
         </div>
       ) : (
         <div ref={ref} data-testid="route-map" className="absolute inset-0" />
+      )}
+      {!failed && from && (
+        <p
+          data-testid="route-map-caption"
+          className="absolute inset-x-0 bottom-2 z-10 mx-auto w-fit max-w-[calc(100%-80px)] rounded-md bg-surface/90 px-2 py-1 text-center text-[12px] text-ink-muted"
+        >
+          실제 경로선은 준비 중이에요. 출발지와 도착지만 표시돼요.
+        </p>
       )}
       {!failed && (
         <div className="absolute bottom-[26px] right-[14px] z-10 flex flex-col gap-[6px]">

@@ -2,72 +2,99 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useDirections, useEvent } from '../api/hooks'
 import { ApiError } from '../api/client'
-import type { DirectionsRoute, TransitStep } from '../api/types'
+import { errorMessage } from '../api/errors'
+import type { DirectionsMode, DirectionsResult, DirectionsStep } from '../api/types'
 import { useAuth } from '../auth'
 import { EmptyState, ErrorState, Spinner } from '../components'
-import { BusIcon, CarIcon, ChevronLeftIcon, WalkIcon, WarnIcon } from './detail/icons'
+import { BusIcon, CarIcon, ChevronLeftIcon, RouteIcon, WalkIcon, WarnIcon } from './detail/icons'
 import { OriginPicker } from './directions/OriginPicker'
 import type { Origin } from './directions/OriginPicker'
 import { RouteMap } from './directions/RouteMap'
 import { getCurrentPosition } from './directions/geocode'
+import { STEP_LABEL, compactSteps, detailText, formatDistance, formatDuration, formatKstTime } from './directions/format'
 
-type Mode = 'transit' | 'car' | 'walk'
-const MODES: Array<{ key: Mode; label: string; Icon: typeof BusIcon }> = [
+const MODES: Array<{ key: DirectionsMode; label: string; Icon: typeof BusIcon }> = [
   { key: 'transit', label: '대중교통', Icon: BusIcon },
   { key: 'car', label: '자동차', Icon: CarIcon },
   { key: 'walk', label: '도보', Icon: WalkIcon },
 ]
 
-const stepColor = (t: TransitStep['type']) =>
-  t === 'bus' ? 'bg-[#2e7d32] text-white' : t === 'subway' ? 'bg-[#1f5dd8] text-white' : 'border-2 border-ink bg-surface text-ink'
+const stepColor = (t: string) =>
+  t === 'BUS' ? 'bg-[#2e7d32] text-white' : t === 'SUBWAY' ? 'bg-[#1f5dd8] text-white' : t === 'DRIVE' ? 'bg-ink text-white' : 'border-2 border-ink bg-surface text-ink'
 
-function stepTitle(s: TransitStep) {
-  if (s.type === 'walk') return `${s.from}에서 ${s.to}까지 도보 이동`
-  return `${s.from}에서 ${s.line ?? (s.type === 'bus' ? '버스' : '지하철')} 승차`
-}
-function stepMeta(s: TransitStep) {
-  const dist = s.distance_m >= 1000 ? `${(s.distance_m / 1000).toFixed(1)}km` : `${s.distance_m}m`
-  return `${s.minutes}분 · ${s.stops ? `${s.stops}개 정거장 · ` : ''}${dist}`
-}
-function formatDuration(min: number) {
-  return min >= 60 ? `${Math.floor(min / 60)}시간 ${min % 60}분` : `${min}분`
-}
-function arrivalLabel(min: number) {
-  const d = new Date(Date.now() + min * 60_000)
-  const h = d.getHours()
-  return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${String(d.getMinutes()).padStart(2, '0')}`
+function StepIcon({ type }: { type: string }) {
+  if (type === 'BUS' || type === 'SUBWAY') return <BusIcon size={14} />
+  if (type === 'DRIVE') return <CarIcon size={14} />
+  if (type === 'WALK') return <WalkIcon size={14} />
+  return <RouteIcon size={14} />
 }
 
-function RouteSteps({ route }: { route: DirectionsRoute }) {
+function stepMeta(s: DirectionsStep) {
+  const parts = [
+    s.durationMinutes != null ? formatDuration(s.durationMinutes) : null,
+    s.distanceMeters != null ? formatDistance(s.distanceMeters) : null,
+  ].filter(Boolean)
+  return parts.join(' · ')
+}
+
+const STEP_PREVIEW = 5
+
+function RouteSteps({ route }: { route: DirectionsResult }) {
+  const arrival = formatKstTime(route.arrivalTime)
+  const departure = formatKstTime(route.departureTime)
+  const [expanded, setExpanded] = useState(false)
+  const steps = useMemo(() => compactSteps(route.steps), [route.steps])
+  const collapsible = steps.length > STEP_PREVIEW
+  const visible = collapsible && !expanded ? steps.slice(0, STEP_PREVIEW) : steps
   return (
     <>
-      <div className="mt-3 grid grid-cols-3 rounded-lg bg-surface-card p-4">
+      <div className="mt-3 grid grid-cols-3 rounded-lg bg-surface-card p-4" data-testid="route-summary">
         <div>
-          <p className="text-[20px] font-black leading-[30px] text-ink">{formatDuration(route.total_minutes)}</p>
+          <p className="text-[20px] font-black leading-[30px] text-ink">{formatDuration(route.durationMinutes)}</p>
           <p className="text-[12px] leading-[18px] text-ink-muted">총 소요시간</p>
         </div>
         <div>
-          <p className="text-[20px] font-black leading-[30px] text-ink">{(route.total_distance_m / 1000).toFixed(1)}km</p>
+          <p className="text-[20px] font-black leading-[30px] text-ink">{formatDistance(route.distanceMeters)}</p>
           <p className="text-[12px] leading-[18px] text-ink-muted">이동 거리</p>
         </div>
         <div>
-          <p className="text-[20px] font-black leading-[30px] text-ink">{arrivalLabel(route.total_minutes)}</p>
-          <p className="text-[12px] leading-[18px] text-ink-muted">도착 예정</p>
+          <p className="text-[20px] font-black leading-[30px] text-ink">{arrival ?? '-'}</p>
+          <p className="text-[12px] leading-[18px] text-ink-muted">{departure ? `${departure} 출발 · 도착 예정` : '도착 예정'}</p>
         </div>
       </div>
       <h3 className="pt-[18px] text-[16px] font-black leading-[24px] text-ink">경로 안내</h3>
-      <ol className="pt-[6px]">
-        {route.steps.map((s, i) => (
-          <li key={i} className="relative flex gap-3 py-3">
-            {i < route.steps.length - 1 && <span className="absolute left-[13px] top-[40px] h-[35px] w-[2px] bg-line" aria-hidden="true" />}
-            <span className={`flex size-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold ${stepColor(s.type)}`}>{i + 1}</span>
-            <div>
-              <p className="text-[14px] font-bold leading-[21px] text-ink">{stepTitle(s)}</p>
-              <p className="text-[12px] leading-[18px] text-ink-subtle">{stepMeta(s)}</p>
-            </div>
-          </li>
-        ))}
+      <ol className="mt-[6px] max-h-[360px] overflow-y-auto pr-1" data-testid="route-step-list">
+        {visible.map((s, i) => {
+          const detail = detailText(s.detail)
+          const label = STEP_LABEL[s.type as keyof typeof STEP_LABEL] ?? STEP_LABEL.OTHER
+          return (
+            <li key={s.stepNumber ?? i} className="relative flex gap-3 py-3" data-testid="route-step">
+              {i < visible.length - 1 && <span className="absolute left-[13px] top-[40px] h-[35px] w-[2px] bg-line" aria-hidden="true" />}
+              <span className={`flex size-7 shrink-0 items-center justify-center rounded-full ${stepColor(s.type)}`} title={label}>
+                <StepIcon type={s.type} />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[14px] font-bold leading-[21px] text-ink">
+                  <span className="pr-1 text-[12px] font-bold text-ink-subtle">{label}</span>
+                  {s.instruction}
+                </p>
+                <p className="text-[12px] leading-[18px] text-ink-subtle">{stepMeta(s)}</p>
+                {detail && <p className="text-[12px] leading-[18px] text-ink-muted">{detail}</p>}
+              </div>
+            </li>
+          )
+        })}
       </ol>
+      {collapsible && (
+        <button
+          type="button"
+          aria-expanded={expanded}
+          onClick={() => setExpanded((v) => !v)}
+          className="mt-2 w-full rounded-lg border border-line py-2 text-[13px] font-bold text-ink"
+        >
+          {expanded ? '접기' : `전체 ${steps.length}단계 보기`}
+        </button>
+      )}
     </>
   )
 }
@@ -81,7 +108,7 @@ export default function Directions() {
   const [locating, setLocating] = useState(true)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
-  const [mode, setMode] = useState<Mode>('transit')
+  const [mode, setMode] = useState<DirectionsMode>('transit')
 
   useEffect(() => {
     if (!authLoading && !isLoggedIn) openLoginPrompt()
@@ -107,11 +134,14 @@ export default function Directions() {
   const lat = event?.latitude ?? null
   const lng = event?.longitude ?? null
   const query = useMemo(
-    () => (origin && lat != null && lng != null ? { fromLat: origin.lat, fromLng: origin.lng, toLat: lat, toLng: lng } : null),
-    [origin, lat, lng],
+    () => (origin && lat != null && lng != null && Number.isFinite(id) ? { eventId: id, originLat: origin.lat, originLng: origin.lng, mode } : null),
+    [origin, lat, lng, id, mode],
   )
   const dir = useDirections(query)
-  const route = dir.data?.routes[0]
+  const route = dir.data
+const dirError = dir.error
+const routeNotFound = dirError instanceof ApiError && dirError.code === 'ROUTE_NOT_FOUND'
+const dirEventMissing = dirError instanceof ApiError && dirError.code === 'EVENT_NOT_FOUND'
 
   if (!Number.isFinite(id)) return <ErrorState code="404" title="행사를 찾을 수 없어요" />
   if (authLoading) return <div className="flex justify-center py-32"><Spinner /></div>
@@ -125,19 +155,20 @@ export default function Directions() {
       </div>
     )
   }
+  if (dirEventMissing) return <ErrorState code="404" title="행사를 찾을 수 없어요" message="삭제되었거나 잘못된 주소예요" />
   if (error) {
     if (error instanceof ApiError && error.code === 'EVENT_NOT_FOUND') {
       return <ErrorState code="404" title="행사를 찾을 수 없어요" message="삭제되었거나 잘못된 주소예요" />
     }
-    return <ErrorState onRetry={() => void refetch()} message={error.message || undefined} />
+    return <ErrorState onRetry={() => void refetch()} message={errorMessage(error)} />
   }
   if (isLoading || !event) return <div className="flex justify-center py-32"><Spinner /></div>
 
   const destLabel = event.venue_name ?? event.title
   const place = [event.venue_name, event.sido && `(${event.sido})`].filter(Boolean).join(' ')
   const noCoords = lat == null || lng == null
-  const showNoRoute = !noCoords && !!origin && (mode !== 'transit' || dir.isError || (dir.isSuccess && !route))
-  const showRoute = mode === 'transit' && !!route
+  const showNoRoute = !noCoords && !!origin && routeNotFound
+  const showRoute = !!route && dir.isSuccess
 
   return (
     <div className="mx-auto max-w-content px-6 pb-10">
@@ -186,8 +217,8 @@ export default function Directions() {
           <div className="mt-3 grid grid-cols-3 gap-[6px]" role="tablist" aria-label="이동 수단">
             {MODES.map(({ key, label, Icon }) => {
               const selected = mode === key
-              // 목업은 대중교통 경로만 제공한다. 나머지 수단은 "경로 없음"(D3)으로 처리.
-              const sub = key === 'transit' ? (route ? formatDuration(route.total_minutes) : '-') : '경로 없음'
+              // 선택한 수단만 조회하므로 소요시간은 선택된 탭에만 표시한다.
+              const sub = selected ? (route ? formatDuration(route.durationMinutes) : routeNotFound ? '경로 없음' : '-') : '-'
               return (
                 <button
                   key={key}
@@ -211,26 +242,27 @@ export default function Directions() {
             <p className="pt-4 text-[13px] text-ink-muted">출발지를 선택하면 경로를 안내해 드려요.</p>
           ) : dir.isLoading ? (
             <div className="flex justify-center py-10"><Spinner /></div>
+          ) : dir.isError && !routeNotFound ? (
+            <div className="mt-3" data-testid="directions-error"><ErrorState onRetry={() => void dir.refetch()} message={errorMessage(dirError)} /></div>
           ) : showNoRoute ? (
             <div className="mt-3 flex flex-col items-center rounded-lg border border-line px-6 py-8 text-center" data-testid="no-route">
               <span className="flex size-10 items-center justify-center rounded-card bg-primary-tint text-primary"><WarnIcon size={22} /></span>
               <p className="pt-4 text-[15px] font-bold leading-[22px] text-ink">이 방법으로는 경로를 찾지 못했어요</p>
-              <p className="pt-1 text-[12px] leading-[18px] text-ink-muted">다른 이동 수단을 고르거나 출발지를 바꿔 보세요</p>
+              <p className="pt-1 text-[12px] leading-[18px] text-ink-muted">{errorMessage('ROUTE_NOT_FOUND')} 다른 이동 수단을 고르거나 출발지를 바꿔 보세요</p>
               <div className="flex w-full gap-2 pt-4">
                 <button type="button" onClick={() => setPickerOpen(true)} className="h-11 flex-1 rounded-card border border-line text-[14px] font-bold text-ink">출발지 변경</button>
-                <button type="button" onClick={() => { setMode('transit'); if (dir.isError) void dir.refetch() }} className="h-11 flex-1 rounded-card bg-primary text-[14px] font-bold text-white">대중교통으로 보기</button>
+                <button type="button" onClick={() => setMode('transit')} className="h-11 flex-1 rounded-card bg-primary text-[14px] font-bold text-white">대중교통으로 보기</button>
               </div>
             </div>
           ) : showRoute ? (
-            <RouteSteps route={route} />
+            <RouteSteps key={route.mode} route={route} />
           ) : null}
         </div>
 
         <RouteMap
           from={origin}
           to={{ lat: lat ?? 36.8151, lng: lng ?? 127.1139, label: destLabel }}
-          path={showRoute ? route.path : undefined}
-        />
+                  />
       </div>
     </div>
   )
