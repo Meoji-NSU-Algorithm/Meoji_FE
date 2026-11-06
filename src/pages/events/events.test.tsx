@@ -25,7 +25,7 @@ const card = (id: number, o: Record<string, unknown> = {}) => ({
   start_date: '2026-10-22',
   end_date: '2026-10-26',
   venue_name: '천안종합운동장',
-  thumbnail_url: null,
+  image_url: null,
   price: null,
   is_free: true,
   ...o,
@@ -144,7 +144,14 @@ describe('EventList', () => {
 
 describe('Calendar', () => {
   it('찜한 행사를 월 그리드와 하단 목록에 보여준다', async () => {
-    localStorage.setItem('cheonanon.mock.bookmarks.1', JSON.stringify([card(1, { title: '흥타령춤축제' })]))
+    server.use(
+      http.get('*/api/bookmarks', () =>
+        ok({
+          totalCount: 1,
+          events: [{ id: 1, title: '흥타령춤축제', imageUrl: null, startDate: '2026-10-22', endDate: '2026-10-26', priceType: 'FREE' }],
+        }),
+      ),
+    )
     server.use(http.get('*/api/users/me', () => ok({ id: 1, email: null, nickname: '민', profile_image: null })))
     renderPage(<Calendar />, '/calendar')
     // 현재 월(테스트 실행 시점)과 무관하게 이전/다음 달 이동 후 10월로 맞춘다.

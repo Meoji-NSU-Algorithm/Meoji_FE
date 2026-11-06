@@ -10,6 +10,8 @@ import { ToastProvider } from '../../components'
 import { ok } from '../../mocks/handlers'
 import { server } from '../../mocks/server'
 import MapPage from '../MapPage'
+import { renderHook } from '@testing-library/react'
+import { useVenueCoords } from './useVenueCoords'
 import { geocodeKey, geocodeVenue, resetGeocodeCache } from './geocode'
 import { markerLabel } from './mapFormat'
 
@@ -50,6 +52,15 @@ function fakeKakao(places: Record<string, { x: string; y: string } | null> = {},
   }
 }
 
+describe('useVenueCoords', () => {
+  it('좌표가 있는 카드는 지오코딩 없이 그대로 쓰고, 없는 카드만 미위치로 센다', () => {
+    const events = [ev(1, { latitude: 36.8, longitude: 127.1 }), ev(2, { venue_name: null, latitude: null, longitude: null })] as never
+    const { result } = renderHook(() => useVenueCoords({}, events))
+    expect(result.current.located).toEqual([{ event: events[0], coord: { lat: 36.8, lng: 127.1 } }])
+    expect(result.current.unlocatedCount).toBe(1)
+  })
+})
+
 describe('geocode', () => {
   beforeEach(() => resetGeocodeCache())
 
@@ -73,14 +84,14 @@ describe('geocode', () => {
 
   it('마커 라벨', () => {
     expect(markerLabel({ is_free: true, price: null })).toBe('무료')
-    expect(markerLabel({ is_free: false, price: '15000' })).toBe('15,000원')
+    expect(markerLabel({ is_free: false, price: 15000 })).toBe('15,000원')
     expect(markerLabel({ is_free: false, price: null })).toBe('유료')
   })
 })
 
 const ev = (id: number, o: Record<string, unknown> = {}) => ({
   id, title: `행사${id}`, category_id: 1, category: '축제', sido_code: '44', sido: '충남',
-  start_date: '2026-10-22', end_date: '2026-10-26', venue_name: `장소${id}`, thumbnail_url: null,
+  start_date: '2026-10-22', end_date: '2026-10-26', venue_name: `장소${id}`, image_url: null,
   price: null, is_free: true, ...o,
 })
 

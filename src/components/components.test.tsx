@@ -12,7 +12,7 @@ const event: EventCardData = {
   start_date: '2026-10-22',
   end_date: '2026-10-26',
   venue_name: '천안종합운동장 일원',
-  thumbnail_url: null,
+  image_url: null,
   price: null,
   is_free: true,
 }
@@ -25,6 +25,12 @@ describe('formatDateRange', () => {
 })
 
 describe('EventCard', () => {
+  it('조회수를 표시하고, 가격 null 은 안내 문구를 보여준다', () => {
+    render(<EventCard event={{ ...event, is_free: null, price: null, view_count: 12000 }} />)
+    expect(screen.getByText('조회 1.2만')).toBeInTheDocument()
+    expect(screen.getByText('가격 정보 없음')).toBeInTheDocument()
+    expect(screen.queryByText('무료')).not.toBeInTheDocument()
+  })
   it('썸네일이 없으면 플레이스홀더를 보여주고 무료를 표시한다', () => {
     render(<EventCard event={event} variant="ranked" rank={1} />)
     expect(screen.getByTestId('thumbnail-placeholder')).toBeInTheDocument()

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { EmptyState, ErrorState, EventCard, Spinner, useToast } from '../components'
 import type { EventCardData } from '../components'
 import { useBookmarks, useToggleBookmark } from '../api/hooks'
+import { bookmarkToCard } from '../api/bookmarks'
+import { errorMessage } from '../api/errors'
 import type { EventCard as EventCardType } from '../api/types'
 import { MyShell } from './my/MyShell'
 
@@ -33,7 +35,7 @@ function Content() {
       </div>
     )
   if (isError) return <ErrorState onRetry={() => void refetch()} />
-  if (!data || data.length === 0)
+  if (!data || data.events.length === 0)
     return (
       <EmptyState
         title="아직 찜한 행사가 없어요"
@@ -53,18 +55,23 @@ function Content() {
   // 저장 순서가 곧 최근 찜한 순(addBookmark 가 앞에 추가)
   const list =
     sort === 'upcoming'
-      ? [...data].sort((a, b) => (a.start_date ?? '9999').localeCompare(b.start_date ?? '9999'))
-      : data
+      ? [...data.events.map(bookmarkToCard)].sort((a, b) => (a.start_date ?? '9999').localeCompare(b.start_date ?? '9999'))
+      : data.events.map(bookmarkToCard)
 
   const unlike = (event: EventCardType) =>
     toggle.mutate(
       { event, bookmarked: true },
       {
+        onError: (err) => toast.show({ message: errorMessage(err) }),
         onSuccess: () =>
           toast.show({
             message: '찜을 해제했어요',
             actionLabel: '되돌리기',
-            onAction: () => toggle.mutate({ event, bookmarked: false }),
+            onAction: () =>
+              toggle.mutate(
+                { event, bookmarked: false },
+                { onError: (err) => toast.show({ message: errorMessage(err) }) },
+              ),
           }),
       },
     )

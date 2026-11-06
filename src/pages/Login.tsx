@@ -51,7 +51,7 @@ function useColumns(): Tile[][] {
     en: e.category ?? '',
     ko: e.title,
     g: GRADIENTS[i % GRADIENTS.length],
-    img: e.thumbnail_url,
+    img: e.image_url,
   }))
   const cols: Tile[][] = [[], [], []]
   tiles.forEach((t, i) => cols[i % 3].push(t))
@@ -171,7 +171,7 @@ export default function Login() {
               ))}
             </ul>
             <p className="pt-[22px] text-[12px] leading-[19.2px] text-ink-subtle">
-              로그인하면 <u>이용약관</u> 및 <u>개인정보처리방침</u>에 동의한 것으로 봐요.
+              로그인 후 <u>이용약관</u>과 <u>개인정보처리방침</u> 동의 절차가 이어져요.
             </p>
           </div>
         </div>

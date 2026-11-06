@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useBookmarks } from '../api/hooks'
+import { bookmarkToCard } from '../api/bookmarks'
 import { useAuth, useRequireLogin } from '../auth'
 import { EventCard, Spinner } from '../components'
 import { HeartOutlineIcon, ChevronLeftIcon, ChevronRightIcon, SearchBigIcon, WifiOffIcon } from './events/icons'
@@ -46,7 +47,7 @@ export default function Calendar() {
     if (!authLoading && !isLoggedIn) requireLogin()
   }, [authLoading, isLoggedIn, requireLogin])
 
-  const events = useMemo(() => bookmarks.data ?? [], [bookmarks.data])
+  const events = useMemo(() => (bookmarks.data?.events ?? []).map(bookmarkToCard), [bookmarks.data])
   const weeks = useMemo(() => buildMonth(cursor.year, cursor.month, events), [cursor, events])
   const monthEvents = useMemo(() => eventsInMonth(events, cursor.year, cursor.month), [events, cursor])
 

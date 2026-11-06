@@ -20,9 +20,9 @@ function HeroEvent({ event, today, onOpen }: { event: EventCard; today: string; 
       onClick={onOpen}
       className="relative h-[230px] overflow-hidden rounded-[20px] text-left text-white"
       style={
-        event.thumbnail_url
+        event.image_url
           ? {
-              backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.42) 100%), url(${event.thumbnail_url})`,
+              backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.42) 100%), url(${event.image_url})`,
               backgroundSize: 'cover',
               backgroundPosition: 'center',
             }

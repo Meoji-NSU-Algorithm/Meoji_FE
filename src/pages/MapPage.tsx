@@ -16,12 +16,12 @@ import { MapCanvas, type MapCanvasHandle } from './map/MapCanvas'
 import { markerLabel } from './map/mapFormat'
 import { useVenueCoords } from './map/useVenueCoords'
 
-const MAP_SIZE = 30
+const MAP_SIZE = 100
 type Geo = 'idle' | 'loading' | 'granted' | 'denied'
 
 function Thumb({ e }: { e: EventCard }) {
-  return e.thumbnail_url ? (
-    <img src={e.thumbnail_url} alt="" loading="lazy" className="size-16 shrink-0 rounded-[10px] bg-surface-muted object-cover" />
+  return e.image_url ? (
+    <img src={e.image_url} alt="" loading="lazy" className="size-16 shrink-0 rounded-[10px] bg-surface-muted object-cover" />
   ) : (
     <span className="flex size-16 shrink-0 items-center justify-center rounded-[10px] bg-[#f3f0ee] text-ink-disabled">
       <PhotoIcon size={22} />

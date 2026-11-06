@@ -11,9 +11,9 @@ export interface EventCardData {
   start_date: string
   end_date: string
   venue_name: string
-  thumbnail_url?: string | null
+  image_url?: string | null
   price?: string | number | null
-  is_free: boolean
+  is_free?: boolean | null
   rating?: number | null
   review_count?: number | null
   view_count?: number | null
@@ -49,9 +49,12 @@ export function EventCard({
   href,
 }: EventCardProps) {
   const small = variant === 'small'
-  const priceText = event.is_free ? '무료' : formatPrice(event.price)
+  const priceText = event.is_free
+    ? '무료'
+    : formatPrice(event.price) || (event.is_free == null ? '가격 정보 없음' : '')
   const meta = [event.sido, event.category].filter(Boolean).join(' · ')
   const hasRating = event.rating != null && event.rating > 0
+  const hasViews = event.view_count != null && event.view_count > 0
 
   const handleClick = (e: MouseEvent) => {
     if (onClick) {
@@ -78,9 +81,9 @@ export function EventCard({
           small ? 'aspect-[274/205.5]' : 'aspect-[219/292]'
         }`}
       >
-        {event.thumbnail_url ? (
+        {event.image_url ? (
           <img
-            src={event.thumbnail_url}
+            src={event.image_url}
             alt=""
             loading="lazy"
             className="absolute inset-0 size-full object-cover"
@@ -139,7 +142,7 @@ export function EventCard({
             )}
           </div>
         )}
-        {(hasRating || event.view_count != null) && (
+        {(hasRating || hasViews) && (
           <p className="flex items-center gap-[3px] pt-[3px] text-[12px] leading-[18px] text-ink-muted">
             {hasRating && (
               <>
@@ -148,9 +151,9 @@ export function EventCard({
                 {event.review_count != null && <span>({event.review_count.toLocaleString('ko-KR')})</span>}
               </>
             )}
-            {event.view_count != null && (
+            {hasViews && (
               <span>
-                {hasRating ? '· ' : ''}조회 {compactCount(event.view_count)}
+                {hasRating ? '· ' : ''}조회 {compactCount(event.view_count!)}
               </span>
             )}
           </p>

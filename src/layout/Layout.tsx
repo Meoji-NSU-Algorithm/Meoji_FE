@@ -3,6 +3,7 @@ import { useEffect } from 'react'
 import { Footer, Header, useToast } from '../components'
 import { consumePendingBookmark, useAuth } from '../auth'
 import { useToggleBookmark } from '../api/hooks'
+import { errorMessage } from '../api/errors'
 import type { EventCard } from '../api/types'
 import { LoginPromptModal } from './LoginPromptModal'
 
@@ -28,7 +29,10 @@ export default function Layout() {
     if (!pending) return
     toggle.mutate(
       { event: pending, bookmarked: false },
-      { onSuccess: () => toast.show({ message: '찜한 행사에 담았어요' }) },
+      {
+        onSuccess: () => toast.show({ message: '찜한 행사에 담았어요' }),
+        onError: (err) => toast.show({ message: errorMessage(err) }),
+      },
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoggedIn, user?.id])
