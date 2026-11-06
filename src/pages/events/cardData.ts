@@ -15,6 +15,8 @@ export function toCardData(e: EventCard, extra: Partial<EventCardData> = {}): Ev
     price: e.price,
     is_free: e.is_free,
     view_count: e.view_count,
+    rating: e.average_rating ?? undefined,
+    review_count: e.review_count,
     ...extra,
   }
 }

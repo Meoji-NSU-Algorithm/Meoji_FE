@@ -20,6 +20,8 @@ export const eventCardFixture = (over: Record<string, unknown> = {}) => ({
   latitude: 36.8,
   longitude: 127.1,
   view_count: 10,
+  average_rating: 0,
+  review_count: 0,
   price: null,
   is_free: null,
   ...over,
