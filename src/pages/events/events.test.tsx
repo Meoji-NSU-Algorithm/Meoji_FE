@@ -105,6 +105,23 @@ describe('EventList', () => {
     expect(await within(filters).findByRole('button', { name: '충남', pressed: true })).toBeInTheDocument()
   })
 
+  it('카드에 BE가 준 평균 별점과 리뷰 수를 보여주고, 리뷰가 없으면 별점을 숨긴다', async () => {
+    server.use(
+      http.get('*/api/events', () =>
+        ok({
+          total_count: 2,
+          page: 1,
+          size: 12,
+          events: [card(1, { average_rating: 4.5, review_count: 128 }), card(2, { average_rating: 0, review_count: 0 })],
+        }),
+      ),
+    )
+    renderPage(<EventList />, '/events')
+    expect(await screen.findByText('4.5')).toBeInTheDocument()
+    expect(screen.getByText('(128)')).toBeInTheDocument()
+    expect(screen.queryByText('0.0')).not.toBeInTheDocument()
+  })
+
   it('결과가 없으면 B2 빈 상태와 필터 초기화를 보여준다', async () => {
     server.use(http.get('*/api/events', () => ok({ total_count: 0, page: 1, size: 12, events: [] })))
     renderPage(<EventList />, '/events?q=구름빵')

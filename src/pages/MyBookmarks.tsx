@@ -16,6 +16,7 @@ function toCardData(e: EventCardType): EventCardData {
     start_date: e.start_date ?? '',
     end_date: e.end_date ?? e.start_date ?? '',
     venue_name: e.venue_name ?? '',
+    rating: e.average_rating,
   }
 }
 

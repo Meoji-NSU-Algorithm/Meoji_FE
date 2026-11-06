@@ -123,6 +123,8 @@ export function toCardData(e: EventCard, extra: Partial<EventCardData> = {}): Ev
     image_url: e.image_url,
     price: e.price,
     is_free: e.is_free,
+    rating: e.average_rating,
+    review_count: e.review_count,
     ...extra,
   }
 }

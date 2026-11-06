@@ -52,6 +52,9 @@ export interface EventCard {
   longitude: number | null
   price: string | number | null
   is_free: boolean
+  /** 목록·월간 인기 카드에만 온다(찜 목록 등에는 없음). 리뷰가 없으면 0 */
+  average_rating?: number | null
+  review_count?: number
 }
 export interface MonthlyTopEvent extends EventCard {
   monthly_views: number
