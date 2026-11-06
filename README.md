@@ -4,8 +4,8 @@
 백엔드는 `CheonanOn_BE` 레포(Flask)이고, 디자인은 Figma "NOL 스타일 리디자인" 페이지를 따릅니다.
 
 > **⚠️ 먼저 읽어 주세요: [`docs/backend-requests.md`](docs/backend-requests.md)**
-> 기준 백엔드는 `CheonanOn_BE` **develop(01fdeb3)** 입니다. 찜·리뷰 사진·약관·길찾기 등은 실제 API로 연동했고,
-> 아직 백엔드에 없는 항목(프로필 수정, 카드 평점·리뷰 수 등)만 [`docs/backend-requests.md`](docs/backend-requests.md)에 남겨 두었습니다.
+> 기준 백엔드는 `CheonanOn_BE` **develop(235c500)** 입니다. 찜·리뷰 사진·약관·길찾기 등은 실제 API로 연동했고,
+> 아직 백엔드에 없는 항목(프로필 수정, 경로 좌표 등)만 [`docs/backend-requests.md`](docs/backend-requests.md)에 남겨 두었습니다.
 > 디자인과 백엔드 데이터가 맞지 않는 부분은 [`docs/design-requests.md`](docs/design-requests.md)에 정리했습니다.
 
 ## 기술 스택
