@@ -13,6 +13,8 @@ import { CameraIcon } from './icons'
 export const ANONYMOUS_LABEL = '방문자'
 
 const MAX_CONTENT = 1000
+/** BE가 첨부를 거부한 사진(올린 지 24시간이 지났거나 직접 올린 사진이 아님)에 대한 안내 */
+const IMAGE_NOT_UPLOADED_MESSAGE = '사용할 수 없는 사진이 있어 빼 두었어요. 사진을 다시 올려 주세요.'
 /** BE MAX_REVIEW_IMAGES 와 같은 값 */
 const MAX_IMAGES = 5
 
@@ -144,6 +146,10 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
         onError: (e) => {
           if (e instanceof ApiError && e.code === 'REVIEW_ALREADY_EXISTS') {
             setError('이미 이 행사에 리뷰를 남기셨어요. 작성한 리뷰를 수정해 주세요.')
+          } else if (e instanceof ApiError && e.code === 'REVIEW_IMAGE_NOT_UPLOADED') {
+            // 새로 올린 사진은 모두 다시 올려야 하므로 첨부 목록을 비운다.
+            setImages([])
+            setError(IMAGE_NOT_UPLOADED_MESSAGE)
           } else {
             setError(e instanceof Error && e.message ? e.message : '리뷰를 등록하지 못했어요.')
           }
@@ -167,7 +173,16 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
           setImages([])
           toast.show({ message: '리뷰를 수정했어요' })
         },
-        onError: (e) => setError(e instanceof Error && e.message ? e.message : '리뷰를 수정하지 못했어요.'),
+        onError: (e) => {
+          if (e instanceof ApiError && e.code === 'REVIEW_IMAGE_NOT_UPLOADED') {
+            // 원래 리뷰에 붙어 있던 사진은 그대로 두고 새로 올린 사진만 뺀다.
+            const kept = new Set(reviews.find((r) => r.id === editingId)?.images?.map((i) => i.key))
+            setImages((prev) => prev.filter((i) => kept.has(i.key)))
+            setError(IMAGE_NOT_UPLOADED_MESSAGE)
+          } else {
+            setError(e instanceof Error && e.message ? e.message : '리뷰를 수정하지 못했어요.')
+          }
+        },
       },
     )
   }

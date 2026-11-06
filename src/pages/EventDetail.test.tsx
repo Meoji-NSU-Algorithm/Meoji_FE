@@ -177,6 +177,23 @@ describe('EventDetail', () => {
     vi.mocked(uploadReviewImage).mockReset()
   })
 
+  it('BE가 사진 첨부를 거부하면(REVIEW_IMAGE_NOT_UPLOADED) 사진을 빼고 다시 올리라고 안내한다', async () => {
+    server.use(
+      http.get('*/api/events/1', () => ok({ ...baseEvent, reviews: [], review_count: 0, average_rating: null })),
+      http.post('*/api/reviews/images', () => ok({ key: 'reviews/old.webp', url: 'http://img.test/reviews/old.webp' })),
+      http.post('*/api/reviews', () => fail(400, 'REVIEW_IMAGE_NOT_UPLOADED')),
+    )
+    renderAt('/events/1')
+    await userEvent.click(await screen.findByRole('radio', { name: '4점' }))
+    await userEvent.type(screen.getByLabelText('리뷰 내용'), '사진 후기')
+    await userEvent.upload(screen.getByLabelText('사진 파일 선택'), new File(['x'], 'a.jpg', { type: 'image/jpeg' }))
+    expect(await screen.findByTestId('review-image-preview')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('사진을 다시 올려 주세요')
+    expect(screen.queryByTestId('review-image-preview')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('리뷰 내용')).toHaveValue('사진 후기')
+  })
+
   it('리뷰에 첨부된 사진을 보여준다', async () => {
     const withImage = { ...baseEvent.reviews[1], images: [{ key: 'reviews/k.webp', url: 'http://img.test/k.webp' }] }
     server.use(http.get('*/api/events/1', () => ok({ ...baseEvent, reviews: [withImage] })))
