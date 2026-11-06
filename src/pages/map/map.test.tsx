@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { http } from 'msw'
@@ -16,8 +16,12 @@ import { markerLabel } from './mapFormat'
 const loadKakaoMaps = vi.fn()
 vi.mock('../../lib/kakaoMaps', () => ({ loadKakaoMaps: () => loadKakaoMaps() }))
 
+// fakeKakao가 등록받은 idle 콜백. 테스트에서 "사용자가 지도를 움직이고 멈춤"을 흉내 낼 때 부른다.
+const idleHandlers: Array<() => void> = []
+
 function fakeKakao(places: Record<string, { x: string; y: string } | null> = {}, calls: string[] = []) {
-  const bounds = { contain: () => true }
+  const corner = (lat: number, lng: number) => ({ getLat: () => lat, getLng: () => lng })
+  const bounds = { contain: () => true, getSouthWest: () => corner(36.7, 127.0), getNorthEast: () => corner(36.9, 127.3) }
   class Map {
     getBounds() { return bounds }
     getLevel() { return 8 }
@@ -44,7 +48,12 @@ function fakeKakao(places: Record<string, { x: string; y: string } | null> = {},
       CustomOverlay: Overlay,
       LatLng: class { a: number; b: number; constructor(a: number, b: number) { this.a = a; this.b = b } },
       LatLngBounds: class { extend() {} },
-      event: { addListener: (_m: unknown, _e: string, fn: () => void) => fn() },
+      event: {
+        addListener: (_m: unknown, e: string, fn: () => void) => {
+          if (e === 'idle') idleHandlers.push(fn)
+          fn()
+        },
+      },
       services: { Places, Status: { OK: 'OK', ZERO_RESULT: 'ZERO_RESULT', ERROR: 'ERROR' } },
     },
   }
@@ -107,6 +116,7 @@ function renderMap(url = '/map') {
 describe('MapPage', () => {
   beforeEach(() => {
     resetGeocodeCache()
+    idleHandlers.length = 0
     loadKakaoMaps.mockReset()
     Object.defineProperty(navigator, 'geolocation', { configurable: true, value: undefined })
   })
@@ -162,5 +172,45 @@ describe('MapPage', () => {
     loadKakaoMaps.mockResolvedValue(fakeKakao())
     renderMap('/map?is_free=true')
     expect(await screen.findByText('조건에 맞는 행사가 없어요')).toBeInTheDocument()
+  })
+
+  it('좌표 있는 행사만 최대 100개 요청하고, 더 있으면 확대 안내를 보여준다', async () => {
+    let url = ''
+    server.use(http.get('*/api/events', ({ request }) => {
+      url = request.url
+      return ok({ total_count: 250, page: 1, size: 100, events: [ev(1, { latitude: 36.8, longitude: 127.1 })] })
+    }))
+    loadKakaoMaps.mockResolvedValue(fakeKakao())
+    renderMap()
+    expect(await screen.findByText('행사1')).toBeInTheDocument()
+    const sp = new URL(url).searchParams
+    expect(sp.get('has_coords')).toBe('true')
+    expect(sp.get('size')).toBe('100')
+    expect(sp.has('min_lat')).toBe(false)
+    expect(screen.getByText(/조건에 맞는 250개 중 1개만 표시했어요/)).toBeInTheDocument()
+  })
+
+  it('지도를 움직이면 "이 지역에서 다시 찾기"로 그 영역을 조회한다', async () => {
+    const urls: string[] = []
+    server.use(http.get('*/api/events', ({ request }) => {
+      urls.push(request.url)
+      return ok({ total_count: 1, page: 1, size: 100, events: [ev(1, { latitude: 36.8, longitude: 127.1 })] })
+    }))
+    loadKakaoMaps.mockResolvedValue(fakeKakao())
+    renderMap()
+    expect(await screen.findByText('행사1')).toBeInTheDocument()
+    // 처음 그린 직후의 idle은 사용자 이동이 아니라 버튼이 없다.
+    expect(screen.queryByRole('button', { name: '이 지역에서 다시 찾기' })).not.toBeInTheDocument()
+
+    vi.spyOn(Date, 'now').mockReturnValue(Date.now() + 10_000)
+    act(() => idleHandlers.forEach((fn) => fn()))
+    await userEvent.click(await screen.findByRole('button', { name: '이 지역에서 다시 찾기' }))
+
+    await waitFor(() => expect(urls.some((u) => new URL(u).searchParams.has('min_lat'))).toBe(true))
+    const sp = new URL(urls.at(-1)!).searchParams
+    expect(Object.fromEntries(['min_lat', 'max_lat', 'min_lng', 'max_lng', 'has_coords'].map((k) => [k, sp.get(k)]))).toEqual({
+      min_lat: '36.7', max_lat: '36.9', min_lng: '127', max_lng: '127.3', has_coords: 'true',
+    })
+    expect(screen.queryByRole('button', { name: '이 지역에서 다시 찾기' })).not.toBeInTheDocument()
   })
 })

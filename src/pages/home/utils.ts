@@ -98,15 +98,47 @@ export function inRegion(e: EventCard, label: string): boolean {
   return !!e.sido && !!r && r.aliases.includes(e.sido)
 }
 
-/** 태그 기획전 (정적). 클릭 시 /events?tag= 로 이동 */
-export const TAG_PROMOS = [
-  { tag: '푸드트럭', title: '먹으러 가는 축제', gradient: 'linear-gradient(155deg,#e8461c 8.5%,#f7a04b 91.5%)' },
-  { tag: '불꽃놀이', title: '하늘을 수놓는 밤', gradient: 'linear-gradient(155deg,#1c2147 8.5%,#5b3c8c 91.5%)' },
-  { tag: '야시장', title: '퇴근 후 야시장 산책', gradient: 'linear-gradient(155deg,#7a2257 8.5%,#e87a9a 91.5%)' },
-  { tag: '반려동물', title: '반려견과 함께 가요', gradient: 'linear-gradient(155deg,#2f5d34 8.5%,#b6d27a 91.5%)' },
-  { tag: '아이와함께', title: '주말 가족 나들이', gradient: 'linear-gradient(155deg,#2e6fd8 8.5%,#9cd3f5 91.5%)' },
-  { tag: '단풍', title: '지금 아니면 못 보는 가을', gradient: 'linear-gradient(155deg,#b9771a 8.5%,#f4cf6a 91.5%)' },
+/** 태그 기획전 문구·배경. BE 태그 사전(tour.sync_service.TAG_KEYWORDS)의 태그를 기준으로 둔다. */
+const TAG_STYLES: Record<string, { title: string; gradient: string }> = {
+  푸드트럭: { title: '먹으러 가는 축제', gradient: 'linear-gradient(155deg,#e8461c 8.5%,#f7a04b 91.5%)' },
+  먹거리: { title: '맛있는 거 먹으러 가요', gradient: 'linear-gradient(155deg,#c2410c 8.5%,#fbbf24 91.5%)' },
+  불꽃놀이: { title: '하늘을 수놓는 밤', gradient: 'linear-gradient(155deg,#1c2147 8.5%,#5b3c8c 91.5%)' },
+  야간: { title: '퇴근 후 밤 나들이', gradient: 'linear-gradient(155deg,#7a2257 8.5%,#e87a9a 91.5%)' },
+  가족: { title: '주말 가족 나들이', gradient: 'linear-gradient(155deg,#2e6fd8 8.5%,#9cd3f5 91.5%)' },
+  체험: { title: '직접 해 보는 재미', gradient: 'linear-gradient(155deg,#2f5d34 8.5%,#b6d27a 91.5%)' },
+  꽃: { title: '꽃 보러 가요', gradient: 'linear-gradient(155deg,#be185d 8.5%,#f9a8d4 91.5%)' },
+  음악: { title: '귀가 즐거운 축제', gradient: 'linear-gradient(155deg,#312e81 8.5%,#818cf8 91.5%)' },
+  공연: { title: '무대 앞으로', gradient: 'linear-gradient(155deg,#4c1d95 8.5%,#c084fc 91.5%)' },
+  전시: { title: '천천히 둘러보는 전시', gradient: 'linear-gradient(155deg,#b9771a 8.5%,#f4cf6a 91.5%)' },
+}
+const FALLBACK_GRADIENTS = [
+  'linear-gradient(155deg,#0f766e 8.5%,#5eead4 91.5%)',
+  'linear-gradient(155deg,#334155 8.5%,#94a3b8 91.5%)',
 ]
+
+export interface TagPromo {
+  tag: string
+  title: string
+  gradient: string
+  count: number
+}
+/**
+ * 행사 카드의 tags를 세어 행사가 많은 태그부터 기획전을 만든다. 클릭 시 /events?tag= 로 이동.
+ * 행사가 없는 태그는 만들지 않아서, 눌렀는데 결과가 0건인 기획전이 생기지 않는다.
+ */
+export function tagPromos(events: EventCard[], max = 6): TagPromo[] {
+  const counts = new Map<string, number>()
+  for (const e of events) for (const t of e.tags ?? []) counts.set(t, (counts.get(t) ?? 0) + 1)
+  return [...counts]
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ko'))
+    .slice(0, max)
+    .map(([tag, count], i) => ({
+      tag,
+      count,
+      title: TAG_STYLES[tag]?.title ?? `${tag} 행사 모아보기`,
+      gradient: TAG_STYLES[tag]?.gradient ?? FALLBACK_GRADIENTS[i % FALLBACK_GRADIENTS.length],
+    }))
+}
 
 /** 카테고리 스트립 항목. categoryName 은 BE categories 의 name 과 매칭해 category_id 링크를 만든다. */
 export const CATEGORY_NAMES = ['축제', '전시', '공연', '체험', '계절행사']

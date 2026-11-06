@@ -1,5 +1,5 @@
 import { StrictMode } from 'react'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -14,6 +14,7 @@ import Home from '../Home'
 import KakaoCallback from '../KakaoCallback'
 import Terms from '../Terms'
 import { tokenStorage } from '../../auth'
+import { tagPromos } from './utils'
 
 const ev = (id: number, over = {}) => ({
   id, title: `행사${id}`, category_id: 1, category: '축제', sido_code: '44', sido: '충남',
@@ -50,12 +51,19 @@ describe('Home (비로그인)', () => {
       http.get('*/api/events/monthly-top', () => ok({ month: '2099-01', events: [{ ...ev(1), monthly_views: 10 }] })),
       http.get('*/api/events', ({ request }) => {
         urls.push(request.url)
-        return ok({ total_count: 2, page: 1, size: 100, events: [ev(2), ev(3)] })
+        return ok({ total_count: 2, page: 1, size: 100, events: [ev(2, { tags: ['가족', '야간'] }), ev(3, { tags: ['야간'] })] })
       }),
     )
     setup('/')
     await screen.findAllByText('행사2')
     expect(urls.length).toBe(1)
+    // 기획전은 실제 행사에 붙은 태그로만 만든다.
+    const promos = screen.getByRole('region', { name: '태그로 찾는 기획전' })
+    expect(within(promos).getAllByRole('link').map((a) => a.getAttribute('href'))).toEqual([
+      `/events?tag=${encodeURIComponent('야간')}`,
+      `/events?tag=${encodeURIComponent('가족')}`,
+    ])
+    expect(within(promos).getByText('행사 2개 모아보기 ›')).toBeInTheDocument()
     const u = new URL(urls[0])
     expect([...u.searchParams.keys()].sort()).toEqual(['page', 'size', 'sort'])
     await userEvent.click(screen.getAllByRole('button', { name: '찜하기' })[0])
@@ -99,5 +107,17 @@ describe('KakaoCallback', () => {
     server.use(http.post('*/api/auth/kakao', () => fail(401, 'KAKAO_TOKEN_REQUEST_FAILED')))
     setup('/auth/kakao/callback?code=bad')
     await waitFor(() => expect(screen.getByText('로그인을 완료하지 못했어요')).toBeInTheDocument())
+  })
+})
+
+describe('태그 기획전', () => {
+  it('행사에 붙은 태그를 많은 순으로 세고, 없는 태그는 만들지 않는다', () => {
+    const e = (id: number, tags?: string[]) => ({ id, tags }) as never
+    const promos = tagPromos([e(1, ['가족', '야간']), e(2, ['야간']), e(3), e(4, ['새태그'])])
+    expect(promos.map((p) => [p.tag, p.count])).toEqual([['야간', 2], ['가족', 1], ['새태그', 1]])
+    expect(promos[0].title).toBe('퇴근 후 밤 나들이')
+    expect(promos[2].title).toBe('새태그 행사 모아보기')
+    expect(tagPromos([e(1, ['a', 'b', 'c']), e(2, ['d', 'e', 'f', 'g'])], 6)).toHaveLength(6)
+    expect(tagPromos([])).toEqual([])
   })
 })

@@ -6,6 +6,12 @@ export interface MapPoint {
   lng: number
   label: string
 }
+export interface MapBounds {
+  min_lat: number
+  max_lat: number
+  min_lng: number
+  max_lng: number
+}
 export interface MapCanvasHandle {
   zoomIn: () => void
   zoomOut: () => void
@@ -38,17 +44,23 @@ interface Props {
   onVisibleChange: (ids: number[]) => void
   /** 이 값이 바뀌면 모든 마커가 보이도록 지도를 맞춘다 */
   fitKey: string
+  /** 사용자가 지도를 움직이거나 확대/축소해 멈췄을 때의 영역. fit으로 맞춘 이동은 알리지 않는다 */
+  onUserMove?: (bounds: MapBounds) => void
   ref?: Ref<MapCanvasHandle>
 }
 
 /** Kakao 지도 + 가격 라벨 마커(CustomOverlay). 데이터는 props로만 받는다. */
-export function MapCanvas({ kakao, points, selectedId, onSelect, onVisibleChange, fitKey, ref }: Props) {
+// fit 직후 이 시간 안에 오는 idle은 프로그램이 맞춘 이동으로 본다(같은 영역이면 idle이 안 올 수도 있어 시간으로 끊는다).
+const FIT_SETTLE_MS = 800
+
+export function MapCanvas({ kakao, points, selectedId, onSelect, onVisibleChange, fitKey, onUserMove, ref }: Props) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<any>(null)
   const overlays = useRef(new Map<number, { overlay: any; el: HTMLElement }>())
   const mine = useRef<any>(null)
-  const latest = useRef({ points, onVisibleChange, onSelect })
-  latest.current = { points, onVisibleChange, onSelect }
+  const latest = useRef({ points, onVisibleChange, onSelect, onUserMove })
+  latest.current = { points, onVisibleChange, onSelect, onUserMove }
+  const fittedAt = useRef(0)
 
   const reportVisible = () => {
     const m = map.current
@@ -65,7 +77,18 @@ export function MapCanvas({ kakao, points, selectedId, onSelect, onVisibleChange
     if (!m || pts.length === 0) return
     const bounds = new kakao.maps.LatLngBounds()
     pts.forEach((p) => bounds.extend(new kakao.maps.LatLng(p.lat, p.lng)))
+    fittedAt.current = Date.now()
     m.setBounds(bounds, 60, 60, 60, 60)
+  }
+  const onIdle = () => {
+    reportVisible()
+    const m = map.current
+    if (!m || !latest.current.onUserMove) return
+    if (Date.now() - fittedAt.current < FIT_SETTLE_MS) return
+    const b = m.getBounds()
+    const sw = b.getSouthWest()
+    const ne = b.getNorthEast()
+    latest.current.onUserMove({ min_lat: sw.getLat(), max_lat: ne.getLat(), min_lng: sw.getLng(), max_lng: ne.getLng() })
   }
 
   useImperativeHandle(ref, () => ({
@@ -96,7 +119,9 @@ export function MapCanvas({ kakao, points, selectedId, onSelect, onVisibleChange
       level: 8,
     })
     map.current = m
-    kakao.maps.event.addListener(m, 'idle', reportVisible)
+    // 처음 그린 직후의 idle은 사용자 이동이 아니다.
+    fittedAt.current = Date.now()
+    kakao.maps.event.addListener(m, 'idle', onIdle)
     const store = overlays.current
     return () => {
       store.forEach(({ overlay }) => overlay.setMap(null))

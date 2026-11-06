@@ -45,7 +45,7 @@ export default function Home() {
       <FreeSection events={events} state={state} />
       <div className="mx-auto max-w-content px-6">
         <WeekendSection events={events} state={state} />
-        <TagSection />
+        <TagSection events={events} />
       </div>
     </>
   )

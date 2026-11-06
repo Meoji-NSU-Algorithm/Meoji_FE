@@ -55,6 +55,8 @@ export interface EventCard {
   /** 목록·월간 인기 카드에만 온다(찜 목록 등에는 없음). 리뷰가 없으면 0 */
   average_rating?: number | null
   review_count?: number
+  /** 목록·월간 인기·상세 카드에 온다(이름순). 찜 목록 등에는 없을 수 있다 */
+  tags?: string[]
 }
 export interface MonthlyTopEvent extends EventCard {
   monthly_views: number
@@ -110,6 +112,13 @@ export interface EventListParams {
   page?: number
   size?: number
   sort?: EventSort
+  /** 지도용: 좌표 있는 행사만. 로그인 필요 없음 */
+  has_coords?: boolean
+  /** 지도용 영역. 네 값을 함께 보낸다. 로그인 필요 없음 */
+  min_lat?: number
+  max_lat?: number
+  min_lng?: number
+  max_lng?: number
 }
 export interface EventListResult {
   total_count: number

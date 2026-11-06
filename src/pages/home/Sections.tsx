@@ -10,7 +10,7 @@ import { SectionState } from './SectionState'
 import { useEventActions } from './useEventActions'
 import { startKakaoLogin } from './kakaoLogin'
 import { KakaoIcon } from '../../components/icons'
-import { REGIONS, TAG_PROMOS, dLabel, inRegion, isOnAnyDate, weekendTabs } from './utils'
+import { REGIONS, dLabel, inRegion, isOnAnyDate, tagPromos, weekendTabs } from './utils'
 
 interface ListState {
   isLoading: boolean
@@ -233,13 +233,16 @@ export function WeekendSection({ events, state }: { events: EventCard[]; state: 
   )
 }
 
-export function TagSection() {
+export function TagSection({ events }: { events: EventCard[] }) {
   const navigate = useNavigate()
+  const promos = useMemo(() => tagPromos(events), [events])
+  // 태그가 붙은 행사가 없으면(로딩 중 포함) 섹션을 숨긴다.
+  if (promos.length === 0) return null
   return (
     <section className="pb-20 pt-12" aria-label="태그로 찾는 기획전">
       <SectionHeader title="태그로 찾는 기획전" moreLabel={null} />
       <div className="grid grid-cols-3 gap-[14px] pt-[14px]">
-        {TAG_PROMOS.map((t) => (
+        {promos.map((t) => (
           <Link
             key={t.tag}
             to={`/events?tag=${encodeURIComponent(t.tag)}`}
@@ -253,7 +256,7 @@ export function TagSection() {
             <span className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
             <span className="absolute left-[14px] top-[14px] rounded-md bg-black/35 px-[10px] py-[3px] text-[12px] font-bold">#{t.tag}</span>
             <span className="relative text-[20px] font-black leading-[30px] tracking-[-0.4px]">{t.title}</span>
-            <span className="relative text-[12px] leading-[18px] opacity-90">행사 모아보기 ›</span>
+            <span className="relative text-[12px] leading-[18px] opacity-90">행사 {t.count}개 모아보기 ›</span>
           </Link>
         ))}
       </div>

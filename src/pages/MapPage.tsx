@@ -12,11 +12,12 @@ import { outlineBtn, primaryBtn, StatePanel } from './events/StatePanel'
 import { formatPrice } from '../components'
 import { hasLoginFilters, useEventFilters } from './events/useEventFilters'
 import { PageTitleBar } from './events/ViewTabs'
-import { MapCanvas, type MapCanvasHandle } from './map/MapCanvas'
+import { MapCanvas, type MapBounds, type MapCanvasHandle } from './map/MapCanvas'
 import { markerLabel } from './map/mapFormat'
 import { useVenueCoords } from './map/useVenueCoords'
 
-const MAP_SIZE = 30
+// BE 목록 size 상한. 이보다 많으면 지도를 확대해 영역을 좁히도록 안내한다.
+const MAP_SIZE = 100
 type Geo = 'idle' | 'loading' | 'granted' | 'denied'
 
 function Thumb({ e }: { e: EventCard }) {
@@ -52,12 +53,20 @@ export default function MapPage() {
     }
   }, [sdkTry])
 
-  // 행사 + 좌표
+  // 행사 + 좌표. 처음엔 좌표 있는 행사 전체에서 받고, "이 지역에서 다시 찾기"를 누르면 그 영역으로 받는다.
+  const filterKey = JSON.stringify(params)
+  const [area, setArea] = useState<MapBounds | null>(null)
+  const [moved, setMoved] = useState<MapBounds | null>(null)
+  useEffect(() => {
+    // 필터가 바뀌면 영역 검색을 풀고 결과 전체에 지도를 다시 맞춘다.
+    setArea(null)
+    setMoved(null)
+  }, [filterKey])
   const query = useEvents(
-    { ...params, sort: params.sort ?? 'dateAsc', page: 1, size: MAP_SIZE },
+    { ...params, sort: params.sort ?? 'dateAsc', page: 1, size: MAP_SIZE, has_coords: true, ...(area ?? {}) },
     { enabled: !needsLogin && !authLoading },
   )
-  const filterKey = JSON.stringify(params)
+  const total = query.data?.total_count ?? 0
   useEffect(() => {
     if (needsLogin && !authLoading) requireLogin()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -122,7 +131,8 @@ export default function MapPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapReady])
 
-  const fitKey = `${filterKey}|${settled ? located.length : 'loading'}`
+  // 영역 검색 중에는 사용자가 고른 화면을 유지한다(결과에 맞춰 지도를 옮기면 다시 검색 버튼이 뜨는 순환이 생긴다).
+  const fitKey = area ? 'area' : `${filterKey}|${settled ? located.length : 'loading'}`
   // SDK 없이도(키 없음/로드 실패) 행사 목록은 보여준다. 지도 영역 필터는 지도가 있을 때만 적용.
   const listEvents = useMemo(() => (kakao ? visibleList.map((l) => l.event) : events), [kakao, visibleList, events])
   const countText = kakao ? (visibleIds ? visibleList.length : located.length) : events.length
@@ -138,6 +148,11 @@ export default function MapPage() {
       <div className="flex items-center justify-between pb-4 pt-[22px]">
         <p className="text-[14px] leading-[21px] text-ink" aria-live="polite">
           지도 영역 안 <b className="font-bold text-brand">{countText}</b>개 행사
+          {total > events.length && (
+            <span className="pl-2 text-[12px] text-ink-subtle">
+              조건에 맞는 {total}개 중 {events.length}개만 표시했어요. 지도를 확대해 다시 찾아 보세요
+            </span>
+          )}
           {kakao && settled && unlocatedCount > 0 && (
             <span className="pl-2 text-[12px] text-ink-subtle">위치를 찾지 못한 행사 {unlocatedCount}개는 지도에 표시되지 않아요</span>
           )}
@@ -241,7 +256,21 @@ export default function MapPage() {
                 onSelect={(id) => select(id, false)}
                 onVisibleChange={setVisibleIds}
                 fitKey={fitKey}
+                onUserMove={setMoved}
               />
+              {moved && !needsLogin && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setArea(moved)
+                    setMoved(null)
+                    setSelectedId(null)
+                  }}
+                  className={`${primaryBtn} absolute left-1/2 top-[14px] z-10 h-10 -translate-x-1/2 px-4 text-[13px] shadow-[0_2px_6px_rgba(0,0,0,0.18)]`}
+                >
+                  이 지역에서 다시 찾기
+                </button>
+              )}
               <div className="absolute bottom-[26px] right-[14px] z-10 flex flex-col gap-[6px]">
                 {[
                   { label: '내 위치', Icon: LocateIcon, onClick: requestLocation },
