@@ -11,7 +11,7 @@ export interface EventCardData {
   start_date: string
   end_date: string
   venue_name: string
-  thumbnail_url?: string | null
+  image_url?: string | null
   price?: string | number | null
   is_free: boolean
   rating?: number | null
@@ -78,9 +78,9 @@ export function EventCard({
           small ? 'aspect-[274/205.5]' : 'aspect-[219/292]'
         }`}
       >
-        {event.thumbnail_url ? (
+        {event.image_url ? (
           <img
-            src={event.thumbnail_url}
+            src={event.image_url}
             alt=""
             loading="lazy"
             className="absolute inset-0 size-full object-cover"

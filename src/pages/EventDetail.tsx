@@ -86,7 +86,7 @@ export default function EventDetail() {
 
   const dates = formatDateRange(event.start_date, event.end_date)
   const price = event.is_free ? '무료' : formatPrice(event.price) || event.fee_text || '요금 정보 없음'
-  const hero = event.image_url ?? event.thumbnail_url
+  const hero = event.image_url
   const address = [event.address, event.address_detail].filter(Boolean).join(' ')
   const canRoute = event.latitude != null && event.longitude != null
 

@@ -80,7 +80,7 @@ describe('geocode', () => {
 
 const ev = (id: number, o: Record<string, unknown> = {}) => ({
   id, title: `행사${id}`, category_id: 1, category: '축제', sido_code: '44', sido: '충남',
-  start_date: '2026-10-22', end_date: '2026-10-26', venue_name: `장소${id}`, thumbnail_url: null,
+  start_date: '2026-10-22', end_date: '2026-10-26', venue_name: `장소${id}`, image_url: null,
   price: null, is_free: true, ...o,
 })
 

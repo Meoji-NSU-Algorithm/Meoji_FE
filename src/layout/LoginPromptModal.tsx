@@ -62,8 +62,8 @@ export function LoginPromptModal({ open, onClose }: Props) {
     <div className="h-[170px] rounded-t-xl" style={{ background: 'var(--gradient-night)' }}>
       {event && (
         <div className="absolute left-5 top-[73px] flex w-[400px] max-w-[calc(100%-40px)] items-center gap-3 rounded-lg bg-white/95 py-[10px] pl-[10px] pr-[14px] shadow-float">
-          {event.thumbnail_url ? (
-            <img src={event.thumbnail_url} alt="" className="size-[52px] shrink-0 rounded-[10px] object-cover" />
+          {event.image_url ? (
+            <img src={event.image_url} alt="" className="size-[52px] shrink-0 rounded-[10px] object-cover" />
           ) : (
             <span
               className="size-[52px] shrink-0 rounded-[10px]"

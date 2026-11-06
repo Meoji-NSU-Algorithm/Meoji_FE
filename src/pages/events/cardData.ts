@@ -11,7 +11,7 @@ export function toCardData(e: EventCard): EventCardData {
     start_date: e.start_date ?? '',
     end_date: e.end_date ?? '',
     venue_name: e.venue_name ?? '',
-    thumbnail_url: e.thumbnail_url,
+    image_url: e.image_url,
     price: e.price,
     is_free: e.is_free,
   }

@@ -34,7 +34,7 @@ vi.mock('../../api/hooks', () => ({
   useBookmarks: () => ({ data: hooks.bookmarks, isLoading: false, isError: false }),
   useMyReviews: () => ({ data: hooks.reviews, isLoading: false, isError: false }),
   useToggleBookmark: () => ({ mutate: hooks.toggle }),
-  useEvent: () => ({ data: { title: '천안 축제', end_date: '2000-01-01', is_permanent: false, thumbnail_url: null } }),
+  useEvent: () => ({ data: { title: '천안 축제', end_date: '2000-01-01', is_permanent: false, image_url: null } }),
   useUpdateReview: () => ({ mutate: hooks.updateReview, isError: false, isPending: false }),
   useDeleteReview: () => ({ mutate: hooks.deleteReview, isError: false, isPending: false }),
   useUpdateProfile: () => ({ mutate: hooks.updateProfile, isError: false, isPending: false }),
@@ -49,7 +49,7 @@ const wrap = (ui: React.ReactNode) =>
 
 const card = (id: number, title: string, start: string) => ({
   id, title, category_id: 1, category: '공연', sido_code: '44', sido: '충남',
-  start_date: start, end_date: start, venue_name: '장소', thumbnail_url: null, price: null, is_free: true,
+  start_date: start, end_date: start, venue_name: '장소', image_url: null, price: null, is_free: true,
 })
 
 beforeEach(() => {

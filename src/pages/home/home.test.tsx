@@ -17,7 +17,7 @@ import { tokenStorage } from '../../auth'
 
 const ev = (id: number, over = {}) => ({
   id, title: `행사${id}`, category_id: 1, category: '축제', sido_code: '44', sido: '충남',
-  start_date: '2099-01-01', end_date: '2099-01-02', venue_name: '장소', thumbnail_url: null, price: null, is_free: true, ...over,
+  start_date: '2099-01-01', end_date: '2099-01-02', venue_name: '장소', image_url: null, price: null, is_free: true, ...over,
 })
 
 function setup(path: string, strict = false) {

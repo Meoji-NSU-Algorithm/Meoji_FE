@@ -51,7 +51,7 @@ function useColumns(): Tile[][] {
     en: e.category ?? '',
     ko: e.title,
     g: GRADIENTS[i % GRADIENTS.length],
-    img: e.thumbnail_url,
+    img: e.image_url,
   }))
   const cols: Tile[][] = [[], [], []]
   tiles.forEach((t, i) => cols[i % 3].push(t))

@@ -21,7 +21,7 @@ const btn = 'h-8 rounded-md border border-line px-3 text-[12px] text-ink'
 
 /**
  * BE 의 /reviews/my 는 event_id 만 주므로 행사명/썸네일은 행사별 상세 조회(useEvent)로 보강한다.
- * (BE 요청: 리뷰 응답에 event {id,title,thumbnail_url,end_date} 포함)
+ * (BE 요청: 리뷰 응답에 event {id,title,image_url,end_date} 포함)
  */
 function ReviewRow({ review, onEdit, onDelete }: { review: Review; onEdit: () => void; onDelete: () => void }) {
   const { data: event, isError } = useEvent(review.event_id)
@@ -34,7 +34,7 @@ function ReviewRow({ review, onEdit, onDelete }: { review: Review; onEdit: () =>
         aria-label={`${title} 상세 보기`}
         className="size-24 overflow-hidden rounded-card bg-gradient-to-br from-[#e8461c] to-[#f7a04b]"
       >
-        {event?.thumbnail_url && <img src={event.thumbnail_url} alt="" className="size-full object-cover" />}
+        {event?.image_url && <img src={event.image_url} alt="" className="size-full object-cover" />}
       </Link>
       <div className="min-w-0">
         <div className="flex items-center gap-2">

@@ -20,8 +20,8 @@ const MAP_SIZE = 30
 type Geo = 'idle' | 'loading' | 'granted' | 'denied'
 
 function Thumb({ e }: { e: EventCard }) {
-  return e.thumbnail_url ? (
-    <img src={e.thumbnail_url} alt="" loading="lazy" className="size-16 shrink-0 rounded-[10px] bg-surface-muted object-cover" />
+  return e.image_url ? (
+    <img src={e.image_url} alt="" loading="lazy" className="size-16 shrink-0 rounded-[10px] bg-surface-muted object-cover" />
   ) : (
     <span className="flex size-16 shrink-0 items-center justify-center rounded-[10px] bg-[#f3f0ee] text-ink-disabled">
       <PhotoIcon size={22} />

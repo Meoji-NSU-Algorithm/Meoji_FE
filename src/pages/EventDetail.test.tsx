@@ -49,9 +49,9 @@ function renderAt(path: string, loggedIn = true) {
 
 const baseEvent = {
   id: 1, title: '흥타령춤축제', category_id: 1, category: '축제', sido_code: '44', sido: '충남',
-  start_date: '2026-10-22', end_date: '2026-10-26', venue_name: '천안종합운동장', thumbnail_url: null,
+  start_date: '2026-10-22', end_date: '2026-10-26', venue_name: '천안종합운동장', image_url: null,
   price: null, is_free: true, description: '소개글', address: '천안시', address_detail: null, play_time: null,
-  fee_text: null, image_url: null, latitude: 36.8, longitude: 127.1, organizer: null, contact_phone: null,
+  fee_text: null, latitude: 36.8, longitude: 127.1, organizer: null, contact_phone: null,
   homepage_url: null, is_permanent: false, review_count: 2, average_rating: 4.5,
   reviews: [
     { id: 1, user_id: 7, event_id: 1, rating: 4, content: '내 리뷰', created_at: '2026-10-23T00:00:00', updated_at: '' },

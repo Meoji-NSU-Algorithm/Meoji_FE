@@ -25,7 +25,7 @@ const card = (id: number, o: Record<string, unknown> = {}) => ({
   start_date: '2026-10-22',
   end_date: '2026-10-26',
   venue_name: '천안종합운동장',
-  thumbnail_url: null,
+  image_url: null,
   price: null,
   is_free: true,
   ...o,

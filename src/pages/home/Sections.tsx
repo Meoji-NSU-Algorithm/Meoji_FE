@@ -148,8 +148,8 @@ function FreeCard({ event }: { event: EventCard }) {
         <p className="truncate text-[12px] leading-[18px] text-ink-muted">{sub}</p>
       </div>
       <div className="relative aspect-[274/205.5] bg-surface-muted">
-        {event.thumbnail_url ? (
-          <img src={event.thumbnail_url} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
+        {event.image_url ? (
+          <img src={event.image_url} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center text-white/40" style={{ background: 'var(--gradient-festival)' }}>
             <PhotoIcon />
