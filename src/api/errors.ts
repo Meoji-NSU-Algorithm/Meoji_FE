@@ -33,6 +33,8 @@ const MESSAGES: Record<string, string> = {
   REVIEW_IMAGE_INVALID: '지원하지 않는 이미지예요. jpg, png, webp 파일을 올려 주세요.',
   REVIEW_IMAGE_TOO_LARGE: '이미지는 한 장에 10MB까지 올릴 수 있어요.',
   REVIEW_IMAGE_ALREADY_ATTACHED: '다른 리뷰에 쓰인 이미지는 사용할 수 없어요.',
+  REVIEW_IMAGE_NOT_UPLOADED: '사진 업로드 시간이 지났어요. 사진을 다시 올려 주세요.',
+  REVIEW_IMAGE_UPLOAD_LIMIT: '리뷰에 붙이지 않은 사진이 너무 많아요. 리뷰를 먼저 작성한 뒤 다시 올려 주세요.',
   REVIEW_IMAGE_STORAGE_UNAVAILABLE: '이미지 저장소를 잠시 사용할 수 없어요. 잠시 후 다시 시도해 주세요.',
 }
 
@@ -45,8 +47,13 @@ export function errorMessage(errOrCode: unknown): string {
   if (code) {
     if (MESSAGES[code]) return MESSAGES[code]
     if (code.startsWith('DIRECTIONS_API_')) return MESSAGES.DIRECTIONS_API_ERROR
-    if (code.startsWith('REVIEW_IMAGE_')) return MESSAGES.REVIEW_IMAGE_INVALID
+    if (code.startsWith('REVIEW_IMAGE_')) return '사진을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.'
   }
   if (errOrCode instanceof ApiError && errOrCode.status === 413) return MESSAGES.COMMON_PAYLOAD_TOO_LARGE
   return FALLBACK
+}
+
+/** 서버가 새로 올린 사진을 첨부할 수 없다고 답한 경우(업로드 후 24시간 경과 등) */
+export function isImageNotUploaded(err: unknown): boolean {
+  return err instanceof ApiError && err.code === 'REVIEW_IMAGE_NOT_UPLOADED'
 }

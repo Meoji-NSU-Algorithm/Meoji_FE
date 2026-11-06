@@ -14,6 +14,8 @@ export function useReviewImages(initial: ReviewImage[] = []) {
   const [pending, setPending] = useState(0)
   const [error, setError] = useState<string | null>(null)
   const countRef = useRef(initial.length)
+  /** 이미 리뷰에 붙어 있던 사진의 key. 서버가 새 업로드를 거부했을 때 이것만 남긴다 */
+  const attachedRef = useRef(new Set(initial.map((i) => i.key)))
   useEffect(() => {
     countRef.current = images.length + pending
   }, [images.length, pending])
@@ -48,9 +50,13 @@ export function useReviewImages(initial: ReviewImage[] = []) {
 
   const remove = useCallback((key: string) => setImages((cur) => cur.filter((i) => i.key !== key)), [])
   const reset = useCallback((next: ReviewImage[] = []) => {
+    attachedRef.current = new Set(next.map((i) => i.key))
     setImages(next)
     setError(null)
   }, [])
 
-  return { images, keys: images.map((i) => i.key), uploading: pending > 0, error, addFiles, remove, reset }
+  /** 서버가 새로 올린 사진을 인정하지 않을 때(기한 만료 등) 새 사진만 비워 다시 올리게 한다 */
+  const dropNew = useCallback(() => setImages((cur) => cur.filter((i) => attachedRef.current.has(i.key))), [])
+
+  return { images, keys: images.map((i) => i.key), uploading: pending > 0, error, addFiles, remove, reset, dropNew }
 }

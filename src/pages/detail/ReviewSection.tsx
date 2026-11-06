@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { errorMessage } from '../../api/errors'
+import { errorMessage, isImageNotUploaded } from '../../api/errors'
 import { useCreateReview, useDeleteReview, useUpdateReview } from '../../api/hooks'
 import type { Review } from '../../api/types'
 import { useAuth, useRequireLogin } from '../../auth'
@@ -61,7 +61,10 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
           pics.reset()
           toast.show({ message: '리뷰를 등록했어요' })
         },
-        onError: (e) => setError(errorMessage(e)),
+        onError: (e) => {
+          if (isImageNotUploaded(e)) pics.dropNew()
+          setError(errorMessage(e))
+        },
       },
     )
   }
@@ -81,7 +84,10 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
           pics.reset()
           toast.show({ message: '리뷰를 수정했어요' })
         },
-        onError: (e) => setError(errorMessage(e)),
+        onError: (e) => {
+          if (isImageNotUploaded(e)) pics.dropNew()
+          setError(errorMessage(e))
+        },
       },
     )
   }
