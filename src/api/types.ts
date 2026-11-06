@@ -48,6 +48,8 @@ export interface EventCard {
   end_date: string | null
   venue_name: string | null
   image_url: string | null
+  latitude: number | null
+  longitude: number | null
   price: string | number | null
   is_free: boolean
 }
@@ -69,8 +71,6 @@ export interface EventDetail extends EventCard {
   address_detail: string | null
   play_time: string | null
   fee_text: string | null
-  latitude: number | null
-  longitude: number | null
   organizer: string | null
   contact_phone: string | null
   homepage_url: string | null

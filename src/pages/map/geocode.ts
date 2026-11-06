@@ -1,5 +1,5 @@
-// 행사 카드에는 좌표가 없어(상세에만 있음) 장소명을 Kakao Places 키워드 검색으로 좌표로 바꾼다.
-// 결과(없음 포함)를 메모리 + localStorage에 캐시한다. BE가 카드에 latitude/longitude를 주면 이 모듈은 필요 없다.
+// BE 좌표(latitude/longitude)가 없는 행사만 장소명을 Kakao Places 키워드 검색으로 좌표로 바꾼다.
+// 결과(없음 포함)를 메모리 + localStorage에 캐시한다.
 export interface Coord {
   lat: number
   lng: number

@@ -7,15 +7,22 @@ export interface Located {
   coord: Coord
 }
 
-/** 카드의 venue_name(+시도)을 좌표로 변환한다. 캐시된 값은 즉시 반영, 나머지는 순차 조회. */
+/** BE 좌표가 있으면 그대로 쓰고, 없을 때만 venue_name(+시도)을 좌표로 변환한다. 캐시된 값은 즉시 반영, 나머지는 순차 조회. */
 export function useVenueCoords(kakao: any | null, events: EventCard[]) {
   const [version, setVersion] = useState(0)
   const [doneFor, setDoneFor] = useState<unknown>(null)
 
+  const direct = useMemo<Located[]>(
+    () =>
+      events.flatMap((e) =>
+        e.latitude != null && e.longitude != null ? [{ event: e, coord: { lat: e.latitude, lng: e.longitude } }] : [],
+      ),
+    [events],
+  )
   const keyed = useMemo(
     () =>
       events
-        .filter((e) => !!e.venue_name)
+        .filter((e) => (e.latitude == null || e.longitude == null) && !!e.venue_name)
         .map((e) => ({ event: e, key: geocodeKey(e.venue_name!, e.sido) })),
     [events],
   )
@@ -47,15 +54,18 @@ export function useVenueCoords(kakao: any | null, events: EventCard[]) {
   const located = useMemo<Located[]>(
     () => {
       void version // 캐시가 채워질 때마다 다시 계산
-      return keyed.flatMap(({ event, key }) => {
-        const c = getCachedCoord(key)
-        return c ? [{ event, coord: c }] : []
-      })
+      return [
+        ...direct,
+        ...keyed.flatMap(({ event, key }) => {
+          const c = getCachedCoord(key)
+          return c ? [{ event, coord: c }] : []
+        }),
+      ]
     },
-    [keyed, version],
+    [direct, keyed, version],
   )
   const settled =
     !!kakao && (doneFor === keyed || keyed.every((k) => getCachedCoord(k.key) !== undefined))
-  const unlocatedCount = settled ? keyed.length - located.length + (events.length - keyed.length) : 0
+  const unlocatedCount = settled ? events.length - located.length : 0
   return { located, settled, unlocatedCount }
 }

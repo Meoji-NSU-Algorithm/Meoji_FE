@@ -81,7 +81,7 @@ describe('geocode', () => {
 const ev = (id: number, o: Record<string, unknown> = {}) => ({
   id, title: `행사${id}`, category_id: 1, category: '축제', sido_code: '44', sido: '충남',
   start_date: '2026-10-22', end_date: '2026-10-26', venue_name: `장소${id}`, image_url: null,
-  price: null, is_free: true, ...o,
+  latitude: null, longitude: null, price: null, is_free: true, ...o,
 })
 
 function renderMap(url = '/map') {
@@ -130,6 +130,18 @@ describe('MapPage', () => {
     expect(await screen.findByText('행사1')).toBeInTheDocument()
     expect(screen.queryByText('행사2')).not.toBeInTheDocument()
     expect(await screen.findByText(/위치를 찾지 못한 행사 1개/)).toBeInTheDocument()
+  })
+
+  it('BE 좌표가 있는 행사는 장소 검색 없이 그 좌표를 쓴다', async () => {
+    const calls: string[] = []
+    server.use(http.get('*/api/events', () => ok({
+      total_count: 2, page: 1, size: 30, events: [ev(1, { latitude: 36.8, longitude: 127.1 }), ev(2)],
+    })))
+    loadKakaoMaps.mockResolvedValue(fakeKakao({ '충남 장소2': { x: '127.2', y: '36.9' } }, calls))
+    renderMap()
+    expect(await screen.findByText('행사1')).toBeInTheDocument()
+    expect(await screen.findByText('행사2')).toBeInTheDocument()
+    expect(calls).toEqual(['충남 장소2'])
   })
 
   it('위치 권한이 거부되면 B5 안내를 보여주고 "지역으로 보기"로 닫는다', async () => {
