@@ -94,7 +94,7 @@ export function useUpdateReview() {
   const invalidate = useInvalidateReviews()
   return useMutation({
     mutationFn: (v: { id: number; eventId?: number } & ReviewInput) =>
-      updateReview(v.id, { rating: v.rating, content: v.content }),
+      updateReview(v.id, { rating: v.rating, content: v.content, images: v.images }),
     onSuccess: (_r, v) => invalidate(v.eventId),
   })
 }

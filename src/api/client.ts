@@ -61,8 +61,10 @@ async function send(
 ): Promise<Response> {
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (opts.bearer) headers.Authorization = `Bearer ${opts.bearer}`
-  let body: string | undefined
-  if (opts.body !== undefined) {
+  let body: string | FormData | undefined
+  if (opts.body instanceof FormData) {
+    body = opts.body // Content-Type(multipart boundary)은 브라우저가 붙인다
+  } else if (opts.body !== undefined) {
     headers['Content-Type'] = 'application/json'
     body = JSON.stringify(opts.body)
   }

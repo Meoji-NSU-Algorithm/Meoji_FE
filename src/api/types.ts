@@ -61,10 +61,16 @@ export interface ReviewAuthor {
   nickname: string
   profile_image: string | null
 }
+export interface ReviewImage {
+  key: string
+  /** BE에 저장소 설정이 없으면 null */
+  url: string | null
+}
 export interface Review {
   id: number
   user_id: number
   author?: ReviewAuthor | null
+  images?: ReviewImage[]
   event_id: number
   rating: number
   content: string
@@ -120,6 +126,8 @@ export interface RatingSummary {
 export interface ReviewInput {
   rating: number
   content: string
+  /** POST /reviews/images 가 준 key. 수정 시 보내면 목록 전체를 교체한다 */
+  images?: string[]
 }
 export interface CreateReviewInput extends ReviewInput {
   event_id: number

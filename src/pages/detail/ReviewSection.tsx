@@ -1,7 +1,9 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
+import type { Dispatch, SetStateAction } from 'react'
 import { ApiError } from '../../api/client'
 import { useCreateReview, useDeleteReview, useUpdateReview } from '../../api/hooks'
-import type { Review } from '../../api/types'
+import { uploadReviewImage } from '../../api/reviews'
+import type { Review, ReviewImage } from '../../api/types'
 import { useAuth, useRequireLogin } from '../../auth'
 import { EmptyState, Modal, RatingStars, useToast } from '../../components'
 import { Avatar } from '../my/Avatar'
@@ -11,6 +13,84 @@ import { CameraIcon } from './icons'
 export const ANONYMOUS_LABEL = '방문자'
 
 const MAX_CONTENT = 1000
+/** BE MAX_REVIEW_IMAGES 와 같은 값 */
+const MAX_IMAGES = 5
+
+/** 사진 추가 버튼 + 첨부 미리보기. 고른 파일은 바로 업로드하고 key/url을 부모 상태에 쌓는다 */
+function ImagePicker({ images, onChange, pending, onPendingChange, onError, onPick }: {
+  images: ReviewImage[]
+  /** 동시에 끝나는 업로드가 서로 덮어쓰지 않도록 함수형 업데이트를 받는다 */
+  onChange: Dispatch<SetStateAction<ReviewImage[]>>
+  /** 업로드 중인 장 수. 그만큼 로딩 칸을 보여주고, 부모는 0이 아니면 제출을 막는다 */
+  pending: number
+  onPendingChange: Dispatch<SetStateAction<number>>
+  onError: (message: string) => void
+  /** 파일 창을 열기 전 확인(로그인 유도). false면 열지 않는다 */
+  onPick?: () => boolean
+}) {
+  const inputRef = useRef<HTMLInputElement>(null)
+  const full = images.length + pending >= MAX_IMAGES
+
+  // BE가 요청마다 따로 변환(장당 약 0.5초)하므로 한 장씩 기다리지 않고 동시에 보낸다.
+  // 끝나는 순서대로 미리보기에 붙고, 실패한 장만 빠진다.
+  const upload = async (files: FileList | null) => {
+    if (!files?.length) return
+    const picked = Array.from(files).slice(0, MAX_IMAGES - images.length - pending)
+    if (inputRef.current) inputRef.current.value = ''
+    onPendingChange((n) => n + picked.length)
+    const results = await Promise.allSettled(
+      picked.map((file) =>
+        uploadReviewImage(file)
+          .then((img) => onChange((prev) => [...prev, img]))
+          .finally(() => onPendingChange((n) => n - 1)),
+      ),
+    )
+    const failed = results.filter((r): r is PromiseRejectedResult => r.status === 'rejected')
+    if (failed.length) {
+      const e = failed[0].reason
+      const reason = e instanceof Error && e.message ? e.message : '사진을 올리지 못했어요.'
+      onError(failed.length > 1 ? `사진 ${failed.length}장을 올리지 못했어요. ${reason}` : reason)
+    }
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {images.map((img) => (
+        <div key={img.key} className="relative size-16 overflow-hidden rounded-[10px] bg-surface-muted" data-testid="review-image-preview">
+          {img.url && <img src={img.url} alt="" className="size-full object-cover" />}
+          <button
+            type="button"
+            aria-label="사진 삭제"
+            onClick={() => onChange((prev) => prev.filter((i) => i.key !== img.key))}
+            className="absolute right-0.5 top-0.5 flex size-5 items-center justify-center rounded-full bg-black/60 text-[12px] leading-none text-white"
+          >
+            ×
+          </button>
+        </div>
+      ))}
+      {Array.from({ length: pending }, (_, i) => (
+        <div key={`pending-${i}`} className="size-16 animate-pulse rounded-[10px] bg-surface-muted" aria-label="사진 올리는 중" data-testid="review-image-pending" />
+      ))}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        multiple
+        hidden
+        aria-label="사진 파일 선택"
+        onChange={(e) => void upload(e.target.files)}
+      />
+      <button
+        type="button"
+        disabled={full}
+        onClick={() => { if (onPick?.() !== false) inputRef.current?.click() }}
+        className="inline-flex h-10 items-center gap-[6px] rounded-[10px] border border-dashed border-[#d5cfcb] px-[14px] text-[13px] text-ink-muted disabled:cursor-not-allowed disabled:text-ink-disabled"
+      >
+        <CameraIcon size={18} /> {`사진 추가 ${images.length + pending}/${MAX_IMAGES}`}
+      </button>
+    </div>
+  )
+}
 
 function formatDate(iso: string) {
   return iso.slice(0, 10).replaceAll('-', '.')
@@ -37,11 +117,14 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
   const [error, setError] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Review | null>(null)
+  const [images, setImages] = useState<ReviewImage[]>([])
+  const [pendingImages, setPendingImages] = useState(0)
 
   const startEdit = (r: Review) => {
     setEditingId(r.id)
     setRating(r.rating)
     setContent(r.content)
+    setImages(r.images ?? [])
     setError(null)
   }
 
@@ -50,11 +133,12 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
     if (!content.trim()) return setError('후기를 입력해 주세요.')
     setError(null)
     create.mutate(
-      { event_id: eventId, rating, content: content.trim() },
+      { event_id: eventId, rating, content: content.trim(), images: images.map((i) => i.key) },
       {
         onSuccess: () => {
           setRating(0)
           setContent('')
+          setImages([])
           toast.show({ message: '리뷰를 등록했어요' })
         },
         onError: (e) => {
@@ -74,12 +158,13 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
     if (!content.trim()) return setError('후기를 입력해 주세요.')
     setError(null)
     update.mutate(
-      { id: editingId, eventId, rating, content: content.trim() },
+      { id: editingId, eventId, rating, content: content.trim(), images: images.map((i) => i.key) },
       {
         onSuccess: () => {
           setEditingId(null)
           setRating(0)
           setContent('')
+          setImages([])
           toast.show({ message: '리뷰를 수정했어요' })
         },
         onError: (e) => setError(e instanceof Error && e.message ? e.message : '리뷰를 수정하지 못했어요.'),
@@ -105,7 +190,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
   }
 
   const average = averageRating ?? 0
-  const formDisabled = create.isPending
+  const formDisabled = create.isPending || pendingImages > 0
 
   return (
     <section className="pt-14" aria-label="리뷰">
@@ -145,16 +230,19 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
               {error}
             </p>
           )}
-          <div className="flex items-center justify-between pt-3">
-            {/* BE에 사진 업로드 API가 없어 비활성화한다. */}
-            <button
-              type="button"
-              disabled
-              title="사진 첨부는 준비 중이에요"
-              className="inline-flex h-10 cursor-not-allowed items-center gap-[6px] rounded-[10px] border border-dashed border-[#d5cfcb] px-[14px] text-[13px] text-ink-disabled"
-            >
-              <CameraIcon size={18} /> 사진 추가 (준비 중)
-            </button>
+          <div className="flex items-end justify-between gap-3 pt-3">
+            <ImagePicker
+              images={images}
+              onChange={setImages}
+              pending={pendingImages}
+              onPendingChange={setPendingImages}
+              onError={setError}
+              onPick={() => {
+                let ok = false
+                requireLogin(() => { ok = true })
+                return ok
+              }}
+            />
             <button
               type="button"
               disabled={formDisabled}
@@ -205,22 +293,36 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
                       onChange={(e) => setContent(e.target.value)}
                       className="mt-2 h-24 w-full resize-y rounded-card border border-line bg-[#fcfbfa] p-[14px] text-[14px] leading-[21px] text-ink outline-none focus:border-primary"
                     />
+                    <div className="pt-2">
+                      <ImagePicker images={images} onChange={setImages} pending={pendingImages} onPendingChange={setPendingImages} onError={setError} />
+                    </div>
                     {error && (
                       <p role="alert" className="pt-2 text-[13px] text-primary-ink">
                         {error}
                       </p>
                     )}
                     <div className="flex justify-end gap-2 pt-2">
-                      <button type="button" onClick={() => { setEditingId(null); setError(null) }} className="h-10 rounded-card border border-line px-4 text-[14px] font-bold text-ink">
+                      <button type="button" onClick={() => { setEditingId(null); setImages([]); setError(null) }} className="h-10 rounded-card border border-line px-4 text-[14px] font-bold text-ink">
                         취소
                       </button>
-                      <button type="button" disabled={update.isPending} onClick={submitEdit} className="h-10 rounded-card bg-primary px-4 text-[14px] font-bold text-white disabled:opacity-60">
+                      <button type="button" disabled={update.isPending || pendingImages > 0} onClick={submitEdit} className="h-10 rounded-card bg-primary px-4 text-[14px] font-bold text-white disabled:opacity-60">
                         수정 완료
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <p className="whitespace-pre-wrap pt-[10px] text-[14px] leading-[23.8px] text-ink">{r.content}</p>
+                  <>
+                    <p className="whitespace-pre-wrap pt-[10px] text-[14px] leading-[23.8px] text-ink">{r.content}</p>
+                    {!!r.images?.some((img) => img.url) && (
+                      <div className="flex flex-wrap gap-2 pt-[10px]">
+                        {r.images.filter((img) => img.url).map((img) => (
+                          <a key={img.key} href={img.url ?? undefined} target="_blank" rel="noreferrer" className="size-24 overflow-hidden rounded-[10px] bg-surface-muted">
+                            <img src={img.url ?? undefined} alt="리뷰 사진" loading="lazy" className="size-full object-cover" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 )}
               </li>
             )

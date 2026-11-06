@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen, waitFor } from '@testing-library/react'
+import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -9,9 +9,15 @@ import type { AuthContextValue } from '../auth/AuthContext'
 import { ToastProvider } from '../components'
 import { fail, ok } from '../mocks/handlers'
 import { server } from '../mocks/server'
+import { uploadReviewImage } from '../api/reviews'
+import type { ReviewImage } from '../api/types'
 import EventDetail from './EventDetail'
 import Directions from './Directions'
 
+vi.mock('../api/reviews', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../api/reviews')>()
+  return { ...actual, uploadReviewImage: vi.fn(actual.uploadReviewImage) }
+})
 vi.mock('../lib/kakaoMaps', () => ({ loadKakaoMaps: () => Promise.reject(new Error('no sdk')) }))
 
 const openLoginPrompt = vi.fn()
@@ -84,7 +90,7 @@ describe('EventDetail', () => {
     expect(item.querySelector('img')).toHaveAttribute('src', 'https://img.test/sky.png')
   })
 
-  it('내 리뷰만 수정/삭제 가능하고 작성자 정보가 없는 타인은 익명 라벨, 사진 추가는 비활성', async () => {
+  it('내 리뷰만 수정/삭제 가능하고 작성자 정보가 없는 타인은 익명 라벨', async () => {
     server.use(http.get('*/api/events/1', () => ok(baseEvent)))
     renderAt('/events/1')
     expect(await screen.findByText('내 리뷰')).toBeInTheDocument()
@@ -119,7 +125,63 @@ describe('EventDetail', () => {
     await userEvent.type(screen.getByLabelText('리뷰 내용'), '좋아요')
     await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('이미 이 행사에 리뷰를 남기셨어요')
-    expect(screen.getByRole('button', { name: /사진 추가/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /사진 추가/ })).toBeEnabled()
+  })
+
+  it('사진을 올리면 미리보기가 보이고 리뷰 등록 시 key를 보낸다', async () => {
+    let sent: unknown = null
+    server.use(
+      http.get('*/api/events/1', () => ok({ ...baseEvent, reviews: [], review_count: 0, average_rating: null })),
+      http.post('*/api/reviews/images', () => ok({ key: 'reviews/abc.webp', url: 'http://img.test/reviews/abc.webp' })),
+      http.post('*/api/reviews', async ({ request }) => {
+        sent = await request.json()
+        return ok({ id: 9, user_id: 7, event_id: 1, rating: 4, content: '사진 후기', created_at: '', updated_at: '' })
+      }),
+    )
+    renderAt('/events/1')
+    await userEvent.click(await screen.findByRole('radio', { name: '4점' }))
+    await userEvent.type(screen.getByLabelText('리뷰 내용'), '사진 후기')
+    await userEvent.upload(screen.getByLabelText('사진 파일 선택'), new File(['x'], 'a.jpg', { type: 'image/jpeg' }))
+    const preview = await screen.findByTestId('review-image-preview')
+    expect(preview.querySelector('img')).toHaveAttribute('src', 'http://img.test/reviews/abc.webp')
+    expect(screen.getByRole('button', { name: /사진 추가 1\/5/ })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
+    await waitFor(() => expect(sent).toMatchObject({ images: ['reviews/abc.webp'] }))
+  })
+
+  it('사진 여러 장은 동시에 올리고, 다 올라갈 때까지 등록을 막는다', async () => {
+    // jsdom+MSW에서는 FormData 요청 핸들러가 비동기로 기다리면 요청이 실패해,
+    // 응답 시점을 직접 정할 수 있게 업로드 함수만 대체한다.
+    const done: Array<(img: ReviewImage) => void> = []
+    vi.mocked(uploadReviewImage).mockImplementation(() => new Promise((resolve) => { done.push(resolve) }))
+    server.use(http.get('*/api/events/1', () => ok({ ...baseEvent, reviews: [], review_count: 0, average_rating: null })))
+    renderAt('/events/1')
+    await screen.findByLabelText('리뷰 내용')
+    const files = [1, 2, 3].map((i) => new File(['x'], `${i}.jpg`, { type: 'image/jpeg' }))
+    await userEvent.upload(screen.getByLabelText('사진 파일 선택'), files)
+
+    // 첫 응답 전에 세 장 모두 요청했다(동시 업로드)
+    expect(uploadReviewImage).toHaveBeenCalledTimes(3)
+    expect(screen.getAllByTestId('review-image-pending')).toHaveLength(3)
+    expect(screen.getByRole('button', { name: '리뷰 등록' })).toBeDisabled()
+
+    // 끝나는 장부터 미리보기로 바뀐다
+    act(() => done[1]({ key: 'reviews/2.webp', url: 'http://img.test/2.webp' }))
+    expect(await screen.findAllByTestId('review-image-preview')).toHaveLength(1)
+    expect(screen.getAllByTestId('review-image-pending')).toHaveLength(2)
+
+    act(() => { done[0]({ key: 'reviews/1.webp', url: 'http://img.test/1.webp' }); done[2]({ key: 'reviews/3.webp', url: 'http://img.test/3.webp' }) })
+    await waitFor(() => expect(screen.getAllByTestId('review-image-preview')).toHaveLength(3))
+    expect(screen.queryByTestId('review-image-pending')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '리뷰 등록' })).toBeEnabled()
+    vi.mocked(uploadReviewImage).mockReset()
+  })
+
+  it('리뷰에 첨부된 사진을 보여준다', async () => {
+    const withImage = { ...baseEvent.reviews[1], images: [{ key: 'reviews/k.webp', url: 'http://img.test/k.webp' }] }
+    server.use(http.get('*/api/events/1', () => ok({ ...baseEvent, reviews: [withImage] })))
+    renderAt('/events/1')
+    expect(await screen.findByRole('img', { name: '리뷰 사진' })).toHaveAttribute('src', 'http://img.test/k.webp')
   })
 
   it('길찾기 링크는 directions 로 이동한다', async () => {
