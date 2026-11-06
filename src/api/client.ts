@@ -61,8 +61,11 @@ async function send(
 ): Promise<Response> {
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (opts.bearer) headers.Authorization = `Bearer ${opts.bearer}`
-  let body: string | undefined
-  if (opts.body !== undefined) {
+  let body: string | FormData | undefined
+  if (opts.body instanceof FormData) {
+    // Content-Type은 브라우저가 boundary와 함께 설정한다. FormData는 재전송(401 재시도)해도 안전하다.
+    body = opts.body
+  } else if (opts.body !== undefined) {
     headers['Content-Type'] = 'application/json'
     body = JSON.stringify(opts.body)
   }
@@ -134,6 +137,7 @@ export const api = {
     request<T>('GET', path, { query, ...opts }),
   post: <T>(path: string, body?: unknown, opts?: Pick<RequestOptions, 'auth'>) =>
     request<T>('POST', path, { body, ...opts }),
+  postForm: <T>(path: string, form: FormData) => request<T>('POST', path, { body: form }),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, { body }),
   delete: <T>(path: string) => request<T>('DELETE', path),
 }

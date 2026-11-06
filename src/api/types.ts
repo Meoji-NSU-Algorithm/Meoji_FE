@@ -47,21 +47,38 @@ export interface EventCard {
   start_date: string | null
   end_date: string | null
   venue_name: string | null
-  thumbnail_url: string | null
-  price: string | number | null
-  is_free: boolean
+  image_url: string | null
+  latitude: number | null
+  longitude: number | null
+  view_count: number
+  price: number | null
+  is_free: boolean | null
 }
 export interface MonthlyTopEvent extends EventCard {
   monthly_views: number
 }
+export interface ReviewImage {
+  key: string
+  url: string
+}
+export interface ReviewAuthor {
+  id: number
+  nickname: string
+  profile_image: string | null
+}
 export interface Review {
   id: number
   user_id: number
+  author: ReviewAuthor
+  images: ReviewImage[]
   event_id: number
   rating: number
   content: string
   created_at: string
   updated_at: string
+}
+export interface MyReview extends Review {
+  event: { id: number; title: string; image_url: string | null; end_date: string | null }
 }
 export interface EventDetail extends EventCard {
   description: string | null
@@ -69,9 +86,6 @@ export interface EventDetail extends EventCard {
   address_detail: string | null
   play_time: string | null
   fee_text: string | null
-  image_url: string | null
-  latitude: number | null
-  longitude: number | null
   organizer: string | null
   contact_phone: string | null
   homepage_url: string | null
@@ -115,45 +129,58 @@ export interface RatingSummary {
 export interface ReviewInput {
   rating: number
   content: string
+  /** 업로드 API가 돌려준 key 목록(최대 5). PUT에서는 기존 목록을 통째로 대체한다. */
+  images?: string[]
 }
 export interface CreateReviewInput extends ReviewInput {
   event_id: number
 }
 
-// ---- 목업 전용 타입 ----
+// ---- 찜 (BE는 camelCase) ----
+export interface BookmarkItem {
+  id: number
+  title: string
+  imageUrl: string | null
+  startDate: string | null
+  endDate: string | null
+  priceType: 'FREE' | 'PAID' | 'UNKNOWN'
+}
+export interface BookmarkList {
+  totalCount: number
+  events: BookmarkItem[]
+}
+
+// ---- 약관 ----
+export interface Consents {
+  terms_agreed_at: string | null
+  privacy_agreed_at: string | null
+  marketing_agreed: boolean
+  marketing_agreed_at: string | null
+}
+
+// ---- 길찾기 (BE는 camelCase) ----
+export type DirectionsMode = 'car' | 'transit' | 'walk'
+export type DirectionsStepType = 'SUBWAY' | 'BUS' | 'WALK' | 'DRIVE' | 'OTHER'
+export interface DirectionsStep {
+  stepNumber: number
+  type: DirectionsStepType | string
+  instruction: string
+  durationMinutes: number | null
+  distanceMeters: number | null
+  detail: string | Record<string, unknown> | null
+}
 export interface DirectionsQuery {
-  fromLat: number
-  fromLng: number
-  toLat: number
-  toLng: number
-}
-export type TransitStepType = 'walk' | 'bus' | 'subway'
-export interface TransitStep {
-  type: TransitStepType
-  /** 노선명 (예: "버스 400", "1호선"). 도보는 없음 */
-  line?: string
-  from: string
-  to: string
-  minutes: number
-  distance_m: number
-  /** 정류장/역 수 (대중교통만) */
-  stops?: number
-}
-export interface DirectionsRoute {
-  id: string
-  total_minutes: number
-  total_distance_m: number
-  fare: number
-  transfers: number
-  steps: TransitStep[]
-  /** 지도에 그릴 경로 좌표 [lat, lng] */
-  path: Array<[number, number]>
+  eventId: number
+  originLat: number
+  originLng: number
+  mode?: DirectionsMode
 }
 export interface DirectionsResult {
-  mock: true
-  routes: DirectionsRoute[]
-}
-export interface ProfileUpdate {
-  nickname?: string
-  profile_image?: string | null
+  eventId: number
+  mode: DirectionsMode
+  departureTime: string | null
+  durationMinutes: number
+  distanceMeters: number
+  arrivalTime: string | null
+  steps: DirectionsStep[]
 }
