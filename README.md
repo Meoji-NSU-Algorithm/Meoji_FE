@@ -4,8 +4,9 @@
 백엔드는 `CheonanOn_BE` 레포(Flask)이고, 디자인은 Figma "NOL 스타일 리디자인" 페이지를 따릅니다.
 
 > **⚠️ 먼저 읽어 주세요: [`docs/backend-requests.md`](docs/backend-requests.md)**
-> 백엔드에 아직 없는 기능(찜, 프로필 수정, 리뷰 작성자 정보 등)은 프론트에서 **목업**으로 처리했습니다.
-> 백엔드에 필요한 변경 사항과 이유가 모두 이 문서에 정리되어 있으니, 백엔드 작업 전에 꼭 확인해 주세요.
+> 기준 백엔드는 `CheonanOn_BE` **develop(01fdeb3)** 입니다. 찜·리뷰 사진·약관·길찾기 등은 실제 API로 연동했고,
+> 아직 백엔드에 없는 항목(프로필 수정, 카드 평점·리뷰 수 등)만 [`docs/backend-requests.md`](docs/backend-requests.md)에 남겨 두었습니다.
+> 디자인과 백엔드 데이터가 맞지 않는 부분은 [`docs/design-requests.md`](docs/design-requests.md)에 정리했습니다.
 
 ## 기술 스택
 
@@ -87,35 +88,37 @@ macOS는 5000번 포트를 AirPlay 수신기가 사용합니다. 백엔드를 �
 | `/events` | 행사 목록·검색 (필터는 URL 쿼리로 관리) |
 | `/events/:id`, `/events/:id/directions` | 행사 상세·리뷰, 길찾기 |
 | `/calendar`, `/map` | 찜 캘린더, 지도 |
-| `/my`, `/my/bookmarks`, `/my/reviews`, `/my/profile` | 마이페이지 |
+| `/my`, `/my/bookmarks`, `/my/reviews`, `/my/profile` | 마이페이지 (프로필은 읽기 전용) |
+| `/my/withdraw`, `/my/withdraw/done` | 회원 탈퇴, 탈퇴 완료 |
 
 ## 백엔드 연동 현황
 
 | 기능 | 상태 |
 |---|---|
 | 카카오 로그인, 토큰 갱신, 로그아웃 | 실제 연동 |
-| 행사 목록·상세·월간 인기·카테고리 | 실제 연동 |
-| 리뷰 작성·수정·삭제·내 리뷰 | 실제 연동 (작성자 정보·사진은 백엔드에 없음) |
-| **찜(북마크)** | **목업** — 브라우저 localStorage에만 저장 (`src/api/bookmarks.ts`) |
-| **프로필 수정** | **목업** — localStorage에만 저장 (`src/api/users.ts`) |
-| **길찾기** | **목업** — 백엔드 개발 중 (`src/api/directions.ts`) |
-| 약관 동의 저장 | 화면만 있고 저장하지 않음 |
+| 행사 목록·상세·월간 인기·카테고리·시도 | 실제 연동 (카드에 평점·리뷰 수는 없음) |
+| 리뷰 작성·수정·삭제·내 리뷰 | 실제 연동 (작성자 정보, 사진 업로드, 행사 정보 포함) |
+| 찜(북마크) | 실제 연동 (`GET/POST/DELETE /api/bookmarks`, 낙관적 업데이트) |
+| 약관 동의 | 실제 연동 (`/api/users/me/consents`, 로그인 후 미동의면 약관 화면) |
+| 길찾기 | 실제 연동 (대중교통·자동차·도보, 경로선은 응답에 없고 대중교통·도보는 ODsay 키 문제로 오류) |
+| 회원 탈퇴 | 실제 연동 (`DELETE /api/users/me`, 탈퇴 사유는 저장하지 않음) |
+| 프로필 | **읽기 전용** — 백엔드에 수정 API가 없고 로그인 때마다 카카오 값으로 덮어씀 |
 
-목업 코드에는 `MOCK` 주석이 있고, 같은 훅 인터페이스(`src/api/hooks.ts`) 뒤에 분리되어 있어 백엔드 API가 생기면 해당 파일만 바꾸면 됩니다.
-자세한 요청 내용은 [`docs/backend-requests.md`](docs/backend-requests.md)를 보세요.
+남은 백엔드 요청은 [`docs/backend-requests.md`](docs/backend-requests.md), 디자인 수정 요청은 [`docs/design-requests.md`](docs/design-requests.md)를 보세요.
+API 에러는 `code`로 분기하며, 사용자 문구는 `src/api/errors.ts`의 `errorMessage()`에 모여 있습니다.
 
 ## 폴더 구조
 
 ```
 src/
-  api/         API 클라이언트(client.ts), 엔드포인트별 함수, TanStack Query 훅(hooks.ts), 목업
+  api/         API 클라이언트(client.ts), 엔드포인트별 함수, 에러 문구(errors.ts), TanStack Query 훅(hooks.ts)
   auth/        AuthProvider/useAuth, 카카오 인가 URL, 토큰 저장, 로그인 가드 훅(useRequireLogin)
   components/  Figma 기반 공통 컴포넌트 (Header, EventCard, Modal, Toast ...)
   layout/      Layout, RequireLogin(라우트 가드), 로그인 유도 모달
   lib/         카카오맵 SDK 로더
   mocks/       MSW 핸들러 (테스트에서만 사용)
   pages/       화면 (home/, events/, map/, detail/, directions/, my/ 하위에 화면별 구성요소)
-docs/          백엔드 요청 사항
+docs/          백엔드 요청 사항, 디자인 요청 사항
 ```
 
 ## 인증 동작 메모
@@ -127,6 +130,10 @@ docs/          백엔드 요청 사항
 
 ## 알려진 한계
 
-- 카드 썸네일(`thumbnail_url`)이 약 300×200이라 크게 보이는 곳에서 흐릿합니다 (백엔드에 원본 이미지 요청).
-- 지도는 목록 응답에 좌표가 없어 `venue_name`을 카카오 장소 검색으로 변환하며, 시작일순 30개만 표시합니다.
+- 카드 응답에 `average_rating`, `review_count`가 없어 카드의 별점 줄은 그리지 않습니다.
+- 찜 목록 응답에는 장소·카테고리·시도·가격 금액이 없어 찜 카드는 해당 줄이 비어 있습니다.
+- 지도는 카드의 좌표를 쓰고, 좌표가 없는 행사만 `venue_name`을 카카오 장소 검색으로 변환합니다. 최대 100개까지 표시합니다.
+- 길찾기 대중교통·도보는 백엔드의 ODsay 키 인증이 실패해(`ApiKeyAuthFailed`) 오류가 납니다. 키에 서버 IP를 등록해야 합니다 (`docs/backend-requests.md` 0번). 자동차는 동작합니다.
+- 길찾기 응답에 경로 좌표가 없어 지도에는 출발·도착 핀만 표시합니다.
+- 리뷰 사진을 올리고 리뷰에 붙이지 않으면 서버에 고아 파일이 남습니다 (24시간 뒤 서버가 삭제).
 - 로그인이 필요한 화면은 실제 카카오 로그인으로만 확인할 수 있습니다.
