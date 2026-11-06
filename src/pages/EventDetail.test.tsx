@@ -56,6 +56,10 @@ const baseEvent = {
   reviews: [
     { id: 1, user_id: 7, event_id: 1, rating: 4, content: '내 리뷰', created_at: '2026-10-23T00:00:00', updated_at: '' },
     { id: 2, user_id: 9, event_id: 1, rating: 5, content: '남의 리뷰', created_at: '2026-10-22T00:00:00', updated_at: '' },
+    {
+      id: 3, user_id: 10, event_id: 1, rating: 3, content: '작성자 있는 리뷰', created_at: '2026-10-21T00:00:00', updated_at: '',
+      author: { id: 10, nickname: '하늘', profile_image: 'https://img.test/sky.png' },
+    },
   ],
 }
 
@@ -72,7 +76,15 @@ describe('EventDetail', () => {
     expect(await screen.findByText('행사를 찾을 수 없어요')).toBeInTheDocument()
   })
 
-  it('내 리뷰만 수정/삭제 가능하고 타인은 익명 라벨, 사진 추가는 비활성', async () => {
+  it('작성자 정보가 있으면 닉네임과 프로필 사진을 보여준다', async () => {
+    server.use(http.get('*/api/events/1', () => ok(baseEvent)))
+    renderAt('/events/1')
+    expect(await screen.findByText('하늘')).toBeInTheDocument()
+    const item = screen.getByText('작성자 있는 리뷰').closest('[data-testid="review-item"]')!
+    expect(item.querySelector('img')).toHaveAttribute('src', 'https://img.test/sky.png')
+  })
+
+  it('내 리뷰만 수정/삭제 가능하고 작성자 정보가 없는 타인은 익명 라벨, 사진 추가는 비활성', async () => {
     server.use(http.get('*/api/events/1', () => ok(baseEvent)))
     renderAt('/events/1')
     expect(await screen.findByText('내 리뷰')).toBeInTheDocument()

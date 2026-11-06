@@ -56,9 +56,15 @@ export interface EventCard {
 export interface MonthlyTopEvent extends EventCard {
   monthly_views: number
 }
+export interface ReviewAuthor {
+  id: number
+  nickname: string
+  profile_image: string | null
+}
 export interface Review {
   id: number
   user_id: number
+  author?: ReviewAuthor | null
   event_id: number
   rating: number
   content: string

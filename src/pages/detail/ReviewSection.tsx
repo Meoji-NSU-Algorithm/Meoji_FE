@@ -4,9 +4,10 @@ import { useCreateReview, useDeleteReview, useUpdateReview } from '../../api/hoo
 import type { Review } from '../../api/types'
 import { useAuth, useRequireLogin } from '../../auth'
 import { EmptyState, Modal, RatingStars, useToast } from '../../components'
+import { Avatar } from '../my/Avatar'
 import { CameraIcon } from './icons'
 
-/** BE 리뷰에는 작성자 정보가 없어 타인은 익명 라벨로 표시한다. (docs/backend-requests.md 3번) */
+/** 작성자 정보(author)가 없는 리뷰에 쓰는 익명 라벨 */
 export const ANONYMOUS_LABEL = '방문자'
 
 const MAX_CONTENT = 1000
@@ -172,14 +173,14 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
         <ul className="mt-2">
           {reviews.map((r) => {
             const own = !!user && r.user_id === user.id
-            const name = own ? (user?.nickname ?? ANONYMOUS_LABEL) : ANONYMOUS_LABEL
+            // 내 리뷰는 로컬 프로필 수정(MOCK)이 반영된 user 값을 우선한다.
+            const writer = own ? user : r.author
+            const name = writer?.nickname ?? ANONYMOUS_LABEL
             const editing = editingId === r.id
             return (
               <li key={r.id} className="border-b border-line py-5" data-testid="review-item">
                 <div className="flex items-center gap-[10px]">
-                  <span className="flex size-9 items-center justify-center rounded-full bg-primary-tint text-[13px] font-bold text-primary-ink" aria-hidden="true">
-                    {name.slice(0, 1)}
-                  </span>
+                  <Avatar name={name} src={writer?.profile_image} size={36} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[14px] font-bold leading-[21px] text-ink">{name}</p>
                     <p className="flex h-[18px] items-center gap-[6px] text-[12px] text-ink-subtle">
