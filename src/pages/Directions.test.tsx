@@ -151,7 +151,23 @@ describe('Directions', () => {
       http.get('*/api/directions/1', () => fail(404, 'ROUTE_NOT_FOUND')),
     )
     renderPage()
-    expect(await screen.findByTestId('no-route')).toBeInTheDocument()
+    const noRoute = await screen.findByTestId('no-route')
+    expect(noRoute).toBeInTheDocument()
+    expect(screen.getByText('다른 이동 수단을 고르거나 출발지를 바꿔 보세요', { exact: true })).toBeInTheDocument()
+    expect(noRoute).not.toHaveTextContent('이 조건으로 이용할 수 있는 경로를 찾지 못했어요')
+  })
+
+  it('길찾기 API 가 404 COMMON_NOT_FOUND 를 주면 크래시 없이 오류 상태를 보여준다', async () => {
+    geo(true)
+    server.use(
+      http.get('*/api/events/1', () => ok(event)),
+      http.get('*/api/directions/1', () => fail(404, 'COMMON_NOT_FOUND')),
+    )
+    renderPage()
+    const error = await screen.findByTestId('directions-error')
+    expect(error).toHaveTextContent('요청한 페이지를 찾을 수 없어요.')
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument()
+    expect(screen.queryByTestId('no-route')).not.toBeInTheDocument()
   })
 
   it('DIRECTIONS_API_ERROR(502) 면 에러와 재시도를 보여주고 재시도하면 경로가 나온다', async () => {
