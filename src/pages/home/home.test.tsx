@@ -7,7 +7,7 @@ import { http } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { server } from '../../mocks/server'
 import { fail, ok } from '../../mocks/handlers'
-import { AuthProvider } from '../../auth'
+import { AuthProvider, savePendingBookmark } from '../../auth'
 import { ToastProvider } from '../../components'
 import Layout from '../../layout/Layout'
 import Home from '../Home'
@@ -33,6 +33,7 @@ function setup(path: string, strict = false) {
                 <Route path="auth/kakao/callback" element={<KakaoCallback />} />
                 <Route path="auth/terms" element={<Terms />} />
                 <Route path="events/:id" element={<div>상세 화면</div>} />
+                <Route path="my/bookmarks" element={<div>찜 목록 화면</div>} />
               </Route>
             </Routes>
           </ToastProvider>
@@ -42,6 +43,37 @@ function setup(path: string, strict = false) {
   )
   return render(strict ? <StrictMode>{tree}</StrictMode> : tree)
 }
+
+describe('Home (로그인) 찜 토스트', () => {
+  const homeHandlers = () => [
+    http.get('*/api/events/monthly-top', () => ok({ month: '2099-01', events: [] })),
+    http.get('*/api/events', () => ok({ total_count: 1, page: 1, size: 100, events: [ev(2)] })),
+    http.get('*/api/bookmarks', () => ok({ totalCount: 0, events: [] })),
+    http.post('*/api/bookmarks', () => ok({}, 201)),
+  ]
+
+  it('카드 하트로 찜하면 토스트가 뜨고 보러 가기로 찜 목록에 이동한다', async () => {
+    tokenStorage.setTokens({ access_token: 'a', refresh_token: 'r' })
+    server.use(...homeHandlers())
+    setup('/')
+    await screen.findAllByText('행사2')
+    await userEvent.click(screen.getAllByRole('button', { name: '찜하기' })[0])
+    expect(await screen.findByText('찜 목록에 담았어요!')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '보러 가기' }))
+    expect(await screen.findByText('찜 목록 화면')).toBeInTheDocument()
+    tokenStorage.clear()
+  })
+
+  it('로그인 직후 대기 중이던 찜도 같은 토스트로 알린다', async () => {
+    tokenStorage.setTokens({ access_token: 'a', refresh_token: 'r' })
+    savePendingBookmark(ev(2))
+    server.use(...homeHandlers())
+    setup('/')
+    expect(await screen.findByText('찜 목록에 담았어요!')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '보러 가기' })).toBeInTheDocument()
+    tokenStorage.clear()
+  })
+})
 
 describe('Home (비로그인)', () => {
   it('필터 없는 목록 하나로 섹션을 그리고, 하트를 누르면 로그인 유도 모달을 연다', async () => {

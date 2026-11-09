@@ -87,6 +87,24 @@ describe('buildMonth', () => {
 })
 
 describe('EventList', () => {
+  it('카드 하트로 찜하면 "찜 목록에 담았어요!" 토스트와 보러 가기 액션을 보여준다', async () => {
+    let added: unknown
+    server.use(
+      http.get('*/api/events', () => ok({ total_count: 1, page: 1, size: 12, events: [card(1)] })),
+      http.get('*/api/bookmarks', () => ok({ totalCount: 0, events: [] })),
+      http.post('*/api/bookmarks', async ({ request }) => {
+        added = await request.json()
+        return ok({}, 201)
+      }),
+    )
+    renderPage(<EventList />, '/events')
+    await screen.findByRole('link', { name: '행사1' })
+    await userEvent.click(screen.getByRole('button', { name: '찜하기' }))
+    expect(await screen.findByText('찜 목록에 담았어요!')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '보러 가기' })).toBeInTheDocument()
+    expect(added).toEqual({ eventId: 1 })
+  })
+
   it('목록과 총 건수를 보여주고 필터를 쿼리로 보낸다', async () => {
     let url = ''
     server.use(

@@ -1,9 +1,9 @@
 import { useEffect } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
-import { useEvent, useIsBookmarked, useToggleBookmark } from '../api/hooks'
-import { errorMessage } from '../api/errors'
+import { Link, useParams } from 'react-router-dom'
+import { useEvent, useIsBookmarked } from '../api/hooks'
 import { ApiError } from '../api/client'
 import { useAuth, useRequireLogin } from '../auth'
+import { useBookmarkToggle } from '../lib/useBookmarkToggle'
 import { EmptyState, ErrorState, Spinner, Tag, formatDateRange, formatPrice, useToast } from '../components'
 import { HeartIcon } from '../components/icons'
 import { MiniMap } from './detail/MiniMap'
@@ -30,13 +30,12 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 export default function EventDetail() {
   const params = useParams()
   const id = Number(params.id)
-  const navigate = useNavigate()
   const toast = useToast()
   const { isLoggedIn, isLoading: authLoading, openLoginPrompt } = useAuth()
   const requireLogin = useRequireLogin()
   const { data: event, isLoading, error, refetch } = useEvent(id)
   const bookmarked = useIsBookmarked(id)
-  const toggle = useToggleBookmark()
+  const bookmark = useBookmarkToggle()
 
   useEffect(() => {
     if (!authLoading && !isLoggedIn) openLoginPrompt()
@@ -91,21 +90,7 @@ export default function EventDetail() {
   const address = [event.address, event.address_detail].filter(Boolean).join(' ')
   const canRoute = event.latitude != null && event.longitude != null
 
-  const onBookmark = () =>
-    requireLogin(() =>
-      toggle.mutate(
-        { event, bookmarked },
-        {
-          onError: (err) => toast.show({ message: errorMessage(err) }),
-          onSuccess: () =>
-            toast.show(
-              bookmarked
-                ? { message: '찜을 해제했어요' }
-                : { message: '찜 목록에 담았어요', actionLabel: '보러 가기', onAction: () => navigate('/my/bookmarks') },
-            ),
-        },
-      ),
-    )
+  const onBookmark = () => requireLogin(() => bookmark.toggle(event, bookmarked))
 
   const onShare = async () => {
     try {
@@ -204,7 +189,7 @@ export default function EventDetail() {
               type="button"
               onClick={onBookmark}
               aria-pressed={bookmarked}
-              disabled={toggle.isPending}
+              disabled={bookmark.isPending}
               className="flex h-11 flex-1 items-center justify-center gap-[6px] rounded-card border border-line bg-surface text-[14px] font-bold text-ink"
             >
               <HeartIcon size={18} filled={bookmarked} className={bookmarked ? 'text-brand' : undefined} />

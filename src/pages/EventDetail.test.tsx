@@ -293,3 +293,17 @@ describe('리뷰가 없는 행사 (C4)', () => {
     expect(screen.queryByText('첫 리뷰의 주인공이 되어 보세요!')).not.toBeInTheDocument()
   })
 })
+
+describe('찜 토스트', () => {
+  it('찜하면 같은 문구와 보러 가기 액션을 보여준다', async () => {
+    server.use(
+      http.get('*/api/events/1', () => ok(baseEvent)),
+      http.get('*/api/bookmarks', () => ok({ totalCount: 0, events: [] })),
+      http.post('*/api/bookmarks', () => ok({}, 201)),
+    )
+    renderAt('/events/1')
+    await userEvent.click(await screen.findByRole('button', { name: '찜하기' }))
+    expect(await screen.findByText('찜 목록에 담았어요!')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '보러 가기' })).toBeInTheDocument()
+  })
+})

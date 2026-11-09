@@ -1,9 +1,8 @@
 import { useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { savePendingBookmark, saveReturnTo, useAuth, useRequireLogin } from '../../auth'
-import { useBookmarks, useToggleBookmark } from '../../api/hooks'
-import { errorMessage } from '../../api/errors'
-import { useToast } from '../../components'
+import { useBookmarks } from '../../api/hooks'
+import { useBookmarkToggle } from '../../lib/useBookmarkToggle'
 import { setLoginPromptEvent } from '../../layout/loginPromptStore'
 import type { EventCard } from '../../api/types'
 
@@ -13,8 +12,7 @@ export function useEventActions() {
   const { isLoggedIn } = useAuth()
   const requireLogin = useRequireLogin()
   const bookmarks = useBookmarks()
-  const toggle = useToggleBookmark()
-  const toast = useToast()
+  const { toggle } = useBookmarkToggle()
   const liked = useMemo(() => new Set((bookmarks.data?.events ?? []).map((e) => e.id)), [bookmarks.data])
 
   const openEvent = useCallback(
@@ -37,12 +35,9 @@ export function useEventActions() {
         setLoginPromptEvent(event)
         savePendingBookmark(event)
       }
-      requireLogin(() => toggle.mutate(
-          { event, bookmarked: liked.has(event.id) },
-          { onError: (err) => toast.show({ message: errorMessage(err) }) },
-        ))
+      requireLogin(() => toggle(event, liked.has(event.id)))
     },
-    [isLoggedIn, requireLogin, toggle, liked, toast],
+    [isLoggedIn, requireLogin, toggle, liked],
   )
 
   return { openEvent, toggleLike, isLiked: (id: number) => liked.has(id) }
