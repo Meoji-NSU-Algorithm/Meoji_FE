@@ -8,8 +8,8 @@ import type { EventCard } from '../api/types'
 import { LoginPromptModal } from './LoginPromptModal'
 
 function activeTab(pathname: string) {
-  if (pathname === '/') return 'home'
-  if (pathname.startsWith('/events')) return 'events'
+  if (pathname === '/' || pathname === '/my/withdraw/done') return 'home'
+  if (['/events', '/calendar', '/map'].some((p) => pathname.startsWith(p))) return 'events'
   if (pathname.startsWith('/my')) return 'mypage'
   return undefined
 }
