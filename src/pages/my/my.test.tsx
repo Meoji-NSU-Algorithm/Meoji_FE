@@ -75,6 +75,14 @@ describe('MyBookmarks', () => {
     wrap(<MyBookmarks />)
     expect(screen.getByText('아직 찜한 행사가 없어요')).toBeInTheDocument()
   })
+  it('빈 상태는 큰 제목과 하트 타일, 행사 둘러보기 CTA 를 보여준다 (E2)', () => {
+    hooks.bookmarks = list()
+    wrap(<MyBookmarks />)
+    expect(screen.getByText('아직 찜한 행사가 없어요')).toHaveClass('text-[20px]')
+    expect(screen.getByTestId('empty-state-tile')).toHaveClass('size-[84px]')
+    expect(screen.getByTestId('empty-state-tile').querySelector('svg')).not.toBeNull()
+    expect(screen.getByRole('button', { name: '행사 둘러보기' })).toBeInTheDocument()
+  })
   it('다가오는 순으로 정렬하고 하트로 해제한다', async () => {
     hooks.bookmarks = list(item(1, '나중 행사', '2026-12-01'), item(2, '먼저 행사', '2026-11-01'))
     wrap(<MyBookmarks />)

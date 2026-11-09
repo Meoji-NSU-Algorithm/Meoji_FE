@@ -6,14 +6,25 @@ export interface EmptyStateProps {
   description?: ReactNode
   icon?: ReactNode
   action?: ReactNode
+  /** feature: 아이콘을 84px 연한 타일에 담고 제목을 크게 (E2 찜 빈 상태) */
+  variant?: 'default' | 'feature'
 }
 
 /** 결과/목록이 비었을 때 (사진 없음 스타일: 회색 아이콘 + 작은 안내) */
-export function EmptyState({ title, description, icon, action }: EmptyStateProps) {
+export function EmptyState({ title, description, icon, action, variant = 'default' }: EmptyStateProps) {
+  const feature = variant === 'feature'
   return (
     <div className="flex flex-col items-center gap-[6px] px-6 py-16 text-center">
-      <span className="text-ink-disabled">{icon ?? <PhotoIcon />}</span>
-      <p className="text-[14px] font-bold leading-[21px] text-ink">{title}</p>
+      {feature ? (
+        <span data-testid="empty-state-tile" className="mb-[10px] flex size-[84px] items-center justify-center rounded-[24px] bg-primary-tint text-primary">
+          {icon ?? <PhotoIcon />}
+        </span>
+      ) : (
+        <span className="text-ink-disabled">{icon ?? <PhotoIcon />}</span>
+      )}
+      <p className={feature ? 'text-[20px] font-bold leading-[30px] text-ink' : 'text-[14px] font-bold leading-[21px] text-ink'}>
+        {title}
+      </p>
       {description && <p className="text-[12px] leading-[18px] text-ink-muted">{description}</p>}
       {action && <div className="pt-4">{action}</div>}
     </div>

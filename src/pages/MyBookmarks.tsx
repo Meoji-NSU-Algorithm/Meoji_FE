@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { EmptyState, ErrorState, EventCard, Spinner, useToast } from '../components'
+import { HeartIcon } from '../components/icons'
 import { useBookmarks, useToggleBookmark } from '../api/hooks'
 import { bookmarkToCard } from '../api/bookmarks'
 import type { EventCard as EventCardType } from '../api/types'
@@ -27,13 +28,15 @@ function Content() {
   if (!data || data.events.length === 0)
     return (
       <EmptyState
+        variant="feature"
+        icon={<HeartIcon size={24} />}
         title="아직 찜한 행사가 없어요"
         description="관심 있는 행사를 찜하고 한눈에 모아 보세요"
         action={
           <button
             type="button"
             onClick={() => navigate('/events')}
-            className="h-11 rounded-card bg-primary px-[18px] text-[14px] font-bold text-white"
+            className="h-12 rounded-card bg-primary px-7 text-[15px] font-bold text-white"
           >
             행사 둘러보기
           </button>
