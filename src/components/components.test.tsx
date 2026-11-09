@@ -54,6 +54,16 @@ describe('EventCard', () => {
     expect(container.querySelector('svg.text-star')).toBeNull()
   })
 
+  it('categoryPill 이면 사진 왼쪽 위에 분류 알약을 그리고, 분류가 없으면 그리지 않는다', () => {
+    const { container, rerender } = render(<EventCard event={event} variant="small" categoryPill />)
+    const photo = container.querySelector('article > div') as HTMLElement
+    expect(within(photo).getByText('축제', { selector: 'span.absolute' })).toHaveClass('left-3', 'top-3', 'bg-surface')
+    rerender(<EventCard event={{ ...event, category: '' }} variant="small" categoryPill />)
+    expect(container.querySelector('span.absolute.left-3.top-3')).toBeNull()
+    rerender(<EventCard event={event} variant="small" />)
+    expect(container.querySelector('span.absolute.left-3.top-3')).toBeNull()
+  })
+
   it('하트는 카드 클릭과 분리되어 onToggleLike 만 호출한다', async () => {
     const onToggleLike = vi.fn()
     const onClick = vi.fn()

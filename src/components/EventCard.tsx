@@ -33,6 +33,8 @@ export interface EventCardProps {
   onClick?: (event: EventCardData) => void
   /** 지정하면 카드가 <a> 로 렌더된다 */
   href?: string
+  /** 사진 왼쪽 위에 분류 알약을 띄운다 (B1 목록). 분류가 없으면 그리지 않는다 */
+  categoryPill?: boolean
 }
 
 function compactCount(n: number) {
@@ -47,6 +49,7 @@ export function EventCard({
   onToggleLike,
   onClick,
   href,
+  categoryPill = false,
 }: EventCardProps) {
   const small = variant === 'small'
   const priceText = event.is_free
@@ -90,6 +93,11 @@ export function EventCard({
           />
         ) : (
           <ThumbnailPlaceholder title={event.title} category={event.category} />
+        )}
+        {categoryPill && event.category && (
+          <span className="absolute left-3 top-3 flex h-6 items-center rounded-[7px] bg-surface px-[9px] text-[12px] font-bold text-ink">
+            {event.category}
+          </span>
         )}
         {variant === 'ranked' && rank != null && (
           <span

@@ -105,6 +105,14 @@ describe('EventList', () => {
     expect(added).toEqual({ eventId: 1 })
   })
 
+  it('목록 카드는 사진 왼쪽 위에 분류 알약을 보여주고, 평점 필드가 없어도 그려진다', async () => {
+    server.use(http.get('*/api/events', () => ok({ total_count: 1, page: 1, size: 12, events: [card(1, { category: '공연' })] })))
+    renderPage(<EventList />, '/events')
+    const article = (await screen.findByRole('link', { name: '행사1' })).closest('article')!
+    expect(article.querySelector('span.absolute.left-3.top-3')).toHaveTextContent('공연')
+    expect(article.querySelector('svg.text-star')).toBeNull()
+  })
+
   it('목록과 총 건수를 보여주고 필터를 쿼리로 보낸다', async () => {
     let url = ''
     server.use(

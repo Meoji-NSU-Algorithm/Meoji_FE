@@ -102,6 +102,7 @@ export default function EventList() {
               <EventCard
                 event={toCardData(e)}
                 variant="small"
+                categoryPill
                 href={`/events/${e.id}`}
                 onClick={() => navigate(`/events/${e.id}`)}
                 liked={isLiked(e.id)}
