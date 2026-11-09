@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { Chip, ErrorState, EventCard, Header, Modal, RatingStars, ToastView, formatDateRange } from '.'
@@ -36,6 +36,22 @@ describe('EventCard', () => {
     expect(screen.getByTestId('thumbnail-placeholder')).toBeInTheDocument()
     expect(screen.getByText('무료')).toBeInTheDocument()
     expect(screen.getByLabelText('1위')).toBeInTheDocument()
+  })
+
+  it('작은 무료 카드는 사진에 무료 배지를 올리지 않고 "무료 [지역 · 분류]" 줄을 보여준다', () => {
+    const { container } = render(<EventCard event={event} variant="small" />)
+    const photo = container.querySelector('article > div') as HTMLElement
+    expect(within(photo).queryByText('무료')).not.toBeInTheDocument()
+    expect(screen.getAllByText('무료')).toHaveLength(1)
+    expect(screen.getByText('무료')).toHaveClass('text-free')
+    expect(screen.getByText('충남 · 축제')).toBeInTheDocument()
+  })
+
+  it('rating/review_count 필드가 없어도 크래시 없이 별점 줄을 숨긴다', () => {
+    expect('rating' in event || 'review_count' in event).toBe(false)
+    const { container } = render(<EventCard event={event} />)
+    expect(screen.getByRole('button', { name: event.title })).toBeInTheDocument()
+    expect(container.querySelector('svg.text-star')).toBeNull()
   })
 
   it('하트는 카드 클릭과 분리되어 onToggleLike 만 호출한다', async () => {

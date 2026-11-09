@@ -99,11 +99,6 @@ export function EventCard({
             {rank}
           </span>
         )}
-        {small && event.is_free && (
-          <span className="absolute bottom-[10px] left-[10px] rounded-md bg-white/95 px-2 py-[2px] text-[12px] font-bold text-free">
-            무료
-          </span>
-        )}
         <button
           type="button"
           aria-label={liked ? '찜 해제' : '찜하기'}
@@ -124,24 +119,22 @@ export function EventCard({
             .filter(Boolean)
             .join(' · ')}
         </p>
-        {(!small || !event.is_free) && (
-          <div className="flex items-center gap-[6px] pt-[5px]">
-            {priceText && (
-              <span
-                className={`text-[14.5px] font-black leading-[21.75px] ${
-                  event.is_free ? 'text-free' : 'text-ink'
-                }`}
-              >
-                {priceText}
-              </span>
-            )}
-            {meta && (
-              <span className="rounded-sm bg-surface-muted px-[6px] py-px text-[11px] font-medium leading-[16.5px] text-ink-muted">
-                {meta}
-              </span>
-            )}
-          </div>
-        )}
+        <div className="flex items-center gap-[6px] pt-[5px]">
+          {priceText && (
+            <span
+              className={`text-[14.5px] font-black leading-[21.75px] ${
+                event.is_free ? 'text-free' : 'text-ink'
+              }`}
+            >
+              {priceText}
+            </span>
+          )}
+          {meta && (
+            <span className="rounded-sm bg-surface-muted px-[6px] py-px text-[11px] font-medium leading-[16.5px] text-ink-muted">
+              {meta}
+            </span>
+          )}
+        </div>
         {(hasRating || hasViews) && (
           <p className="flex items-center gap-[3px] pt-[3px] text-[12px] leading-[18px] text-ink-muted">
             {hasRating && (
