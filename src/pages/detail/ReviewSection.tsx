@@ -59,7 +59,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
           setRating(0)
           setContent('')
           pics.reset()
-          toast.show({ message: '리뷰를 등록했어요' })
+          toast.show({ message: '리뷰가 등록됐어요!' })
         },
         onError: (e) => {
           if (isImageNotUploaded(e)) pics.dropNew()

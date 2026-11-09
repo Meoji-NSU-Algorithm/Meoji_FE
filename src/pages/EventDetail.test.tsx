@@ -260,3 +260,17 @@ describe('리뷰 사진', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('다른 리뷰에 쓰인 이미지')
   })
 })
+
+describe('리뷰 등록 토스트', () => {
+  it('등록에 성공하면 "리뷰가 등록됐어요!" 토스트를 보여준다', async () => {
+    server.use(
+      http.get('*/api/events/1', () => ok(emptyEvent)),
+      http.post('*/api/reviews', () => ok({}, 201)),
+    )
+    renderAt('/events/1')
+    await userEvent.click(await screen.findByRole('radio', { name: '4점' }))
+    await userEvent.type(screen.getByLabelText('리뷰 내용'), '좋아요')
+    await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
+    expect(await screen.findByText('리뷰가 등록됐어요!')).toBeInTheDocument()
+  })
+})
