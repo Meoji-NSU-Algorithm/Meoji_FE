@@ -137,7 +137,6 @@ export const api = {
     request<T>('GET', path, { query, ...opts }),
   post: <T>(path: string, body?: unknown, opts?: Pick<RequestOptions, 'auth'>) =>
     request<T>('POST', path, { body, ...opts }),
-  postForm: <T>(path: string, form: FormData) => request<T>('POST', path, { body: form }),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, { body }),
   delete: <T>(path: string) => request<T>('DELETE', path),
 }

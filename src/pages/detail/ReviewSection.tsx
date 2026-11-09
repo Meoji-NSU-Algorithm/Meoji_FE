@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { errorMessage, isImageNotUploaded } from '../../api/errors'
+import { errorMessage } from '../../api/errors'
 import { useCreateReview, useDeleteReview, useUpdateReview } from '../../api/hooks'
 import type { Review } from '../../api/types'
 import { useAuth, useRequireLogin } from '../../auth'
@@ -53,7 +53,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
     if (!content.trim()) return setError('후기를 입력해 주세요.')
     setError(null)
     create.mutate(
-      { event_id: eventId, rating, content: content.trim(), images: pics.keys },
+      { event_id: eventId, rating, content: content.trim(), files: pics.files },
       {
         onSuccess: () => {
           setRating(0)
@@ -61,10 +61,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
           pics.reset()
           toast.show({ message: '리뷰가 등록됐어요!' })
         },
-        onError: (e) => {
-          if (isImageNotUploaded(e)) pics.dropNew()
-          setError(errorMessage(e))
-        },
+        onError: (e) => setError(errorMessage(e)),
       },
     )
   }
@@ -75,7 +72,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
     if (!content.trim()) return setError('후기를 입력해 주세요.')
     setError(null)
     update.mutate(
-      { id: editingId, eventId, rating, content: content.trim(), images: pics.keys },
+      { id: editingId, eventId, rating, content: content.trim(), images: pics.keys, files: pics.files },
       {
         onSuccess: () => {
           setEditingId(null)
@@ -84,10 +81,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
           pics.reset()
           toast.show({ message: '리뷰를 수정했어요' })
         },
-        onError: (e) => {
-          if (isImageNotUploaded(e)) pics.dropNew()
-          setError(errorMessage(e))
-        },
+        onError: (e) => setError(errorMessage(e)),
       },
     )
   }
@@ -110,7 +104,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
   }
 
   const average = averageRating ?? 0
-  const formDisabled = create.isPending || pics.uploading
+  const formDisabled = create.isPending
 
   return (
     <section className="pt-14" aria-label="리뷰">
@@ -224,7 +218,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
                       <button type="button" onClick={() => { setEditingId(null); setError(null); pics.reset() }} className="h-10 rounded-card border border-line px-4 text-[14px] font-bold text-ink">
                         취소
                       </button>
-                      <button type="button" disabled={update.isPending || pics.uploading} onClick={submitEdit} className="h-10 rounded-card bg-primary px-4 text-[14px] font-bold text-white disabled:opacity-60">
+                      <button type="button" disabled={update.isPending} onClick={submitEdit} className="h-10 rounded-card bg-primary px-4 text-[14px] font-bold text-white disabled:opacity-60">
                         수정 완료
                       </button>
                     </div>

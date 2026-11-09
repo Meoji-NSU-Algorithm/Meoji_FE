@@ -5,7 +5,7 @@ import type { useReviewImages } from './useReviewImages'
 
 type State = ReturnType<typeof useReviewImages>
 
-/** 사진 추가 버튼 + 업로드된 썸네일(삭제 가능). */
+/** 사진 추가 버튼 + 첨부한 사진 썸네일(삭제 가능). 사진은 리뷰를 등록·수정할 때 같이 올라간다. */
 export function ReviewImagePicker({ state, disabled }: { state: State; disabled?: boolean }) {
   const input = useRef<HTMLInputElement>(null)
   const full = state.images.length >= MAX_REVIEW_IMAGES
@@ -19,7 +19,7 @@ export function ReviewImagePicker({ state, disabled }: { state: State; disabled?
         hidden
         data-testid="review-image-input"
         onChange={(e) => {
-          void state.addFiles(Array.from(e.target.files ?? []))
+          state.addFiles(Array.from(e.target.files ?? []))
           e.target.value = ''
         }}
       />
@@ -31,11 +31,6 @@ export function ReviewImagePicker({ state, disabled }: { state: State; disabled?
       >
         <CameraIcon size={18} /> 사진 추가 ({state.images.length}/{MAX_REVIEW_IMAGES})
       </button>
-      {state.uploading && (
-        <p role="status" className="pt-2 text-[12px] text-ink-subtle">
-          사진을 올리는 중이에요…
-        </p>
-      )}
       {state.error && (
         <p role="alert" className="pt-2 text-[13px] text-primary-ink">
           {state.error}

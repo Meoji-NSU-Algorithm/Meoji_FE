@@ -11,7 +11,6 @@ import {
   getEventReviews,
   getMyReviews,
   updateReview,
-  uploadReviewImage,
 } from './reviews'
 import { getConsents, saveConsents, withdrawAccount } from './users'
 import type { BookmarkList, DirectionsQuery, EventCard, EventListParams, ReviewInput } from './types'
@@ -102,7 +101,7 @@ export function useUpdateReview() {
   const invalidate = useInvalidateReviews()
   return useMutation({
     mutationFn: (v: { id: number; eventId?: number } & ReviewInput) =>
-      updateReview(v.id, { rating: v.rating, content: v.content, images: v.images }),
+      updateReview(v.id, { rating: v.rating, content: v.content, images: v.images, files: v.files }),
     onSuccess: (_r, v) => invalidate(v.eventId),
   })
 }
@@ -112,10 +111,6 @@ export function useDeleteReview() {
     mutationFn: (v: { id: number; eventId?: number }) => deleteReview(v.id),
     onSuccess: (_r, v) => invalidate(v.eventId),
   })
-}
-
-export function useUploadReviewImage() {
-  return useMutation({ mutationFn: (file: File) => uploadReviewImage(file) })
 }
 
 // ---- 찜 ----
