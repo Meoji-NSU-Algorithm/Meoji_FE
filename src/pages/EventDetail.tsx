@@ -5,7 +5,7 @@ import { ApiError } from '../api/client'
 import { useAuth, useRequireLogin } from '../auth'
 import { useBookmarkToggle } from '../lib/useBookmarkToggle'
 import { EmptyState, ErrorState, Spinner, Tag, formatDateRange, formatPrice, useToast } from '../components'
-import { HeartIcon } from '../components/icons'
+import { CalendarIcon, HeartIcon, MapPinIcon, StarIcon } from '../components/icons'
 import { MiniMap } from './detail/MiniMap'
 import { ReviewSection } from './detail/ReviewSection'
 import { ChevronLeftIcon, RouteIcon, ShareIcon } from './detail/icons'
@@ -139,14 +139,25 @@ export default function EventDetail() {
             </div>
             <h1 className="pt-2 text-[30px] font-black leading-[39px] tracking-[-0.6px] text-ink">{event.title}</h1>
             <div className="flex flex-wrap items-center gap-[18px] pt-[10px] text-[14px] leading-[21px] text-ink-muted">
-              {dates && <span>{dates}</span>}
-              {event.venue_name && <span>{event.venue_name}</span>}
+              {dates && (
+                <span className="inline-flex items-center gap-[5px]">
+                  <CalendarIcon size={14} /> {dates}
+                </span>
+              )}
+              {event.venue_name && (
+                <span className="inline-flex items-center gap-[5px]">
+                  <MapPinIcon size={14} /> {event.venue_name}
+                </span>
+              )}
               {event.review_count > 0 ? (
-                <span>
-                  <b className="text-ink">★ {(event.average_rating ?? 0).toFixed(1)}</b> ({event.review_count}개 리뷰)
+                <span className="inline-flex items-center gap-[5px]">
+                  <StarIcon size={14} className="text-star" />
+                  <b className="text-ink">{(event.average_rating ?? 0).toFixed(1)}</b> ({event.review_count}개 리뷰)
                 </span>
               ) : (
-                <span>★ - 아직 리뷰가 없어요</span>
+                <span className="inline-flex items-center gap-[5px]">
+                  <StarIcon size={14} className="text-star" /> - 아직 리뷰가 없어요
+                </span>
               )}
             </div>
           </div>

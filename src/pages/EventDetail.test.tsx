@@ -283,7 +283,17 @@ describe('리뷰가 없는 행사 (C4)', () => {
     expect(screen.getByText('이 행사에 다녀오셨다면 첫 리뷰를 남겨 주세요')).toBeInTheDocument()
     const formTitle = screen.getByText('이 행사는 어떠셨나요?')
     expect(title.compareDocumentPosition(formTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-    expect(screen.getByText('★ - 아직 리뷰가 없어요')).toBeInTheDocument()
+    const rating = screen.getByText(/- 아직 리뷰가 없어요/)
+    expect(rating.querySelector('svg.text-star')).not.toBeNull()
+  })
+
+  it('메타 줄에 일정·장소·평점 아이콘을 보여준다 (C1)', async () => {
+    server.use(http.get('*/api/events/1', () => ok(baseEvent)))
+    renderAt('/events/1')
+    const date = (await screen.findByRole('heading', { level: 1 })).nextElementSibling as HTMLElement
+    expect(within(date).getByText(/천안종합운동장/).querySelector('svg')).not.toBeNull()
+    expect(within(date).getByText(/10\.22/).querySelector('svg')).not.toBeNull()
+    expect(within(date).getByText(/4\.5/).closest('span')!.querySelector('svg.text-star')).not.toBeNull()
   })
 
   it('리뷰가 있으면 안내 블록을 보여주지 않는다', async () => {
