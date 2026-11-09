@@ -64,7 +64,7 @@ function Withdraw() {
 
       <div className="mt-4 flex flex-col gap-[10px] rounded-[14px] bg-primary-tint px-[18px] py-4">
         <p className="text-[14px] font-bold leading-[1.5] text-primary-ink">탈퇴하면 이렇게 돼요</p>
-        <Bullet>찜한 행사 {bookmarkCount}개가 모두 삭제돼요</Bullet>
+        <Bullet>찜한 행사 {bookmarkCount}개와 캘린더 일정이 모두 삭제돼요</Bullet>
         <Bullet>작성한 리뷰 {reviewCount}개가 삭제되며 다시 복구할 수 없어요</Bullet>
         <Bullet>카카오 계정 연결이 해제돼요. 언제든 다시 가입할 수 있어요</Bullet>
       </div>

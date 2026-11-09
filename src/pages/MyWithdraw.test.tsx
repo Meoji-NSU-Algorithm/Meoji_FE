@@ -35,7 +35,7 @@ afterEach(() => tokenStorage.clear())
 describe('MyWithdraw', () => {
   it('실제 찜/리뷰 개수를 보여주고 동의해야 탈퇴할 수 있다', async () => {
     setup()
-    expect(await screen.findByText(/찜한 행사 6개/)).toBeInTheDocument()
+    expect(await screen.findByText('찜한 행사 6개와 캘린더 일정이 모두 삭제돼요')).toBeInTheDocument()
     expect(screen.getByText(/작성한 리뷰 3개/)).toBeInTheDocument()
     const submit = screen.getByRole('button', { name: '탈퇴하기' })
     expect(submit).toBeDisabled()
@@ -60,6 +60,7 @@ describe('MyWithdraw', () => {
     await userEvent.click(screen.getByRole('checkbox'))
     await userEvent.click(screen.getByRole('button', { name: '탈퇴하기' }))
     expect(await screen.findByText('탈퇴가 완료됐어요')).toBeInTheDocument()
+    expect(screen.getByText('찜·리뷰·캘린더 정보가 모두 삭제됐고, 카카오 계정 연결도 해제됐어요.')).toBeInTheDocument()
     expect(called).toBe(1)
     expect(bodyText).toBe('')
     expect(tokenStorage.getAccessToken()).toBeNull()

@@ -31,7 +31,7 @@ export default function MyWithdrawDone() {
           보고 싶은 행사가 생기면 언제든 다시 찾아와 주세요.
         </p>
         <p className="mt-5 w-full rounded-[12px] bg-surface-card px-4 py-3 text-center text-[12px] leading-[1.5] text-ink-subtle">
-          찜·리뷰 정보가 모두 삭제됐고, 카카오 계정 연결도 해제됐어요.
+          찜·리뷰·캘린더 정보가 모두 삭제됐고, 카카오 계정 연결도 해제됐어요.
         </p>
         <Link
           to="/"
