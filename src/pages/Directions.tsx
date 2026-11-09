@@ -139,9 +139,9 @@ export default function Directions() {
   )
   const dir = useDirections(query)
   const route = dir.data
-const dirError = dir.error
-const routeNotFound = dirError instanceof ApiError && dirError.code === 'ROUTE_NOT_FOUND'
-const dirEventMissing = dirError instanceof ApiError && dirError.code === 'EVENT_NOT_FOUND'
+  const dirError = dir.error
+  const routeNotFound = dirError instanceof ApiError && dirError.code === 'ROUTE_NOT_FOUND'
+  const dirEventMissing = dirError instanceof ApiError && dirError.code === 'EVENT_NOT_FOUND'
 
   if (!Number.isFinite(id)) return <ErrorState code="404" title="행사를 찾을 수 없어요" />
   if (authLoading) return <div className="flex justify-center py-32"><Spinner /></div>
