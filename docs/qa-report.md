@@ -4,7 +4,7 @@
 
 - 날짜: 2026-11-09
 - 브랜치: feature/integration-mvp
-- 치명 결함 없음. 주요 결함 2건은 모두 백엔드 쪽이다 (reviews/my 의 event 누락, directions 404). FE 결함은 E2E 에서 발견되지 않았다.
+- 치명 결함 없음. 백엔드 요청 4건 (P1 3건, P2 1건)으로 정리했다 (`docs/backend-requests.md`). FE 결함은 E2E 에서 발견되지 않았다.
 
 ## 환경
 
@@ -22,10 +22,10 @@
 | 항목 | 결과 | 비고 |
 |---|---|---|
 | 전 엔드포인트 (아래 예외 제외) | PASS | |
-| GET /reviews/my 의 event 객체 | FAIL | event 키 없음 |
-| 이미지 키 재사용 | FAIL | 서로 다른 리뷰에 같은 키 허용됨 (롤백 영향, 비차단) |
-| 카드 평점 (average_rating/review_count) | 없음 | 알려진 상태 |
-| GET /directions/:eventId | 404 | 예상된 결과 (복원 예정) |
+| GET /reviews/my 의 event 객체 | FAIL | event 키 없음 (요청 2) |
+| 이미지 키 재사용 | FAIL | 다른 사용자의 키를 내 리뷰에 붙여도 201 (요청 4, P2) |
+| 카드 평점 (average_rating/review_count) | FAIL | /events, /events/monthly-top 카드에 없음 (요청 3) |
+| GET /directions/:eventId | FAIL | 404 COMMON_NOT_FOUND, 라우트 없음 (요청 1) |
 | 태그 필터 | 판정 불가 | 태그 데이터 없음 |
 | 10MB 초과 업로드 | 미테스트 | |
 | REVIEW_FORBIDDEN | 미테스트 | |
@@ -50,29 +50,32 @@
 - 실제 카카오 로그인/콜백
 - 모바일 뷰포트
 - 브라우저에서의 만료 토큰 자동 갱신 (API 수준은 검증됨)
-- 배포 오리진에서의 CORS
+- 배포 환경 (CORS, 이미지 HTTPS): 배포 시 확인
 - 스크린샷은 일부만 육안 확인
 
 ## 결함 목록
 
-| 심각도 | ID | 내용 |
-|---|---|---|
-| 치명 | - | 없음 |
-| 주요 | D1 | GET /reviews/my 에 event 누락 (대체 제목/썸네일, '종료된 행사' 칩 불가) |
-| 주요 | D1' | GET /directions/:eventId 404 (길찾기 화면 항상 오류) |
-| 경미 | D2 | 이미지 키 재사용 허용 (REVIEW_IMAGE_ALREADY_ATTACHED 검증 없음) |
-| 경미 | D3 | 카드의 평점/리뷰 수 없음 (FE는 숨김) |
-| 경미 | D4 | 리뷰 이미지 URL이 HTTP (HTTPS 배포 시 mixed content) |
+| 심각도 | ID | 내용 | 요청 |
+|---|---|---|---|
+| 치명 | - | 없음 | |
+| 주요 | D1 | GET /directions/:eventId 404 (길찾기 화면 D1~D3 항상 오류) | 요청 1, P1 |
+| 주요 | D2 | GET /reviews/my 에 event 누락 (대체 제목/썸네일, '종료된 행사' 칩 불가) | 요청 2, P1 |
+| 주요 | D3 | 목록·월간 인기 카드에 평점/리뷰 수 없음 (Figma 카드의 '★ 4.7 (128)' 미표시) | 요청 3, P1 |
+| 경미 | D4 | 남의 리뷰 이미지 키를 내 리뷰에 첨부 가능. 수정·삭제 시 원본 사진 삭제 (보안) | 요청 4, P2 |
+
+CORS와 이미지 HTTPS는 결함이 아니라 배포 시 확인 항목이다 (`docs/backend-requests.md` 의 '배포 참고').
 
 FE 결함: E2E 에서 발견되지 않음.
 
 ## 수동 확인 필요 항목
 
 - [ ] 카카오 로그인 전체 플로우 (약관 동의 단계 포함, 재로그인)
-- [ ] 배포 환경 CORS / HTTPS
 - [ ] 모바일 뷰포트
-- [ ] 길찾기 복원 후 실제 경로 데이터로 재테스트
-- [ ] 배포 환경에서의 S3 업로드
+- [ ] 길찾기 API 구현 후 실제 경로 데이터로 재테스트 (요청 1)
+- [ ] /reviews/my event 반영 후 내 리뷰 화면 재확인 (요청 2)
+- [ ] 카드 평점 반영 후 홈·목록 카드 표시 재확인 (요청 3)
+- [ ] 이미지 키 검증 반영 후 409/400 응답 재확인 (요청 4)
+- [ ] 배포 시 확인: CORS, 이미지 HTTPS (`S3_PUBLIC_URL`), S3 업로드, 카카오 리다이렉트 URI
 
 ## 남은 테스트 데이터
 
