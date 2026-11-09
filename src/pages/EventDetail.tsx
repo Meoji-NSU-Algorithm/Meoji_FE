@@ -156,10 +156,12 @@ export default function EventDetail() {
             <div className="flex flex-wrap items-center gap-[18px] pt-[10px] text-[14px] leading-[21px] text-ink-muted">
               {dates && <span>{dates}</span>}
               {event.venue_name && <span>{event.venue_name}</span>}
-              {event.review_count > 0 && (
+              {event.review_count > 0 ? (
                 <span>
                   <b className="text-ink">★ {(event.average_rating ?? 0).toFixed(1)}</b> ({event.review_count}개 리뷰)
                 </span>
+              ) : (
+                <span>★ - 아직 리뷰가 없어요</span>
               )}
             </div>
           </div>

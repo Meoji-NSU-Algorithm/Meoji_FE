@@ -274,3 +274,22 @@ describe('리뷰 등록 토스트', () => {
     expect(await screen.findByText('리뷰가 등록됐어요!')).toBeInTheDocument()
   })
 })
+
+describe('리뷰가 없는 행사 (C4)', () => {
+  it('회색 안내 블록이 작성 폼 위에 있고 메타 줄에 "아직 리뷰가 없어요"를 보여준다', async () => {
+    server.use(http.get('*/api/events/1', () => ok(emptyEvent)))
+    renderAt('/events/1')
+    const title = await screen.findByText('첫 리뷰의 주인공이 되어 보세요!')
+    expect(screen.getByText('이 행사에 다녀오셨다면 첫 리뷰를 남겨 주세요')).toBeInTheDocument()
+    const formTitle = screen.getByText('이 행사는 어떠셨나요?')
+    expect(title.compareDocumentPosition(formTitle) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(screen.getByText('★ - 아직 리뷰가 없어요')).toBeInTheDocument()
+  })
+
+  it('리뷰가 있으면 안내 블록을 보여주지 않는다', async () => {
+    server.use(http.get('*/api/events/1', () => ok(baseEvent)))
+    renderAt('/events/1')
+    await screen.findByText('내 리뷰')
+    expect(screen.queryByText('첫 리뷰의 주인공이 되어 보세요!')).not.toBeInTheDocument()
+  })
+})

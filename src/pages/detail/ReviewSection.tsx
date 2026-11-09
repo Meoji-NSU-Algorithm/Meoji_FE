@@ -3,7 +3,7 @@ import { errorMessage, isImageNotUploaded } from '../../api/errors'
 import { useCreateReview, useDeleteReview, useUpdateReview } from '../../api/hooks'
 import type { Review } from '../../api/types'
 import { useAuth, useRequireLogin } from '../../auth'
-import { EmptyState, Modal, RatingStars, useToast } from '../../components'
+import { Modal, RatingStars, useToast } from '../../components'
 import { ReviewImagePicker } from './ReviewImagePicker'
 import { ReviewPhotos } from './ReviewPhotos'
 import { useReviewImages } from './useReviewImages'
@@ -128,6 +128,13 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
         </div>
       )}
 
+      {reviews.length === 0 && (
+        <div className="mt-[14px] rounded-lg bg-surface-card px-6 py-[26px] text-center">
+          <p className="text-[15px] font-bold leading-[22.5px] text-ink">첫 리뷰의 주인공이 되어 보세요!</p>
+          <p className="pt-1 text-[12px] leading-[18px] text-ink-muted">이 행사에 다녀오셨다면 첫 리뷰를 남겨 주세요</p>
+        </div>
+      )}
+
       {!mine && (
         <div className="mt-[14px] rounded-lg border border-line p-5">
           <h3 className="text-[15px] font-bold leading-[22.5px] text-ink">이 행사는 어떠셨나요?</h3>
@@ -164,9 +171,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
         </div>
       )}
 
-      {reviews.length === 0 ? (
-        <EmptyState title="아직 리뷰가 없어요" description="첫 번째 리뷰를 남겨 보세요" />
-      ) : (
+      {reviews.length > 0 && (
         <ul className="mt-2">
           {reviews.map((r) => {
             const own = !!user && r.user_id === user.id
