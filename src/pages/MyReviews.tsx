@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { EmptyState, ErrorState, Modal, RatingStars, Spinner, useToast } from '../components'
-import { errorMessage, isImageNotUploaded } from '../api/errors'
+import { errorMessage } from '../api/errors'
 import { useDeleteReview, useMyReviews, useUpdateReview } from '../api/hooks'
 import type { MyReview } from '../api/types'
 import { ReviewImagePicker } from './detail/ReviewImagePicker'
@@ -75,18 +75,15 @@ function EditModal({ review, onClose }: { review: MyReview; onClose: () => void 
   const [content, setContent] = useState(review.content)
   const pics = useReviewImages(review.images ?? [])
   const trimmed = content.trim()
-  const valid = rating >= 0.5 && trimmed.length >= 1 && trimmed.length <= MAX_CONTENT && !pics.uploading
+  const valid = rating >= 0.5 && trimmed.length >= 1 && trimmed.length <= MAX_CONTENT
 
   const submit = () =>
     update.mutate(
-      { id: review.id, eventId: review.event_id, rating, content: trimmed, images: pics.keys },
+      { id: review.id, eventId: review.event_id, rating, content: trimmed, images: pics.keys, files: pics.files },
       {
         onSuccess: () => {
           toast.show({ message: '리뷰를 수정했어요' })
           onClose()
-        },
-        onError: (e) => {
-          if (isImageNotUploaded(e)) pics.dropNew()
         },
       },
     )

@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { http } from 'msw'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
+import type { MockInstance } from 'vitest'
 import { AuthContext } from '../auth/AuthContext'
 import type { AuthContextValue } from '../auth/AuthContext'
 import { ToastProvider } from '../components'
@@ -47,7 +48,7 @@ function renderAt(path: string, loggedIn = true) {
 
 const baseEvent = {
   id: 1, title: '흥타령춤축제', category_id: 1, category: '축제', sido_code: '44', sido: '충남',
-  start_date: '2026-10-22', end_date: '2026-10-26', venue_name: '천안종합운동장', thumbnail_url: null,
+  start_date: '2026-10-22', end_date: '2026-10-26', venue_name: '천안종합운동장',
   price: null, is_free: true, description: '소개글', address: '천안시', address_detail: null, play_time: null,
   fee_text: null, image_url: null, latitude: 36.8, longitude: 127.1, organizer: null, contact_phone: null,
   homepage_url: null, is_permanent: false, review_count: 2, average_rating: 4.5,
@@ -118,6 +119,17 @@ describe('EventDetail', () => {
 
 const emptyEvent = { ...baseEvent, reviews: [], review_count: 0, average_rating: null }
 const png = (n = 'a.png') => new File(['x'], n, { type: 'image/png' })
+/** fetch 에 실제로 넘긴 FormData. jsdom+msw 에서는 multipart 본문을 handler 에서 읽을 수 없어 여기서 확인한다. */
+async function sentForm(spy: MockInstance<typeof fetch>, method: string, path: string): Promise<FormData> {
+  let body: unknown
+  await waitFor(() => {
+    const call = spy.mock.calls.find(([url, init]) => String(url).endsWith(path) && init?.method === method)
+    body = call?.[1]?.body
+    expect(body).toBeInstanceOf(FormData)
+  })
+  spy.mockRestore()
+  return body as FormData
+}
 
 describe('리뷰 사진', () => {
   it('리뷰 사진을 보여주고 누르면 크게 본다', async () => {
@@ -127,90 +139,50 @@ describe('리뷰 사진', () => {
     expect(within(screen.getByRole('dialog', { name: '리뷰 사진 크게 보기' })).getByAltText('리뷰 사진')).toHaveAttribute('src', 'https://img.test/1.jpg')
   })
 
-  it('선택 즉시 업로드하고 key 를 리뷰 등록에 실어 보낸다', async () => {
-    let body: any
+  it('고른 사진은 미리보기만 하고, 리뷰 등록 요청에 multipart 로 같이 보낸다', async () => {
+    let uploads = 0
     server.use(
       http.get('*/api/events/1', () => ok(emptyEvent)),
-      http.post('*/api/reviews/images', () => ok({ key: 'new-key', url: 'https://img.test/n.png' }, 201)),
-      http.post('*/api/reviews', async ({ request }) => {
-        body = await request.json()
+      http.post('*/api/reviews/images', () => {
+        uploads += 1
         return ok({}, 201)
       }),
+      http.post('*/api/reviews', () => ok({}, 201)),
     )
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
     renderAt('/events/1')
     await userEvent.upload(await screen.findByTestId('review-image-input'), png())
     expect(await screen.findByAltText('첨부 사진 1')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('radio', { name: '4점' }))
     await userEvent.type(screen.getByLabelText('리뷰 내용'), '좋아요')
     await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
-    await waitFor(() => expect(body).toMatchObject({ event_id: 1, images: ['new-key'] }))
+    const form = await sentForm(fetchSpy, 'POST', '/api/reviews')
+    expect(JSON.parse(form.get('data') as string)).toEqual({ event_id: 1, rating: 4, content: '좋아요' })
+    expect((form.getAll('images') as File[]).map((f) => f.name)).toEqual(['a.png'])
+    expect(uploads).toBe(0)
   })
 
   it('첨부한 사진은 삭제할 수 있다', async () => {
-    server.use(
-      http.get('*/api/events/1', () => ok(emptyEvent)),
-      http.post('*/api/reviews/images', () => ok({ key: 'k', url: 'https://img.test/n.png' }, 201)),
-    )
+    server.use(http.get('*/api/events/1', () => ok(emptyEvent)))
     renderAt('/events/1')
     await userEvent.upload(await screen.findByTestId('review-image-input'), png())
     await userEvent.click(await screen.findByRole('button', { name: '첨부 사진 1 삭제' }))
     expect(screen.queryByAltText('첨부 사진 1')).not.toBeInTheDocument()
   })
 
-  it('업로드 시간이 지난 사진으로 등록하면 안내하고 새 사진을 비운다', async () => {
-    server.use(
-      http.get('*/api/events/1', () => ok(emptyEvent)),
-      http.post('*/api/reviews/images', () => ok({ key: 'old-key', url: 'https://img.test/n.png' }, 201)),
-      http.post('*/api/reviews', () => fail(400, 'REVIEW_IMAGE_NOT_UPLOADED')),
-    )
-    renderAt('/events/1')
-    await userEvent.upload(await screen.findByTestId('review-image-input'), png())
-    await screen.findByAltText('첨부 사진 1')
-    await userEvent.click(screen.getByRole('radio', { name: '4점' }))
-    await userEvent.type(screen.getByLabelText('리뷰 내용'), '좋아요')
-    await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
-    expect(await screen.findByText('사진 업로드 시간이 지났어요. 사진을 다시 올려 주세요.')).toBeInTheDocument()
-    expect(screen.queryByAltText('첨부 사진 1')).not.toBeInTheDocument()
-  })
-
-  it('미첨부 사진이 한도에 이르면 업로드 429 문구를 보여준다', async () => {
-    server.use(
-      http.get('*/api/events/1', () => ok(emptyEvent)),
-      http.post('*/api/reviews/images', () => fail(429, 'REVIEW_IMAGE_UPLOAD_LIMIT')),
-    )
-    renderAt('/events/1')
-    await userEvent.upload(await screen.findByTestId('review-image-input'), png())
-    expect(await screen.findByText(/리뷰에 붙이지 않은 사진이 너무 많아요/)).toBeInTheDocument()
-    expect(screen.queryByAltText('첨부 사진 1')).not.toBeInTheDocument()
-  })
-
-  it('최대 5장까지만 올린다', async () => {
-    let n = 0
-    server.use(
-      http.get('*/api/events/1', () => ok(emptyEvent)),
-      http.post('*/api/reviews/images', () => {
-        n += 1
-        return ok({ key: `k${n}`, url: `https://img.test/${n}.png` }, 201)
-      }),
-    )
+  it('최대 5장까지만 첨부한다', async () => {
+    server.use(http.get('*/api/events/1', () => ok(emptyEvent)))
     renderAt('/events/1')
     const input = await screen.findByTestId('review-image-input')
     await userEvent.upload(input, [png('1.png'), png('2.png'), png('3.png'), png('4.png'), png('5.png'), png('6.png')])
-    await waitFor(() => expect(screen.getByAltText('첨부 사진 5')).toBeInTheDocument())
-    expect(n).toBe(5)
+    expect(await screen.findByAltText('첨부 사진 5')).toBeInTheDocument()
+    expect(screen.queryByAltText('첨부 사진 6')).not.toBeInTheDocument()
     expect(screen.getByRole('alert')).toHaveTextContent('최대 5장')
     expect(screen.getByRole('button', { name: /사진 추가/ })).toBeDisabled()
   })
 
-  it('형식/용량이 맞지 않으면 업로드하지 않는다', async () => {
-    let n = 0
-    server.use(
-      http.get('*/api/events/1', () => ok(emptyEvent)),
-      http.post('*/api/reviews/images', () => {
-        n += 1
-        return ok({ key: 'k', url: 'u' }, 201)
-      }),
-    )
+  it('형식/용량이 맞지 않으면 첨부하지 않는다', async () => {
+    server.use(http.get('*/api/events/1', () => ok(emptyEvent)))
     renderAt('/events/1')
     const input = await screen.findByTestId('review-image-input')
     await userEvent.upload(input, new File(['x'], 'a.gif', { type: 'image/gif' }), { applyAccept: false })
@@ -219,17 +191,37 @@ describe('리뷰 사진', () => {
     Object.defineProperty(big, 'size', { value: 11 * 1024 * 1024 })
     await userEvent.upload(input, big)
     expect(await screen.findByRole('alert')).toHaveTextContent('10MB')
-    expect(n).toBe(0)
+    expect(screen.queryByAltText('첨부 사진 1')).not.toBeInTheDocument()
   })
 
-  it('업로드 에러 코드를 문구로 바꿔 보여준다', async () => {
+  it('사진 관련 등록 에러 코드를 문구로 바꿔 보여준다', async () => {
     server.use(
       http.get('*/api/events/1', () => ok(emptyEvent)),
-      http.post('*/api/reviews/images', () => fail(503, 'REVIEW_IMAGE_STORAGE_UNAVAILABLE')),
+      http.post('*/api/reviews', () => fail(503, 'REVIEW_IMAGE_STORAGE_UNAVAILABLE')),
     )
     renderAt('/events/1')
     await userEvent.upload(await screen.findByTestId('review-image-input'), png())
+    await userEvent.click(await screen.findByRole('radio', { name: '4점' }))
+    await userEvent.type(screen.getByLabelText('리뷰 내용'), '좋아요')
+    await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
     expect(await screen.findByRole('alert')).toHaveTextContent('이미지 저장소를 잠시 사용할 수 없어요')
+    // 실패해도 고른 사진은 남아 다시 등록할 수 있다
+    expect(screen.getByAltText('첨부 사진 1')).toBeInTheDocument()
+  })
+
+  it('수정 시 남길 기존 key 와 새 사진을 같이 보낸다', async () => {
+    server.use(
+      http.get('*/api/events/1', () => ok(baseEvent)),
+      http.put('*/api/reviews/1', () => ok({})),
+    )
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    renderAt('/events/1')
+    await userEvent.click(await screen.findByRole('button', { name: '수정' }))
+    await userEvent.upload(screen.getByTestId('review-image-input'), png('new.png'))
+    await userEvent.click(screen.getByRole('button', { name: '수정 완료' }))
+    const form = await sentForm(fetchSpy, 'PUT', '/api/reviews/1')
+    expect(JSON.parse(form.get('data') as string)).toMatchObject({ rating: 4, content: '내 리뷰', images: ['k1'] })
+    expect((form.getAll('images') as File[]).map((f) => f.name)).toEqual(['new.png'])
   })
 
   it('수정 시 전체 images 배열을 보낸다(교체 의미)', async () => {
@@ -248,16 +240,16 @@ describe('리뷰 사진', () => {
     await waitFor(() => expect(body).toMatchObject({ rating: 4, content: '내 리뷰', images: [] }))
   })
 
-  it('REVIEW_IMAGE_ALREADY_ATTACHED 등 등록 에러를 문구로 매핑한다', async () => {
+  it('413 은 파일 크기 문구를 보여준다', async () => {
     server.use(
       http.get('*/api/events/1', () => ok(emptyEvent)),
-      http.post('*/api/reviews', () => fail(409, 'REVIEW_IMAGE_ALREADY_ATTACHED')),
+      http.post('*/api/reviews', () => fail(413, 'COMMON_PAYLOAD_TOO_LARGE')),
     )
     renderAt('/events/1')
     await userEvent.click(await screen.findByRole('radio', { name: '4점' }))
     await userEvent.type(screen.getByLabelText('리뷰 내용'), '좋아요')
     await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('다른 리뷰에 쓰인 이미지')
+    expect(await screen.findByRole('alert')).toHaveTextContent('파일 크기를 줄여 주세요')
   })
 })
 

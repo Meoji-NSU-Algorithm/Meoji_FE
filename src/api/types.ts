@@ -132,10 +132,12 @@ export interface RatingSummary {
 export interface ReviewInput {
   rating: number
   content: string
-  /** 업로드 API가 돌려준 key 목록(최대 5). PUT에서는 기존 목록을 통째로 대체한다. */
+  /** 수정 시 남길 기존 사진 key. 빠진 사진은 서버가 지운다. */
   images?: string[]
+  /** 새로 첨부할 사진. 리뷰 등록·수정 요청에 같이 올린다(남길 사진과 합쳐 최대 5장). */
+  files?: File[]
 }
-export interface CreateReviewInput extends ReviewInput {
+export interface CreateReviewInput extends Omit<ReviewInput, 'images'> {
   event_id: number
 }
 

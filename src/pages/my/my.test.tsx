@@ -36,7 +36,6 @@ vi.mock('../../api/hooks', () => ({
   useMyReviews: () => ({ data: hooks.reviews, isLoading: false, isError: false }),
   useToggleBookmark: () => ({ mutate: hooks.toggle }),
   useEvent: hooks.useEvent,
-  useUploadReviewImage: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUpdateReview: () => ({ mutate: hooks.updateReview, isError: false, isPending: false }),
   useDeleteReview: () => ({ mutate: hooks.deleteReview, isError: false, isPending: false }),
   useUpdateProfile: () => ({ mutate: hooks.updateProfile, isError: false, isPending: false }),
@@ -130,7 +129,7 @@ describe('MyReviews', () => {
     expect(save).toBeEnabled()
     await userEvent.click(save)
     expect(hooks.updateReview).toHaveBeenCalledWith(
-      { id: 7, eventId: 3, rating: 4.5, content: '다시 씀', images: ['k1'] },
+      { id: 7, eventId: 3, rating: 4.5, content: '다시 씀', images: ['k1'], files: [] },
       expect.anything(),
     )
   })
