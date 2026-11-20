@@ -1,6 +1,7 @@
 import type { MouseEvent } from 'react'
-import { CardHeartIcon, PhotoIcon, StarIcon } from './icons'
-import { formatDateRange, formatPrice } from './eventFormat'
+import { CardHeartIcon, EyeIcon, StarIcon } from './icons'
+import { formatDateRange, formatViewCount, priceLabel } from './eventFormat'
+import { PhotoPlaceholder } from './PhotoPlaceholder'
 
 /** BE 카드 응답 형태 (+ 선택적 평점/리뷰 수/조회수) */
 export interface EventCardData {
@@ -19,11 +20,12 @@ export interface EventCardData {
   view_count?: number | null
 }
 
-export type EventCardVariant = 'standard' | 'ranked' | 'small'
+export type EventCardVariant = 'standard' | 'ranked' | 'small' | 'bookmark'
 
 export interface EventCardProps {
   event: EventCardData
-  /** standard: 3:4 썸네일, ranked: 큰 순위 숫자(rank 필요), small: 4:3 썸네일 + 가격 배지 */
+  /** standard: 3:4 썸네일, ranked: 큰 순위 숫자(rank 필요), small: 4:3 썸네일,
+   *  bookmark: 찜 카드(4:3, 제목·기간·무료/유료/가격 정보 없음만) */
   variant?: EventCardVariant
   /** ranked 일 때 표시할 순위 */
   rank?: number
@@ -37,10 +39,6 @@ export interface EventCardProps {
   categoryPill?: boolean
 }
 
-function compactCount(n: number) {
-  return n >= 10000 ? `${(n / 10000).toFixed(1).replace(/\.0$/, '')}만` : n.toLocaleString('ko-KR')
-}
-
 export function EventCard({
   event,
   variant = 'standard',
@@ -51,13 +49,19 @@ export function EventCard({
   href,
   categoryPill = false,
 }: EventCardProps) {
-  const small = variant === 'small'
-  const priceText = event.is_free
-    ? '무료'
-    : formatPrice(event.price) || (event.is_free == null ? '가격 정보 없음' : '')
+  const bookmark = variant === 'bookmark'
+  const short = variant === 'small' || bookmark
+  // 찜 카드는 금액이 없어 무료/유료/가격 정보 없음만 쓴다
+  const { text: priceText, tone } = bookmark
+    ? event.is_free
+      ? { text: '무료', tone: 'free' as const }
+      : event.is_free === false
+        ? { text: '유료', tone: 'paid' as const }
+        : { text: '가격 정보 없음', tone: 'unknown' as const }
+    : priceLabel(event.price, event.is_free)
   const meta = [event.sido, event.category].filter(Boolean).join(' · ')
-  const hasRating = event.rating != null && event.rating > 0
-  const hasViews = event.view_count != null && event.view_count > 0
+  const hasReviews = event.rating != null && (event.review_count ?? 0) > 0
+  const viewText = formatViewCount(event.view_count)
 
   const handleClick = (e: MouseEvent) => {
     if (onClick) {
@@ -81,7 +85,7 @@ export function EventCard({
     <article className="relative w-full" data-variant={variant}>
       <div
         className={`relative w-full overflow-hidden rounded-card bg-surface-muted ${
-          small ? 'aspect-[274/205.5]' : 'aspect-[219/292]'
+          short ? 'aspect-[274/205.5]' : 'aspect-[219/292]'
         }`}
       >
         {event.image_url ? (
@@ -92,7 +96,7 @@ export function EventCard({
             className="absolute inset-0 size-full object-cover"
           />
         ) : (
-          <ThumbnailPlaceholder title={event.title} category={event.category} />
+          <PhotoPlaceholder title={event.title} category={event.category} sido={event.sido} />
         )}
         {categoryPill && event.category && (
           <span className="absolute left-3 top-3 flex h-6 items-center rounded-[7px] bg-surface px-[9px] text-[12px] font-bold text-ink">
@@ -123,66 +127,46 @@ export function EventCard({
       <div className="mt-[9px]">
         <h4 className="text-[14.5px] font-bold leading-[19.5px] text-ink">{titleEl}</h4>
         <p className="mt-[3px] truncate text-[12px] leading-[18px] text-ink-muted">
-          {[formatDateRange(event.start_date, event.end_date), event.venue_name]
+          {[formatDateRange(event.start_date, event.end_date), bookmark ? '' : event.venue_name]
             .filter(Boolean)
             .join(' · ')}
         </p>
         <div className="flex items-center gap-[6px] pt-[5px]">
-          {priceText && (
-            <span
-              className={`text-[14.5px] font-black leading-[21.75px] ${
-                event.is_free ? 'text-free' : 'text-ink'
-              }`}
-            >
-              {priceText}
-            </span>
-          )}
-          {meta && (
+          <span
+            className={`leading-[21.75px] ${
+              tone === 'free'
+                ? 'text-[14.5px] font-black text-free'
+                : tone === 'unknown'
+                  ? 'text-[13px] font-bold text-ink-subtle'
+                  : 'text-[14.5px] font-black text-ink'
+            }`}
+          >
+            {priceText}
+          </span>
+          {!bookmark && meta && (
             <span className="rounded-sm bg-surface-muted px-[6px] py-px text-[11px] font-medium leading-[16.5px] text-ink-muted">
               {meta}
             </span>
           )}
         </div>
-        {(hasRating || hasViews) && (
-          <p className="flex items-center gap-[3px] pt-[3px] text-[12px] leading-[18px] text-ink-muted">
-            {hasRating && (
+        {!bookmark && (hasReviews || viewText) && (
+          <p className="flex items-center gap-[4px] pt-[4px] text-[12px] leading-[18px] text-ink-muted">
+            {hasReviews ? (
               <>
                 <StarIcon className="text-star" />
                 <b className="font-bold text-ink">{event.rating!.toFixed(1)}</b>
-                {event.review_count != null && <span>({event.review_count.toLocaleString('ko-KR')})</span>}
+                <span>({event.review_count!.toLocaleString('ko-KR')})</span>
+                {viewText && <span>· 조회 {viewText}</span>}
               </>
-            )}
-            {hasViews && (
-              <span>
-                {hasRating ? '· ' : ''}조회 {compactCount(event.view_count!)}
-              </span>
+            ) : (
+              <>
+                <EyeIcon className="shrink-0" />
+                <span>조회 {viewText}</span>
+              </>
             )}
           </p>
         )}
       </div>
     </article>
-  )
-}
-
-/** 썸네일이 없을 때: 그라데이션 + 영문 카테고리 느낌의 라벨 (A1 카드 스타일), 큰 이미지 영역은 '사진 없음' 아이콘 */
-function ThumbnailPlaceholder({ title, category }: { title: string; category: string }) {
-  return (
-    <div
-      data-testid="thumbnail-placeholder"
-      className="absolute inset-0 text-white"
-      style={{ background: 'var(--gradient-festival)' }}
-    >
-      <div className="absolute left-[14px] right-[14px] top-[15px]">
-        {category && (
-          <p className="text-[10.5px] font-extrabold uppercase leading-[12.8px] tracking-[1.05px] opacity-85 font-display">
-            {category}
-          </p>
-        )}
-        <p className="mt-1 line-clamp-2 text-[17px] font-black leading-[20.7px] tracking-[-0.34px]">
-          {title}
-        </p>
-      </div>
-      <PhotoIcon className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white/40" />
-    </div>
   )
 }

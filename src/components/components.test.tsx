@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { Chip, ErrorState, EventCard, Header, Modal, RatingStars, ToastView, formatDateRange } from '.'
+import { Chip, ErrorState, EventCard, Header, Modal, RatingStars, ToastView, formatDateRange, formatViewCount, priceLabel } from '.'
 import type { EventCardData } from '.'
 
 const event: EventCardData = {
@@ -44,7 +44,7 @@ describe('EventCard', () => {
     expect(within(photo).queryByText('무료')).not.toBeInTheDocument()
     expect(screen.getAllByText('무료')).toHaveLength(1)
     expect(screen.getByText('무료')).toHaveClass('text-free')
-    expect(screen.getByText('충남 · 축제')).toBeInTheDocument()
+    expect(screen.getAllByText('충남 · 축제').length).toBeGreaterThan(0)
   })
 
   it('rating/review_count 필드가 없어도 크래시 없이 별점 줄을 숨긴다', () => {
@@ -143,5 +143,58 @@ describe('Chip / Toast / ErrorState', () => {
     expect(screen.getByText('404')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: '다시 시도' }))
     expect(onRetry).toHaveBeenCalled()
+  })
+})
+
+describe('formatViewCount / priceLabel', () => {
+  it('조회수: 1만 이상은 만 단위, 미만은 천 단위 구분, 0은 빈 문자열', () => {
+    expect(formatViewCount(32000)).toBe('3.2만')
+    expect(formatViewCount(10000)).toBe('1만')
+    expect(formatViewCount(9620)).toBe('9,620')
+    expect(formatViewCount(0)).toBe('')
+    expect(formatViewCount(null)).toBe('')
+  })
+  it('가격: 무료 / 금액 / 정보 없음', () => {
+    expect(priceLabel(null, true).text).toBe('무료')
+    expect(priceLabel(15000, false)).toEqual({ text: '15,000원', tone: 'paid' })
+    expect(priceLabel(null, null).text).toBe('가격 정보 없음')
+    expect(priceLabel(0, false).text).toBe('가격 정보 없음')
+  })
+})
+
+describe('EventCard 상태', () => {
+  const base = { ...event, is_free: false, price: 15000 }
+  it('리뷰가 있으면 별점 (리뷰 수) · 조회수', () => {
+    render(<EventCard event={{ ...base, rating: 4.7, review_count: 128, view_count: 32000 }} />)
+    expect(screen.getByText('4.7')).toBeInTheDocument()
+    expect(screen.getByText('(128)')).toBeInTheDocument()
+    expect(screen.getByText('· 조회 3.2만')).toBeInTheDocument()
+    expect(screen.getByText('15,000원')).toBeInTheDocument()
+  })
+  it('리뷰가 없으면 별 없이 눈 아이콘 + 조회수만, 조회수 9,620 표기', () => {
+    const { container } = render(<EventCard event={{ ...base, rating: 0, review_count: 0, view_count: 9620 }} />)
+    expect(container.querySelector('svg.text-star')).toBeNull()
+    expect(screen.getByText('조회 9,620')).toBeInTheDocument()
+  })
+  it('조회수 0이고 리뷰도 없으면 줄을 숨긴다', () => {
+    render(<EventCard event={{ ...base, view_count: 0 }} />)
+    expect(screen.queryByText(/조회/)).not.toBeInTheDocument()
+  })
+  it('사진 없음: 분류 색 그라데이션 + 시·도 + 제목, 분류가 없으면 축제 색', () => {
+    const { rerender } = render(<EventCard event={{ ...base, category: '전시' }} />)
+    expect(screen.getByTestId('thumbnail-placeholder').style.background).toContain('47, 43, 42')
+    rerender(<EventCard event={{ ...base, category: '' }} />)
+    expect(screen.getByTestId('thumbnail-placeholder').style.background).toContain('232, 70, 28')
+  })
+  it('찜 카드: 장소·지역 칩 없이 무료/유료/가격 정보 없음, 4:3', () => {
+    const { container, rerender } = render(<EventCard event={{ ...base, is_free: true, image_url: 'x.jpg' }} variant="bookmark" liked />)
+    expect(screen.getByText('무료')).toBeInTheDocument()
+    expect(screen.queryByText('충남 · 축제')).toBeNull()
+    expect(container.querySelector('[class*="aspect-[274"]')).not.toBeNull()
+    rerender(<EventCard event={{ ...base, is_free: false, price: null }} variant="bookmark" liked />)
+    expect(screen.getByText('유료')).toBeInTheDocument()
+    rerender(<EventCard event={{ ...base, is_free: null, price: null }} variant="bookmark" liked />)
+    expect(screen.getByText('가격 정보 없음')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '찜 해제' })).toBeInTheDocument()
   })
 })

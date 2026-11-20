@@ -113,3 +113,12 @@ export function PhotoIcon(p: IconProps) {
     </svg>
   )
 }
+
+export function EyeIcon(p: IconProps) {
+  return (
+    <svg {...base(p, 12, 16)}>
+      <path d="M1.5 8C2.9 5.2 5.2 3.5 8 3.5C10.8 3.5 13.1 5.2 14.5 8C13.1 10.8 10.8 12.5 8 12.5C5.2 12.5 2.9 10.8 1.5 8Z" strokeWidth="1.4" {...stroke} />
+      <circle cx="8" cy="8" r="2.1" strokeWidth="1.4" stroke="currentColor" />
+    </svg>
+  )
+}
