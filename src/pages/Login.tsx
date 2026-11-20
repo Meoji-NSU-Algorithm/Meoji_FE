@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { getSidos } from '../api/events'
 import { useCategories, useEvents, useMonthlyTop } from '../api/hooks'
 import { useAuth } from '../auth'
 import { CheckIcon, KakaoIcon } from '../components/icons'
@@ -86,13 +88,17 @@ function Collage() {
   )
 }
 
-/** 로그인 화면 하단 숫자는 실제 데이터에서 가져온다(행사 수, 시·도 수는 BE 시드 기준 16, 분류 수). */
+/**
+ * 로그인 화면 하단 숫자는 모두 실제 데이터에서 가져온다(행사 수, 시·도 수, 분류 수).
+ * /events/sidos 는 JWT 가 필요해서 비로그인 상태에서는 실패할 수 있고, 그때는 '-' 로 보인다.
+ */
 function useStats(): string[][] {
   const total = useEvents({ page: 1, size: 1 }).data?.total_count
   const categories = useCategories().data?.length
+  const sidos = useQuery({ queryKey: ['sidos', 'public'], queryFn: getSidos, retry: false, staleTime: 60 * 60 * 1000 }).data?.length
   return [
     [total != null ? total.toLocaleString() : '-', '진행 중·예정 행사'],
-    ['16', '전국 시·도'],
+    [sidos != null ? String(sidos) : '-', '전국 시·도'],
     [categories != null ? String(categories) : '-', '행사 분류'],
   ]
 }
@@ -171,7 +177,7 @@ export default function Login() {
               ))}
             </ul>
             <p className="pt-[22px] text-[12px] leading-[19.2px] text-ink-subtle">
-              로그인 후 <u>이용약관</u>과 <u>개인정보처리방침</u> 동의 절차가 이어져요.
+              처음 로그인하면 이용약관·개인정보처리방침 동의 화면이 이어져요.
             </p>
           </div>
         </div>

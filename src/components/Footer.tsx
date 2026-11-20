@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { Logo } from './Logo'
 
 export interface FooterLink {
@@ -10,10 +11,8 @@ export interface FooterProps {
 }
 
 const DEFAULT_LINKS: FooterLink[] = [
-  { label: '서비스 소개', href: '/about' },
   { label: '이용약관', href: '/terms' },
   { label: '개인정보처리방침', href: '/privacy' },
-  { label: '문의하기', href: '/contact' },
 ]
 
 export function Footer({ links = DEFAULT_LINKS }: FooterProps) {
@@ -30,9 +29,9 @@ export function Footer({ links = DEFAULT_LINKS }: FooterProps) {
         </div>
         <nav aria-label="푸터 메뉴" className="flex gap-[18px]">
           {links.map((l) => (
-            <a key={l.label} href={l.href} className="text-[12px] font-medium leading-[18px] text-ink">
+            <Link key={l.label} to={l.href} className="text-[12px] font-medium leading-[18px] text-ink">
               {l.label}
-            </a>
+            </Link>
           ))}
         </nav>
       </div>

@@ -13,6 +13,7 @@ const Directions = lazy(() => import('./pages/Directions'))
 const Login = lazy(() => import('./pages/Login'))
 const KakaoCallback = lazy(() => import('./pages/KakaoCallback'))
 const Terms = lazy(() => import('./pages/Terms'))
+const Policy = lazy(() => import('./pages/Policy'))
 const MyBookmarks = lazy(() => import('./pages/MyBookmarks'))
 const MyReviews = lazy(() => import('./pages/MyReviews'))
 const MyProfile = lazy(() => import('./pages/MyProfile'))
@@ -44,6 +45,9 @@ export default function App() {
           <Route path="auth/login" element={<Login />} />
           <Route path="auth/kakao/callback" element={<KakaoCallback />} />
           <Route path="auth/terms" element={<Terms />} />
+          {/* 약관·방침은 로그인 없이 볼 수 있다(푸터 링크). */}
+          <Route path="terms" element={<Policy policyKey="terms" />} />
+          <Route path="privacy" element={<Policy policyKey="privacy" />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

@@ -125,7 +125,7 @@ export function LoginPromptModal({ open, onClose }: Props) {
         </button>
       </div>
       <p className="pt-[10px] text-center text-[11px] leading-[16.5px] text-ink-subtle">
-        로그인 후 이용약관과 개인정보처리방침 동의 절차가 이어져요.
+        처음 로그인하면 이용약관·개인정보처리방침 동의 화면이 이어져요.
       </p>
     </Modal>
   )
