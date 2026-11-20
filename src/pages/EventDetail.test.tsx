@@ -93,7 +93,7 @@ describe('EventDetail', () => {
     renderAt('/events/1')
     await userEvent.click(await screen.findByRole('button', { name: '삭제' }))
     expect(screen.getByRole('dialog', { name: '리뷰 삭제 확인' })).toBeInTheDocument()
-    await userEvent.click(screen.getAllByRole('button', { name: '삭제' }).at(-1)!)
+    await userEvent.click(within(screen.getByRole('dialog', { name: '리뷰 삭제 확인' })).getByRole('button', { name: '삭제하기' }))
     expect(await screen.findByText('리뷰를 삭제했어요')).toBeInTheDocument()
   })
 
@@ -136,7 +136,9 @@ describe('리뷰 사진', () => {
     server.use(http.get('*/api/events/1', () => ok(baseEvent)))
     renderAt('/events/1')
     await userEvent.click(await screen.findByRole('button', { name: '리뷰 사진 1 크게 보기' }))
-    expect(within(screen.getByRole('dialog', { name: '리뷰 사진 크게 보기' })).getByAltText('리뷰 사진')).toHaveAttribute('src', 'https://img.test/1.jpg')
+    const box = screen.getByRole('dialog', { name: '민지님의 리뷰 사진' })
+    expect(within(box).getByAltText('리뷰 사진 1')).toHaveAttribute('src', 'https://img.test/1.jpg')
+    expect(within(box).getByText('흥타령춤축제 · 2026.10.23')).toBeInTheDocument()
   })
 
   it('고른 사진은 미리보기만 하고, 리뷰 등록 요청에 multipart 로 같이 보낸다', async () => {
@@ -186,11 +188,11 @@ describe('리뷰 사진', () => {
     renderAt('/events/1')
     const input = await screen.findByTestId('review-image-input')
     await userEvent.upload(input, new File(['x'], 'a.gif', { type: 'image/gif' }), { applyAccept: false })
-    expect(await screen.findByRole('alert')).toHaveTextContent('jpg, png, webp')
+    expect(await screen.findByRole('alert')).toHaveTextContent('JPG, PNG, WEBP 사진만 올릴 수 있어요')
     const big = new File(['x'], 'b.png', { type: 'image/png' })
     Object.defineProperty(big, 'size', { value: 11 * 1024 * 1024 })
     await userEvent.upload(input, big)
-    expect(await screen.findByRole('alert')).toHaveTextContent('10MB')
+    expect(await screen.findByRole('alert')).toHaveTextContent('10MB 이하 사진만 올릴 수 있어요')
     expect(screen.queryByAltText('첨부 사진 1')).not.toBeInTheDocument()
   })
 
@@ -249,7 +251,7 @@ describe('리뷰 사진', () => {
     await userEvent.click(await screen.findByRole('radio', { name: '4점' }))
     await userEvent.type(screen.getByLabelText('리뷰 내용'), '좋아요')
     await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('파일 크기를 줄여 주세요')
+    expect(await screen.findByRole('alert')).toHaveTextContent('사진 크기를 줄여서 다시 시도해 주세요')
   })
 })
 

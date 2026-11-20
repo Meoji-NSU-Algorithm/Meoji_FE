@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { errorMessage } from '../../api/errors'
-import { useCreateReview, useDeleteReview, useUpdateReview } from '../../api/hooks'
+import { useCreateReview } from '../../api/hooks'
 import type { Review } from '../../api/types'
 import { useAuth, useRequireLogin } from '../../auth'
-import { Modal, RatingStars, useToast } from '../../components'
+import { RatingStars, useToast } from '../../components'
+import { ReviewAvatar } from './ReviewAvatar'
+import { ReviewDeleteModal } from './ReviewDeleteModal'
+import { MAX_CONTENT, ReviewEditModal } from './ReviewEditModal'
 import { ReviewImagePicker } from './ReviewImagePicker'
 import { ReviewPhotos } from './ReviewPhotos'
 import { useReviewImages } from './useReviewImages'
@@ -11,42 +14,31 @@ import { useReviewImages } from './useReviewImages'
 /** review.author 가 없을 때만 쓰는 대체 라벨 */
 export const ANONYMOUS_LABEL = '방문자'
 
-const MAX_CONTENT = 1000
-
 function formatDate(iso: string) {
   return iso.slice(0, 10).replaceAll('-', '.')
 }
 
 interface Props {
   eventId: number
+  eventTitle?: string
   reviews: Review[]
   averageRating: number | null
   reviewCount: number
 }
 
-export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: Props) {
+export function ReviewSection({ eventId, eventTitle, reviews, averageRating, reviewCount }: Props) {
   const { user, isLoggedIn } = useAuth()
   const requireLogin = useRequireLogin()
   const toast = useToast()
   const create = useCreateReview()
-  const update = useUpdateReview()
-  const remove = useDeleteReview()
   const pics = useReviewImages()
 
   const mine = isLoggedIn && user ? reviews.find((r) => r.user_id === user.id) : undefined
   const [rating, setRating] = useState(0)
   const [content, setContent] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [editingId, setEditingId] = useState<number | null>(null)
+  const [editTarget, setEditTarget] = useState<Review | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Review | null>(null)
-
-  const startEdit = (r: Review) => {
-    setEditingId(r.id)
-    setRating(r.rating)
-    setContent(r.content)
-    pics.reset(r.images ?? [])
-    setError(null)
-  }
 
   const submitCreate = () => {
     if (rating <= 0) return setError('별점을 선택해 주세요.')
@@ -66,45 +58,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
     )
   }
 
-  const submitEdit = () => {
-    if (editingId === null) return
-    if (rating <= 0) return setError('별점을 선택해 주세요.')
-    if (!content.trim()) return setError('후기를 입력해 주세요.')
-    setError(null)
-    update.mutate(
-      { id: editingId, eventId, rating, content: content.trim(), images: pics.keys, files: pics.files },
-      {
-        onSuccess: () => {
-          setEditingId(null)
-          setRating(0)
-          setContent('')
-          pics.reset()
-          toast.show({ message: '리뷰를 수정했어요' })
-        },
-        onError: (e) => setError(errorMessage(e)),
-      },
-    )
-  }
-
-  const confirmDelete = () => {
-    if (!deleteTarget) return
-    remove.mutate(
-      { id: deleteTarget.id, eventId },
-      {
-        onSuccess: () => {
-          setDeleteTarget(null)
-          toast.show({ message: '리뷰를 삭제했어요' })
-        },
-        onError: (e) => {
-          setDeleteTarget(null)
-          toast.show({ message: errorMessage(e) })
-        },
-      },
-    )
-  }
-
   const average = averageRating ?? 0
-  const formDisabled = create.isPending
 
   return (
     <section className="pt-14" aria-label="리뷰">
@@ -130,11 +84,11 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
       )}
 
       {!mine && (
-        <div className="mt-[14px] rounded-lg border border-line p-5">
+        <div className="mt-[14px] flex flex-col gap-4 rounded-[18px] border border-line px-[22px] pb-5 pt-[22px]">
           <h3 className="text-[15px] font-bold leading-[22.5px] text-ink">이 행사는 어떠셨나요?</h3>
-          <div className="flex flex-wrap items-center gap-3 pb-3 pt-[10px]">
-            <RatingStars value={rating} size={30} onChange={(v) => requireLogin(() => setRating(v))} />
-            <span className="text-[18px] font-bold leading-[27px] text-ink">{rating > 0 ? `${rating}점` : '별점을 선택해 주세요'}</span>
+          <div className="flex flex-wrap items-center gap-3">
+            <RatingStars value={rating} size={26} onChange={(v) => requireLogin(() => setRating(v))} />
+            <span className="text-[17px] font-bold leading-[25px] text-ink">{rating > 0 ? `${rating}점` : '별점을 선택해 주세요'}</span>
             <span className="text-[12px] leading-[18px] text-ink-subtle">별의 왼쪽을 누르면 반 개, 오른쪽을 누르면 한 개가 선택돼요</span>
           </div>
           <textarea
@@ -144,22 +98,22 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
             onChange={(e) => setContent(e.target.value)}
             onFocus={() => requireLogin()}
             placeholder="방문 후기를 자유롭게 남겨 주세요"
-            className="h-24 min-h-24 w-full resize-y rounded-card border border-line bg-[#fcfbfa] p-[14px] text-[14px] leading-[21px] text-ink outline-none placeholder:text-[#757575] focus:border-primary"
+            className="h-[84px] min-h-[84px] w-full resize-y rounded-[12px] border border-line bg-surface px-[14px] py-3 text-[14px] leading-[21px] text-ink outline-none placeholder:text-[#757575] focus:border-primary"
           />
+          <ReviewImagePicker state={pics} disabled={create.isPending} />
           {error && (
-            <p role="alert" className="pt-2 text-[13px] text-primary-ink">
+            <p role="alert" className="text-[13px] text-primary-ink">
               {error}
             </p>
           )}
-          <div className="flex items-start justify-between pt-3">
-            <ReviewImagePicker state={pics} />
+          <div className="flex justify-end border-t border-line pt-[14px]">
             <button
               type="button"
-              disabled={formDisabled}
+              disabled={create.isPending}
               onClick={() => requireLogin(submitCreate)}
-              className="h-11 rounded-card bg-primary px-[18px] text-[14px] font-bold text-white disabled:opacity-60"
+              className="h-11 rounded-[12px] bg-primary px-5 text-[14px] font-bold text-white disabled:opacity-60"
             >
-              리뷰 등록
+              {create.isPending ? '등록 중…' : '리뷰 등록'}
             </button>
           </div>
         </div>
@@ -171,17 +125,10 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
             const own = !!user && r.user_id === user.id
             const name = r.author?.nickname || (own ? user?.nickname : undefined) || ANONYMOUS_LABEL
             const avatar = r.author?.profile_image ?? null
-            const editing = editingId === r.id
             return (
               <li key={r.id} className="border-b border-line py-5" data-testid="review-item">
                 <div className="flex items-center gap-[10px]">
-                  {avatar ? (
-                    <img src={avatar} alt="" className="size-9 rounded-full object-cover" />
-                  ) : (
-                    <span className="flex size-9 items-center justify-center rounded-full bg-primary-tint text-[13px] font-bold text-primary-ink" aria-hidden="true">
-                      {name.slice(0, 1)}
-                    </span>
-                  )}
+                  <ReviewAvatar name={name} src={avatar} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[14px] font-bold leading-[21px] text-ink">{name}</p>
                     <p className="flex h-[18px] items-center gap-[6px] text-[12px] text-ink-subtle">
@@ -189,63 +136,28 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
                       {r.rating} · {formatDate(r.created_at)}
                     </p>
                   </div>
-                  {own && !editing && (
+                  {own && (
                     <div className="flex gap-[10px] text-[12px] text-ink-subtle">
-                      <button type="button" onClick={() => startEdit(r)}>수정</button>
+                      <button type="button" onClick={() => setEditTarget(r)}>수정</button>
                       <button type="button" onClick={() => setDeleteTarget(r)}>삭제</button>
                     </div>
                   )}
                 </div>
-                {editing ? (
-                  <div className="pt-[10px]">
-                    <RatingStars value={rating} size={26} onChange={setRating} />
-                    <textarea
-                      aria-label="리뷰 수정 내용"
-                      value={content}
-                      maxLength={MAX_CONTENT}
-                      onChange={(e) => setContent(e.target.value)}
-                      className="mt-2 h-24 w-full resize-y rounded-card border border-line bg-[#fcfbfa] p-[14px] text-[14px] leading-[21px] text-ink outline-none focus:border-primary"
-                    />
-                    {error && (
-                      <p role="alert" className="pt-2 text-[13px] text-primary-ink">
-                        {error}
-                      </p>
-                    )}
-                    <div className="pt-2">
-                      <ReviewImagePicker state={pics} />
-                    </div>
-                    <div className="flex justify-end gap-2 pt-2">
-                      <button type="button" onClick={() => { setEditingId(null); setError(null); pics.reset() }} className="h-10 rounded-card border border-line px-4 text-[14px] font-bold text-ink">
-                        취소
-                      </button>
-                      <button type="button" disabled={update.isPending} onClick={submitEdit} className="h-10 rounded-card bg-primary px-4 text-[14px] font-bold text-white disabled:opacity-60">
-                        수정 완료
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <p className="whitespace-pre-wrap pt-[10px] text-[14px] leading-[23.8px] text-ink">{r.content}</p>
-                    <ReviewPhotos images={r.images ?? []} />
-                  </>
-                )}
+                <p className="whitespace-pre-wrap pt-[10px] text-[14px] leading-[23.8px] text-ink">{r.content}</p>
+                <ReviewPhotos
+                  images={r.images ?? []}
+                  authorName={name}
+                  authorImage={avatar}
+                  caption={[eventTitle, formatDate(r.created_at)].filter(Boolean).join(' · ')}
+                />
               </li>
             )
           })}
         </ul>
       )}
 
-      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="리뷰를 삭제할까요?" ariaLabel="리뷰 삭제 확인">
-        <p className="pt-2 text-center text-[14px] leading-[21px] text-ink-muted">삭제한 리뷰는 되돌릴 수 없어요.</p>
-        <div className="flex gap-2 pt-5">
-          <button type="button" onClick={() => setDeleteTarget(null)} className="h-11 flex-1 rounded-card border border-line text-[14px] font-bold text-ink">
-            취소
-          </button>
-          <button type="button" disabled={remove.isPending} onClick={confirmDelete} className="h-11 flex-1 rounded-card bg-primary text-[14px] font-bold text-white disabled:opacity-60">
-            삭제
-          </button>
-        </div>
-      </Modal>
+      {editTarget && <ReviewEditModal review={editTarget} eventTitle={eventTitle} onClose={() => setEditTarget(null)} />}
+      <ReviewDeleteModal target={deleteTarget && { id: deleteTarget.id, eventId }} onClose={() => setDeleteTarget(null)} />
     </section>
   )
 }

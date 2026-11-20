@@ -4,7 +4,7 @@ import { useEvent, useIsBookmarked } from '../api/hooks'
 import { ApiError } from '../api/client'
 import { useAuth, useRequireLogin } from '../auth'
 import { useBookmarkToggle } from '../lib/useBookmarkToggle'
-import { EmptyState, ErrorState, Spinner, Tag, formatDateRange, formatPrice, useToast } from '../components'
+import { EmptyState, ErrorState, PhotoPlaceholder, Spinner, Tag, errorKind, formatDateRange, formatPrice, useToast } from '../components'
 import { CalendarIcon, HeartIcon, MapPinIcon, StarIcon } from '../components/icons'
 import { MiniMap } from './detail/MiniMap'
 import { ReviewSection } from './detail/ReviewSection'
@@ -78,7 +78,7 @@ export default function EventDetail() {
         />
       )
     }
-    return <ErrorState onRetry={() => void refetch()} message={error.message || undefined} />
+    return <ErrorState error={error} onRetry={() => void refetch()} message={errorKind(error) ? undefined : error.message || undefined} />
   }
   if (isLoading || !event) {
     return <div className="flex justify-center py-32"><Spinner /></div>
@@ -109,21 +109,20 @@ export default function EventDetail() {
         </Link>
       </div>
 
-      <div
-        data-testid="detail-hero"
-        className="relative h-[438px] overflow-hidden rounded-card bg-surface-muted"
-        style={hero ? undefined : { backgroundImage: 'var(--gradient-festival)' }}
-      >
+      <div data-testid="detail-hero" className="relative h-[438px] overflow-hidden rounded-card bg-surface-muted">
         {hero ? (
           <img src={hero} alt={event.title} className="size-full object-cover" />
         ) : (
-          <div className="absolute left-[14px] top-[46px] text-white" data-testid="hero-placeholder">
-            {event.sido && <p className="font-display text-[10.5px] font-extrabold tracking-[1.05px] opacity-85">{event.sido}</p>}
-            <p className="text-[17px] font-black leading-[20.74px] tracking-[-0.34px]">{event.title}</p>
-          </div>
+          <PhotoPlaceholder
+            variant="hero"
+            title={event.title}
+            category={event.category}
+            sido={event.sido}
+            subtitle={[dates, event.venue_name].filter(Boolean).join(' · ') || undefined}
+          />
         )}
-        {event.category && (
-          <span className="absolute left-3 top-3 flex h-6 items-center rounded-[7px] bg-surface px-[9px] text-[12px] font-bold text-ink">
+        {hero && event.category && (
+          <span className="absolute left-3 top-3 z-10 flex h-6 items-center rounded-[7px] bg-surface px-[9px] text-[12px] font-bold text-ink">
             {event.category}
           </span>
         )}
@@ -223,7 +222,7 @@ export default function EventDetail() {
         </aside>
       </div>
 
-      <ReviewSection eventId={event.id} reviews={event.reviews ?? []} averageRating={event.average_rating} reviewCount={event.review_count} />
+      <ReviewSection eventId={event.id} eventTitle={event.title} reviews={event.reviews ?? []} averageRating={event.average_rating} reviewCount={event.review_count} />
       <div className="h-20" />
     </div>
   )
