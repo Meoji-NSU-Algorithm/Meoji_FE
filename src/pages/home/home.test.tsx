@@ -122,7 +122,7 @@ describe('KakaoCallback', () => {
     )
     setup('/auth/kakao/callback?code=abc', true)
     expect(screen.getByText('카카오 계정을 확인하고 있어요')).toBeInTheDocument()
-    expect(await screen.findByText('거의 다 됐어요!')).toBeInTheDocument()
+    expect(await screen.findByText(/약관에 동의해 주세요/)).toBeInTheDocument()
     expect(calls).toBe(1)
     tokenStorage.clear()
   })
@@ -137,7 +137,7 @@ describe('KakaoCallback', () => {
       http.get('*/api/users/me/consents', () => ok(consents(null))),
     )
     setup('/auth/kakao/callback?code=old')
-    expect(await screen.findByText('거의 다 됐어요!')).toBeInTheDocument()
+    expect(await screen.findByText(/약관에 동의해 주세요/)).toBeInTheDocument()
     tokenStorage.clear()
   })
 
@@ -148,7 +148,7 @@ describe('KakaoCallback', () => {
     )
     setup('/auth/kakao/callback?code=agreed')
     await waitFor(() => expect(screen.queryByText('카카오 계정을 확인하고 있어요')).not.toBeInTheDocument())
-    expect(screen.queryByText('거의 다 됐어요!')).not.toBeInTheDocument()
+    expect(screen.queryByText(/약관에 동의해 주세요/)).not.toBeInTheDocument()
     tokenStorage.clear()
   })
 
@@ -158,7 +158,7 @@ describe('KakaoCallback', () => {
       http.get('*/api/users/me/consents', () => fail(500, 'COMMON_INTERNAL_ERROR')),
     )
     setup('/auth/kakao/callback?code=failconsent')
-    expect(await screen.findByText('거의 다 됐어요!')).toBeInTheDocument()
+    expect(await screen.findByText(/약관에 동의해 주세요/)).toBeInTheDocument()
     tokenStorage.clear()
   })
 

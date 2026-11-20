@@ -97,14 +97,17 @@ export function inRegion(e: EventCard, label: string): boolean {
   return !!e.sido && !!r && r.aliases.includes(e.sido)
 }
 
+/** BE(Meoji_BE/app/domains/tour/sync_service.py TAG_KEYWORDS)가 만드는 태그 사전. BE와 항상 동기화할 것. */
+export const BE_TAG_DICTIONARY = ['불꽃놀이', '푸드트럭', '야간', '체험', '가족', '공연', '전시', '음악', '꽃', '먹거리'] as const
+
 /** 태그 기획전 (정적). 클릭 시 /events?tag= 로 이동 */
 export const TAG_PROMOS = [
   { tag: '푸드트럭', title: '먹으러 가는 축제', gradient: 'linear-gradient(155deg,#e8461c 8.5%,#f7a04b 91.5%)' },
-  { tag: '불꽃놀이', title: '하늘을 수놓는 밤', gradient: 'linear-gradient(155deg,#1c2147 8.5%,#5b3c8c 91.5%)' },
-  { tag: '야시장', title: '퇴근 후 야시장 산책', gradient: 'linear-gradient(155deg,#7a2257 8.5%,#e87a9a 91.5%)' },
-  { tag: '반려동물', title: '반려견과 함께 가요', gradient: 'linear-gradient(155deg,#2f5d34 8.5%,#b6d27a 91.5%)' },
-  { tag: '아이와함께', title: '주말 가족 나들이', gradient: 'linear-gradient(155deg,#2e6fd8 8.5%,#9cd3f5 91.5%)' },
-  { tag: '단풍', title: '지금 아니면 못 보는 가을', gradient: 'linear-gradient(155deg,#b9771a 8.5%,#f4cf6a 91.5%)' },
+  { tag: '체험', title: '직접 해 보는 체험', gradient: 'linear-gradient(155deg,#1c2147 8.5%,#5b3c8c 91.5%)' },
+  { tag: '야간', title: '퇴근 후 밤 나들이', gradient: 'linear-gradient(155deg,#7a2257 8.5%,#e87a9a 91.5%)' },
+  { tag: '음악', title: '음악이 흐르는 주말', gradient: 'linear-gradient(155deg,#2f5d34 8.5%,#b6d27a 91.5%)' },
+  { tag: '가족', title: '주말 가족 나들이', gradient: 'linear-gradient(155deg,#2e6fd8 8.5%,#9cd3f5 91.5%)' },
+  { tag: '꽃', title: '꽃 보러 가는 길', gradient: 'linear-gradient(155deg,#b9771a 8.5%,#f4cf6a 91.5%)' },
 ]
 
 /** 카테고리 스트립 항목. categoryName 은 BE categories 의 name 과 매칭해 category_id 링크를 만든다. */

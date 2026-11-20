@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Chip, SectionHeader, formatDateRange } from '../../components'
-import { PhotoIcon, CardHeartIcon } from '../../components/icons'
+import { CardHeartIcon } from '../../components/icons'
+import { PhotoPlaceholder } from '../../components/PhotoPlaceholder'
 import { useAuth } from '../../auth'
 import { useMonthlyTop } from '../../api/hooks'
 import type { EventCard } from '../../api/types'
@@ -66,7 +67,7 @@ export function LoginStrip() {
 }
 
 export function RegionSection({ events, state }: { events: EventCard[]; state: ListState }) {
-  const [region, setRegion] = useState('충남')
+  const [region, setRegion] = useState('전체')
   const filtered = useMemo(() => events.filter((e) => inRegion(e, region)).slice(0, 5), [events, region])
   return (
     <section className="pt-10" aria-label="지역별 행사">
@@ -83,7 +84,7 @@ export function RegionSection({ events, state }: { events: EventCard[]; state: L
         isError={state.isError}
         isEmpty={filtered.length === 0}
         onRetry={state.refetch}
-        emptyTitle={`${region} 지역의 행사가 아직 없어요`}
+        emptyTitle={region === '전체' ? '아직 등록된 행사가 없어요' : `${region} 지역의 행사가 아직 없어요`}
         emptyDescription="다른 지역을 선택해 보세요"
       >
         <div className={grid5}>
@@ -151,11 +152,8 @@ function FreeCard({ event }: { event: EventCard }) {
         {event.image_url ? (
           <img src={event.image_url} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-white/40" style={{ background: 'var(--gradient-festival)' }}>
-            <PhotoIcon />
-          </div>
+          <PhotoPlaceholder title={event.title} category={event.category} sido={event.sido} />
         )}
-        <span className="absolute bottom-[10px] left-[10px] rounded-md bg-ink/80 px-2 py-[2px] text-[12px] font-bold text-white">무료</span>
         <button
           type="button"
           aria-label={liked ? '찜 해제' : '찜하기'}
