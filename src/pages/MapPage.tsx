@@ -1,32 +1,48 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { useEvents } from '../api/hooks'
 import type { EventCard } from '../api/types'
 import { useAuth, useRequireLogin } from '../auth'
-import { Spinner, useToast } from '../components'
-import { PhotoIcon } from '../components/icons'
+import { PhotoPlaceholder, Spinner, formatDateRange, priceLabel, useToast } from '../components'
 import { loadKakaoMaps } from '../lib/kakaoMaps'
 import { FilterPanel } from './events/FilterPanel'
 import { LocateIcon, MinusIcon, PinBigIcon, PlusIcon, SearchBigIcon, WifiOffIcon } from './events/icons'
 import { outlineBtn, primaryBtn, StatePanel } from './events/StatePanel'
-import { formatPrice } from '../components'
 import { hasLoginFilters, useEventFilters } from './events/useEventFilters'
 import { PageTitleBar } from './events/ViewTabs'
 import { MapCanvas, type MapCanvasHandle } from './map/MapCanvas'
 import { markerLabel } from './map/mapFormat'
 import { useVenueCoords } from './map/useVenueCoords'
 
+function InfoIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden className="shrink-0">
+      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M8 7.2V11M8 5V5.1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 const MAP_SIZE = 100
 type Geo = 'idle' | 'loading' | 'granted' | 'denied'
 
-function Thumb({ e }: { e: EventCard }) {
-  return e.image_url ? (
-    <img src={e.image_url} alt="" loading="lazy" className="size-16 shrink-0 rounded-[10px] bg-surface-muted object-cover" />
-  ) : (
-    <span className="flex size-16 shrink-0 items-center justify-center rounded-[10px] bg-[#f3f0ee] text-ink-disabled">
-      <PhotoIcon size={22} />
+function Thumb({ e, size = 60 }: { e: EventCard; size?: number }) {
+  const box = 'relative shrink-0 overflow-hidden rounded-[10px] bg-surface-muted'
+  return (
+    <span className={box} style={{ width: size, height: size }}>
+      {e.image_url ? (
+        <img src={e.image_url} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
+      ) : (
+        <PhotoPlaceholder variant="thumb" title={e.title} category={e.category} />
+      )}
     </span>
   )
+}
+
+/** 목록·미리보기 보조 문구용: 무료/금액. 정보가 없으면 빈 문자열 */
+function priceText(e: EventCard) {
+  const p = priceLabel(e.price, e.is_free)
+  return p.tone === 'unknown' ? '' : p.text
 }
 
 export default function MapPage() {
@@ -34,6 +50,7 @@ export default function MapPage() {
   const { isLoggedIn, isLoading: authLoading } = useAuth()
   const requireLogin = useRequireLogin()
   const { params, patch } = useEventFilters()
+  const { search } = useLocation()
   const needsLogin = hasLoginFilters(params) && !isLoggedIn
 
   // SDK
@@ -64,6 +81,7 @@ export default function MapPage() {
   }, [needsLogin, authLoading, filterKey])
 
   const events = useMemo(() => query.data?.events ?? [], [query.data])
+  const overLimit = (query.data?.total_count ?? 0) > MAP_SIZE
   const { located, settled, unlocatedCount } = useVenueCoords(kakao, events)
   const points = useMemo(
     () => located.map(({ event, coord }) => ({ id: event.id, lat: coord.lat, lng: coord.lng, label: markerLabel(event) })),
@@ -78,6 +96,10 @@ export default function MapPage() {
   const visibleList = useMemo(
     () => (visibleIds ? located.filter((l) => visibleIds.includes(l.event.id)) : located),
     [located, visibleIds],
+  )
+  const selected = useMemo(
+    () => (selectedId == null ? null : (located.find((l) => l.event.id === selectedId)?.event ?? events.find((x) => x.id === selectedId) ?? null)),
+    [selectedId, located, events],
   )
   const select = useCallback(
     (id: number, pan: boolean) => {
@@ -138,9 +160,6 @@ export default function MapPage() {
       <div className="flex items-center justify-between pb-4 pt-[22px]">
         <p className="text-[14px] leading-[21px] text-ink" aria-live="polite">
           지도 영역 안 <b className="font-bold text-brand">{countText}</b>개 행사
-          {kakao && settled && unlocatedCount > 0 && (
-            <span className="pl-2 text-[12px] text-ink-subtle">위치를 찾지 못한 행사 {unlocatedCount}개는 지도에 표시되지 않아요</span>
-          )}
         </p>
       </div>
 
@@ -182,7 +201,7 @@ export default function MapPage() {
             <ul ref={listRef} className="flex flex-col">
               {listEvents.map((e) => {
                 const on = e.id === selectedId
-                const price = e.is_free ? '무료' : formatPrice(e.price)
+                const price = priceText(e)
                 return (
                   <li key={e.id} data-event-id={e.id}>
                     <button
@@ -200,11 +219,6 @@ export default function MapPage() {
                         </span>
                       </span>
                     </button>
-                    {on && (
-                      <Link to={`/events/${e.id}`} className="block px-[10px] pb-2 text-right text-[12px] font-bold text-primary-ink">
-                        상세 보기 ›
-                      </Link>
-                    )}
                   </li>
                 )
               })}
@@ -239,9 +253,57 @@ export default function MapPage() {
                 points={points}
                 selectedId={selectedId}
                 onSelect={(id) => select(id, false)}
+                onDeselect={() => setSelectedId(null)}
                 onVisibleChange={setVisibleIds}
                 fitKey={fitKey}
               />
+              {((settled && unlocatedCount > 0) || overLimit) && (
+                <div className="absolute left-[14px] top-[14px] z-10 flex max-w-[calc(100%-28px)] flex-col gap-[10px]">
+                  {settled && unlocatedCount > 0 && (
+                    <div
+                      data-testid="map-unlocated-notice"
+                      className="flex flex-wrap items-center gap-x-[10px] gap-y-1 rounded-[12px] bg-white/[0.96] px-[14px] py-[10px] text-[13px] text-ink shadow-[0_4px_14px_rgba(0,0,0,0.08)]"
+                    >
+                      <InfoIcon />
+                      <span>
+                        위치를 찾지 못한 행사 <b className="font-bold">{unlocatedCount}개</b>는 지도에 표시되지 않아요
+                      </span>
+                      <Link to={`/events${search}`} className="text-[12px] font-bold text-primary-ink underline">
+                        목록에서 보기
+                      </Link>
+                    </div>
+                  )}
+                  {overLimit && (
+                    <div
+                      data-testid="map-limit-notice"
+                      className="flex items-center gap-[10px] rounded-[12px] bg-white/[0.96] px-[14px] py-[10px] text-[13px] text-ink shadow-[0_4px_14px_rgba(0,0,0,0.08)]"
+                    >
+                      <InfoIcon />
+                      <span>
+                        행사가 많아 <b className="font-bold">{MAP_SIZE}개</b>까지만 보여요. 지도를 확대하거나 필터를 좁혀 보세요
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+              {selected && (
+                <div
+                  role="group"
+                  aria-label="선택한 행사 미리보기"
+                  className="absolute bottom-[26px] left-[14px] z-10 flex w-[324px] max-w-[calc(100%-80px)] gap-3 rounded-[14px] bg-white p-3 shadow-[0_8px_12px_rgba(0,0,0,0.16)]"
+                >
+                  <Thumb e={selected} size={64} />
+                  <div className="flex min-w-0 flex-col gap-[2px]">
+                    <p className="truncate text-[14px] font-bold text-ink">{selected.title}</p>
+                    <p className="truncate text-[12px] text-ink-muted">
+                      {[formatDateRange(selected.start_date, selected.end_date), priceText(selected)].filter(Boolean).join(' · ')}
+                    </p>
+                    <Link to={`/events/${selected.id}`} className="pt-1 text-[13px] font-bold text-primary-ink">
+                      상세 보기 ›
+                    </Link>
+                  </div>
+                </div>
+              )}
               <div className="absolute bottom-[26px] right-[14px] z-10 flex flex-col gap-[6px]">
                 {[
                   { label: '내 위치', Icon: LocateIcon, onClick: requestLocation },

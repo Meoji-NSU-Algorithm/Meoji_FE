@@ -16,17 +16,32 @@ export interface MapCanvasHandle {
 
 const CHEONAN = { lat: 36.8151, lng: 127.1139 }
 
-const BASE = 'relative cursor-pointer whitespace-nowrap rounded-pill px-3 h-[30px] flex items-center text-[12px] font-black leading-[18px] shadow-[0_2px_4px_rgba(0,0,0,0.16)] border-0 '
-const ON = BASE + 'bg-primary-ink text-white'
-const OFF = BASE + 'bg-white text-ink'
+const BASE =
+  'relative cursor-pointer whitespace-nowrap rounded-pill border-0 flex items-center font-bold leading-[normal] drop-shadow-[0_2px_4px_rgba(0,0,0,0.14)] '
+/** 일반 마커: 흰 알약. 무료는 초록 글씨 */
+const OFF = BASE + 'bg-white px-3 py-[6px] text-[12px] '
+/** 선택 마커: 진한 알약 + 아래 꼬리 */
+const ON = BASE + 'bg-[#2a2320] px-[14px] py-2 text-[13px] text-white '
 
 function makeMarker(label: string, selected: boolean, onClick: () => void) {
   const el = document.createElement('button')
   el.type = 'button'
-  el.className = selected ? ON : OFF
-  el.textContent = label
   el.addEventListener('click', onClick)
+  paintMarker(el, label, selected)
   return el
+}
+/** 라벨/선택 상태에 맞게 마커 모양을 바꾼다 */
+function paintMarker(el: HTMLElement, label: string, selected: boolean) {
+  const free = label === '무료'
+  el.className = selected ? ON : OFF + (free ? 'text-free' : 'text-ink')
+  el.dataset.selected = selected ? 'true' : 'false'
+  el.textContent = label
+  if (selected) {
+    const tail = document.createElement('span')
+    tail.setAttribute('aria-hidden', 'true')
+    tail.className = 'absolute left-1/2 top-full -mt-[5px] size-[10px] -translate-x-1/2 rotate-45 bg-[#2a2320]'
+    el.appendChild(tail)
+  }
 }
 
 interface Props {
@@ -34,6 +49,8 @@ interface Props {
   points: MapPoint[]
   selectedId: number | null
   onSelect: (id: number) => void
+  /** 지도 빈 곳을 눌렀을 때 */
+  onDeselect?: () => void
   /** 지도 영역(bounds) 안에 있는 마커 id */
   onVisibleChange: (ids: number[]) => void
   /** 이 값이 바뀌면 모든 마커가 보이도록 지도를 맞춘다 */
@@ -42,13 +59,13 @@ interface Props {
 }
 
 /** Kakao 지도 + 가격 라벨 마커(CustomOverlay). 데이터는 props로만 받는다. */
-export function MapCanvas({ kakao, points, selectedId, onSelect, onVisibleChange, fitKey, ref }: Props) {
+export function MapCanvas({ kakao, points, selectedId, onSelect, onDeselect, onVisibleChange, fitKey, ref }: Props) {
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<any>(null)
   const overlays = useRef(new Map<number, { overlay: any; el: HTMLElement }>())
   const mine = useRef<any>(null)
-  const latest = useRef({ points, onVisibleChange, onSelect })
-  latest.current = { points, onVisibleChange, onSelect }
+  const latest = useRef({ points, onVisibleChange, onSelect, onDeselect })
+  latest.current = { points, onVisibleChange, onSelect, onDeselect }
 
   const reportVisible = () => {
     const m = map.current
@@ -97,6 +114,7 @@ export function MapCanvas({ kakao, points, selectedId, onSelect, onVisibleChange
     })
     map.current = m
     kakao.maps.event.addListener(m, 'idle', reportVisible)
+    kakao.maps.event.addListener(m, 'click', () => latest.current.onDeselect?.())
     const store = overlays.current
     return () => {
       store.forEach(({ overlay }) => overlay.setMap(null))
@@ -123,7 +141,7 @@ export function MapCanvas({ kakao, points, selectedId, onSelect, onVisibleChange
     for (const p of points) {
       const cur = store.get(p.id)
       if (cur) {
-        cur.el.textContent = p.label
+        paintMarker(cur.el, p.label, cur.el.dataset.selected === 'true')
         continue
       }
       const el = makeMarker(p.label, false, () => latest.current.onSelect(p.id))
@@ -131,6 +149,7 @@ export function MapCanvas({ kakao, points, selectedId, onSelect, onVisibleChange
         position: new kakao.maps.LatLng(p.lat, p.lng),
         content: el,
         yAnchor: 1.4,
+        clickable: true,
       })
       overlay.setMap(m)
       store.set(p.id, { overlay, el })
@@ -143,7 +162,8 @@ export function MapCanvas({ kakao, points, selectedId, onSelect, onVisibleChange
   useEffect(() => {
     overlays.current.forEach(({ el, overlay }, id) => {
       const on = id === selectedId
-      el.className = on ? ON : OFF
+      const label = points.find((p) => p.id === id)?.label ?? ''
+      paintMarker(el, label, on)
       overlay.setZIndex(on ? 10 : 0)
     })
   }, [selectedId, points])
