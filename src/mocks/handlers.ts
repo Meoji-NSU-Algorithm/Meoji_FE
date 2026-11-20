@@ -27,6 +27,62 @@ export const eventCardFixture = (over: Record<string, unknown> = {}) => ({
   ...over,
 })
 
+/** BE EventDetailSchema(= EventCardSchema + 상세 필드 + reviews/review_count/average_rating). snake_case */
+export const eventDetailFixture = (over: Record<string, unknown> = {}) => ({
+  ...eventCardFixture(),
+  description: '소개',
+  address: '충남 천안시',
+  address_detail: null,
+  play_time: null,
+  fee_text: null,
+  organizer: null,
+  contact_phone: null,
+  homepage_url: null,
+  is_permanent: false,
+  reviews: [],
+  review_count: 0,
+  average_rating: 0,
+  ...over,
+})
+
+/** BE ReviewResponseSchema. snake_case, images 는 {key,url}, 시각은 UTC ISO 문자열 */
+export const reviewFixture = (over: Record<string, unknown> = {}) => ({
+  id: 1,
+  user_id: 1,
+  event_id: 1,
+  rating: 4.5,
+  content: '좋았어요',
+  author: { id: 1, nickname: '테스터', profile_image: null },
+  images: [],
+  created_at: '2026-11-20T01:00:00+00:00',
+  updated_at: '2026-11-20T01:00:00+00:00',
+  ...over,
+})
+
+/** BE BookmarkEventSchema. camelCase */
+export const bookmarkItemFixture = (over: Record<string, unknown> = {}) => ({
+  id: 1,
+  title: '테스트 행사',
+  imageUrl: null,
+  startDate: '2026-01-01',
+  endDate: '2026-12-31',
+  priceType: 'UNKNOWN',
+  ...over,
+})
+
+/** BE directions 응답. camelCase. path: car/walk 는 [[lat,lng]], transit 은 [{type,coordinates}] */
+export const directionsFixture = (over: Record<string, unknown> = {}) => ({
+  eventId: 1,
+  mode: 'car',
+  departureTime: '2026-11-20T09:00:00+09:00',
+  durationMinutes: 20,
+  distanceMeters: 12000,
+  arrivalTime: '2026-11-20T09:20:00+09:00',
+  path: [[36.8, 127.1], [36.81, 127.11]],
+  steps: [{ stepNumber: 1, type: 'DRIVE', instruction: '직진', durationMinutes: 20, distanceMeters: 12000, detail: null }],
+  ...over,
+})
+
 export const handlers = [
   http.get('*/api/events/categories', () => ok([{ id: 1, name: '공연', sort_order: 1 }])),
   http.get('*/api/users/me', () => ok({ id: 1, email: 'a@b.c', nickname: '테스터', profile_image: null })),
