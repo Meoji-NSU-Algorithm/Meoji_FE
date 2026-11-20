@@ -84,7 +84,7 @@ export default function EventList() {
     body = (
       <StatePanel
         icon={<SearchBigIcon />}
-        title={params.q ? `‘${params.q}’ 검색 결과가 없어요` : '조건에 맞는 행사가 없어요'}
+        title={params.q ? `‘${params.q}’ 검색 결과가 없어요` : params.tag ? `#${params.tag} 행사가 아직 없어요` : '조건에 맞는 행사가 없어요'}
         message="다른 키워드로 검색하거나 필터를 초기화해 보세요"
         action={
           <button type="button" className={outlineBtn} onClick={reset}>
@@ -122,6 +122,20 @@ export default function EventList() {
       <EventSearchBar value={params.q ?? ''} onSubmit={(q) => requireLogin(() => patch({ q: q || undefined }))} />
       <div className="pt-4">
         <FilterPanel params={params} onPatch={patch} />
+        {params.tag && (
+          <div className="flex items-center gap-2 pt-3">
+            <span className="text-[13px] text-ink-muted">태그</span>
+            <button
+              type="button"
+              data-testid="active-tag"
+              aria-label={`#${params.tag} 태그 해제`}
+              onClick={() => patch({ tag: undefined })}
+              className="inline-flex h-[30px] items-center gap-1 rounded-pill bg-brand px-3 text-[13px] font-bold text-white"
+            >
+              #{params.tag} <span aria-hidden="true">×</span>
+            </button>
+          </div>
+        )}
       </div>
 
       {data && !query.isError && !needsLogin && (

@@ -17,6 +17,8 @@ export function parseEventParams(sp: URLSearchParams): EventListParams {
   const p: EventListParams = {}
   const q = sp.get('q')?.trim()
   if (q) p.q = q
+  const tag = sp.get('tag')?.trim()
+  if (tag) p.tag = tag
   const cat = int(sp.get('category_id'), 1)
   if (cat !== undefined) p.category_id = cat
   const sido = sp.get('sido_code')?.trim()
@@ -41,6 +43,7 @@ export function parseEventParams(sp: URLSearchParams): EventListParams {
 export function hasLoginFilters(p: EventListParams): boolean {
   return (
     p.q !== undefined ||
+    p.tag !== undefined ||
     p.category_id !== undefined ||
     p.sido_code !== undefined ||
     p.is_free !== undefined ||

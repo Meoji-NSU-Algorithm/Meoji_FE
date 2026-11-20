@@ -222,3 +222,34 @@ describe('Calendar', () => {
     expect(await screen.findByText('로그인이 필요해요')).toBeInTheDocument()
   })
 })
+
+describe('태그 기획전 필터', () => {
+  it('URL의 tag를 읽고, 로그인이 필요한 필터로 본다', () => {
+    const p = parseEventParams(new URLSearchParams('tag= 야간 '))
+    expect(p).toEqual({ tag: '야간' })
+    expect(hasLoginFilters(p)).toBe(true)
+    expect(parseEventParams(new URLSearchParams('tag='))).toEqual({})
+  })
+
+  it('tag를 API 요청에 실어 보내고, 태그 칩을 누르면 필터를 해제한다', async () => {
+    const urls: string[] = []
+    server.use(
+      http.get('*/api/events', ({ request }) => {
+        urls.push(request.url)
+        return ok({ total_count: 1, page: 1, size: 12, events: [card(1)] })
+      }),
+    )
+    renderPage(<EventList />, '/events?tag=%EC%95%BC%EA%B0%84')
+    await screen.findByRole('link', { name: '행사1' })
+    expect(new URL(urls[urls.length - 1]).searchParams.get('tag')).toBe('야간')
+    await userEvent.click(screen.getByRole('button', { name: '#야간 태그 해제' }))
+    await waitFor(() => expect(new URL(urls[urls.length - 1]).searchParams.get('tag')).toBeNull())
+    expect(screen.queryByTestId('active-tag')).not.toBeInTheDocument()
+  })
+
+  it('태그 결과가 없으면 태그 이름으로 빈 상태를 보여준다', async () => {
+    server.use(http.get('*/api/events', () => ok({ total_count: 0, page: 1, size: 12, events: [] })))
+    renderPage(<EventList />, '/events?tag=%EA%BD%83')
+    expect(await screen.findByText('#꽃 행사가 아직 없어요')).toBeInTheDocument()
+  })
+})
