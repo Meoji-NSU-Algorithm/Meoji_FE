@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useLayoutEffect } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { tokenStorage } from '../auth'
@@ -10,7 +10,8 @@ export default function MyWithdrawDone() {
   const qc = useQueryClient()
 
   // 탈퇴 직후에만 로컬 토큰과 캐시를 정리한다(서버에서는 이미 탈퇴 처리됨).
-  useEffect(() => {
+  // 페인트 전에 지워서 헤더가 처음부터 로그아웃 상태로 보이게 한다.
+  useLayoutEffect(() => {
     if (!withdrawn) return
     tokenStorage.clear()
     qc.clear()
@@ -31,7 +32,7 @@ export default function MyWithdrawDone() {
           보고 싶은 행사가 생기면 언제든 다시 찾아와 주세요.
         </p>
         <p className="mt-5 w-full rounded-[12px] bg-surface-card px-4 py-3 text-center text-[12px] leading-[1.5] text-ink-subtle">
-          찜·리뷰·캘린더 정보가 모두 삭제됐고, 카카오 계정 연결도 해제됐어요.
+          찜한 행사와 작성한 리뷰가 모두 삭제됐고, 카카오 계정 연결도 해제됐어요.
         </p>
         <Link
           to="/"
