@@ -85,15 +85,41 @@ describe('Directions', () => {
       }),
     )
     renderPage()
-    expect(await screen.findByText('경로 안내')).toBeInTheDocument()
+    expect(await screen.findByTestId('route-summary')).toBeInTheDocument()
     expect(modes[0]).toBe('transit')
     const summary = screen.getByTestId('route-summary')
     expect(summary).toHaveTextContent('35분')
     expect(summary).toHaveTextContent('12.0km')
-    expect(summary).toHaveTextContent('09:35')
+    expect(summary).toHaveTextContent('오전 9:35')
     expect(screen.getAllByTestId('route-step')).toHaveLength(3)
     expect(screen.getByText('출발역 2번 출구')).toBeInTheDocument()
     expect(screen.getByText('교차로 · 좌회전')).toBeInTheDocument()
+  })
+
+  it('대중교통 단계를 파싱해 승차·하차 행으로 보여주고 도보는 눌러서 펼친다', async () => {
+    geo(true)
+    server.use(
+      http.get('*/api/events/1', () => ok(event)),
+      http.get('*/api/directions/1', () =>
+        ok(result('transit', {
+          steps: [
+            { stepNumber: 1, type: 'WALK', instruction: '정문에서 직진 → 우회전', durationMinutes: 4, distanceMeters: 280, detail: null },
+            { stepNumber: 2, type: 'BUS', instruction: '24번 버스 이용: 남서울대 승차 → 천안역 하차', durationMinutes: 12, distanceMeters: 5000, detail: '경유 정류장 정보 6개' },
+            { stepNumber: 3, type: 'SUBWAY', instruction: '지하철 1호선 탑승, 봉명역 하차 (신창 방면)', durationMinutes: 3, distanceMeters: 2000, detail: '도착역 2번 출구' },
+          ],
+        })),
+      ),
+    )
+    renderPage()
+    expect(await screen.findByText('남서울대 승차')).toBeInTheDocument()
+    expect(screen.getByText('버스 24')).toBeInTheDocument()
+    expect(screen.getByText('천안역 환승')).toBeInTheDocument()
+    expect(screen.getByText('봉명역 하차')).toBeInTheDocument()
+    expect(screen.getByText('신창 방면')).toBeInTheDocument()
+    expect(screen.queryByText('우회전')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '도보 상세 펼치기' }))
+    expect(screen.getByText('우회전')).toBeInTheDocument()
+    expect(screen.getByTestId('route-summary')).toHaveTextContent('환승 1회')
   })
 
   it('탭을 바꾸면 해당 mode 로 요청한다', async () => {
@@ -108,7 +134,7 @@ describe('Directions', () => {
       }),
     )
     renderPage()
-    await screen.findByText('경로 안내')
+    await screen.findByTestId('route-summary')
     await userEvent.click(screen.getByRole('tab', { name: /자동차/ }))
     await waitFor(() => expect(modes).toContain('car'))
     await waitFor(() => expect(screen.getByTestId('route-summary')).toHaveTextContent('20분'))
@@ -130,7 +156,7 @@ describe('Directions', () => {
       }),
     )
     renderPage()
-    await screen.findByText('경로 안내')
+    await screen.findByTestId('route-summary')
     expect(screen.queryByRole('button', { name: /단계 보기/ })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('tab', { name: /자동차/ }))
     const toggle = await screen.findByRole('button', { name: '전체 8단계 보기' })
@@ -179,9 +205,9 @@ describe('Directions', () => {
     )
     renderPage()
     const box = await screen.findByTestId('directions-error')
-    expect(box).toHaveTextContent('길찾기 서비스에 문제가 생겼어요')
+    expect(box).toHaveTextContent('길찾기 서버가 잠시 응답하지 않아요')
     await userEvent.click(screen.getByRole('button', { name: /다시 시도|재시도/ }))
-    expect(await screen.findByText('경로 안내')).toBeInTheDocument()
+    expect(await screen.findByTestId('route-summary')).toBeInTheDocument()
   })
 
   it('위치 권한이 없으면 출발지 선택(D2)이 열린다', async () => {

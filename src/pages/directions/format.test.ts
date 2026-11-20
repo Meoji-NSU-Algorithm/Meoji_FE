@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DirectionsStep } from '../../api/types'
-import { compactSteps } from './format'
+import { compactSteps, formatKstClock } from './format'
 
 const st = (n: number, instruction: string, d: number | null, t: number | null, type = 'DRIVE'): DirectionsStep => ({
   stepNumber: n, type, instruction, distanceMeters: d, durationMinutes: t, detail: null,
@@ -27,5 +27,21 @@ describe('compactSteps', () => {
     const a = [st(1, '직진', 100, 1), st(2, '직진', 50, 1)]
     compactSteps(a)
     expect(a[0].distanceMeters).toBe(100)
+  })
+})
+
+describe('formatKstClock', () => {
+  it('오전/오후 12시간제로 바꾼다', () => {
+    expect(formatKstClock('2026-11-06T17:15:00+09:00')).toBe('오후 5:15')
+    expect(formatKstClock('2026-11-06T09:05:00+09:00')).toBe('오전 9:05')
+    expect(formatKstClock('2026-11-06T00:10:00+09:00')).toBe('오전 12:10')
+    expect(formatKstClock('2026-11-06T12:00:00+09:00')).toBe('오후 12:00')
+  })
+  it('분을 더하고 yyyyMMddHHmm 도 읽는다', () => {
+    expect(formatKstClock('202611061715', 27)).toBe('오후 5:42')
+  })
+  it('해석 불가면 null', () => {
+    expect(formatKstClock(null)).toBeNull()
+    expect(formatKstClock('nope')).toBeNull()
   })
 })

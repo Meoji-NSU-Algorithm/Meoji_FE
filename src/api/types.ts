@@ -180,6 +180,12 @@ export interface DirectionsQuery {
   originLng: number
   mode?: DirectionsMode
 }
+/** 자동차·도보는 [lat,lng] 배열, 대중교통은 구간(type, coordinates)별 배열로 온다. */
+export type DirectionsPathPoint = [number, number]
+export interface DirectionsPathSegment {
+  type: DirectionsStepType | string
+  coordinates: DirectionsPathPoint[]
+}
 export interface DirectionsResult {
   eventId: number
   mode: DirectionsMode
@@ -187,5 +193,6 @@ export interface DirectionsResult {
   durationMinutes: number
   distanceMeters: number
   arrivalTime: string | null
+  path?: DirectionsPathPoint[] | DirectionsPathSegment[] | null
   steps: DirectionsStep[]
 }

@@ -59,3 +59,25 @@ export function compactSteps(steps: DirectionsStep[]): DirectionsStep[] {
   }
   return out.map((s, i) => ({ ...s, stepNumber: i + 1 }))
 }
+
+function parseKst(value: string | null | undefined): Date | null {
+  if (!value) return null
+  if (/^\d{12,14}$/.test(value)) {
+    const v = value
+    const d = new Date(`${v.slice(0, 4)}-${v.slice(4, 6)}-${v.slice(6, 8)}T${v.slice(8, 10)}:${v.slice(10, 12)}:00+09:00`)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+  const d = new Date(value)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+/** KST 기준 '오후 5:15' 형식. addMinutes 로 이후 시각도 만든다. 해석 불가면 null. */
+export function formatKstClock(value: string | null | undefined, addMinutes = 0): string | null {
+  const d = parseKst(value)
+  if (!d) return null
+  const t = new Date(d.getTime() + addMinutes * 60_000)
+  const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).formatToParts(t)
+  const h = Number(parts.find((p) => p.type === 'hour')?.value ?? 0)
+  const m = parts.find((p) => p.type === 'minute')?.value ?? '00'
+  return `${h < 12 ? '오전' : '오후'} ${h % 12 === 0 ? 12 : h % 12}:${m}`
+}
