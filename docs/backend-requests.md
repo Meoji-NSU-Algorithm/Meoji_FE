@@ -1,144 +1,70 @@
 # 백엔드 요청 사항
 
-대상: 최종 프로젝트 발표용 MVP (feature/integration-mvp). 통합 테스트(2026-11-09)에서 확인한 항목 중 FE만으로 해결할 수 없는 4건이다.
+갱신: 2026-11-21. 대상: 최종 프로젝트 발표용 MVP. MVP 기준. 화면을 막거나 서비스가 동작하지 않는 치명적 항목만 요청한다. 나머지는 맨 아래 참고 표에 한 줄로 둔다.
 
-각 항목은 FE가 기대하는 기능과 응답 명세다. 구현 방식은 백엔드의 현재 코드 스타일에 맞춰 정하면 된다. "참고 구현"은 롤백 전 코드 위치이며 참고용이다.
+FE가 이미 우회한 것(필드명 camelCase/snake_case 혼재, 북마크 응답에 `is_bookmarked` 없음 등)은 적지 않는다. 아래 내용은 2026-11-20·21 QA에서 로컬 BE+MySQL 대상으로 확인했다 (`docs/qa-report-2026-11-20.md` F1~F8, `docs/qa-report-2026-11-21.md`). 응답은 공통 형식(`{success, data}` / `{success:false, code, message}`)을 따르고, FE는 `code` 로 화면 상태와 문구를 정한다 (`src/api/errors.ts`).
 
-공통: 응답은 기존 공통 형식(`{success, data}` / `{success:false, code, message}`)을 따른다. FE는 `code` 로 화면 상태와 문구를 정한다 (`src/api/errors.ts`).
+## 해결된 항목
 
-## 요청 목록
+해결 표의 `구 B*` 는 번호를 다시 매기기 전의 옛 번호다.
+
+| 항목 | 해결일 | 한 줄 메모 |
+|---|---|---|
+| 길찾기 API `GET /api/directions/:eventId` | 2026-11-18 | BE #65·#69. 자동차 200. 도보·대중교통은 2026-11-21에 해결 (구 B3 행) |
+| `GET /api/reviews/my` 항목에 `event` 정보 | 2026-11-18 | BE #64 |
+| 행사 목록·월간 인기 카드의 `average_rating`, `review_count` | 2026-11-18 | BE #66 |
+| 리뷰 이미지 key 검증 | 2026-11-18 | BE #66. 업로드 API를 없애고 multipart로 받는 방식으로 해결. FE는 2026-11-18에 대응 |
+| 구 B1 개발 DB 마이그레이션 | 2026-11-21 | QA 확인: DB 리비전 `371612cb106c` 가 코드 head 와 일치 |
+| 구 B3 도보·대중교통 길찾기 502 | 2026-11-21 | QA 확인: 자동차·도보·대중교통 모두 200, ODsay 정상 |
+| 구 B5 `GET /api/events/sidos` 공개 | 2026-11-21 | QA 확인: 토큰 없이 200. 단 이 변경은 BE 에서 아직 커밋되지 않은 상태 |
+| 구 B9 행사 상세 `GET /api/events/:id` 500 | 2026-11-21 | 데코레이터 순서를 사용자가 되돌려 해결. BE 미커밋 상태 |
+
+## 미해결 요청 목록
 
 | # | 우선순위 | 요청 |
 |---|---|---|
-| 1 | P1 | 길찾기 API `GET /api/directions/:eventId` |
-| 2 | P1 | `GET /api/reviews/my` 항목에 `event` 정보 포함 |
-| 3 | P1 | 행사 목록·월간 인기 카드에 `average_rating`, `review_count` 포함 |
-| 4 | P2 | 리뷰 작성·수정 시 이미지 key 검증 |
+| B1 | P1 | CORS 헤더 설정 또는 같은 출처 프록시 (구 B2) |
+| B2 | P2 | 대중교통 `path` 에서 시외 이동 구간(`OTHER`) 좌표 누락 — 경로선이 중간에 끊김 |
+| B3 | P1 | 태그가 단어 일부에도 붙어 잘못 분류됨 ('꽃'에 불꽃축제) (구 B10) |
 
-## 처리 현황 (2026-11-18 갱신)
+### B1. [P1] CORS 헤더 없음 (구 B2)
 
-BE `develop` 22e8e8f 기준으로 다시 확인했다. 위 4건은 모두 BE에서 처리됐다.
+- **요청**: flask-cors 또는 같은 출처 리버스 프록시(Caddy 등) 중 하나를 정해 적용한다. CORS 로 가면 `Authorization` 헤더와 `multipart/form-data` 요청을 허용해야 한다.
+- **현재 동작**: Origin `http://localhost:5174` 로 확인했을 때 preflight(OPTIONS)와 일반 GET 모두 `Access-Control-*` 헤더가 없다. 배포 브랜치(`chore/deploy-caddy` 등)에도 없다.
+- **영향**: 지금은 FE의 same-origin 프록시로만 동작한다. FE와 BE를 다른 출처로 배포하면 모든 호출이 막힌다. 배포 전 필수.
+- **우선순위**: P1
 
-| # | 상태 | BE PR | 확인 결과 |
-|---|---|---|---|
-| 1 | 처리됨 (일부 외부 설정 남음) | #65, #69 | 자동차 200. 도보·대중교통은 ODsay 키가 서버 IP에 묶여 있어 IP 등록 전에는 502 (코드 문제 아님) |
-| 2 | 처리됨 | #64 | `event`(`id`, `title`, `image_url`, `end_date`) 포함 확인 |
-| 3 | 처리됨 | #66 | 목록·월간 인기 카드에 `average_rating`, `review_count` 포함 확인 (리뷰 없으면 0.0, 0) |
-| 4 | **방식이 바뀌어 처리됨** | #66 | 아래 4번 참고. 409/400 코드가 아니라 업로드 API 제거로 막는다. FE도 이에 맞춰 수정 |
+### B2. [P2] 대중교통 `path` 에 시외 이동 구간(`OTHER`)이 빠져 경로선이 끊김
 
-### 새로 알게 된 요청
+- **요청**: `build_transit_path` (`app/domains/directions/transit_service.py:133`)가 `trafficType` 1·2·3 만 남기고 나머지 구간을 버린다. 시외 열차·고속버스·항공 같은 구간이 `steps` 에는 `OTHER` 로 있는데 `path` 에는 없다. 해당 구간을 `path` 에도 포함하거나(ODsay가 좌표를 주면 그 좌표, 없으면 이전 구간 끝점과 다음 구간 시작점을 잇는 두 점 구간, type 은 `OTHER` 등), 구간 좌표를 어떻게 줄 수 있는지 알려 달라.
+- **현재 동작** (2026-11-21, 로컬 BE, 출발지 서울시청): 장거리 행사에서 `steps` 는 `[WALK, SUBWAY, WALK, OTHER, WALK, ...]` 인데 `path` 구간에는 `OTHER` 가 없다. 이어지는 두 구간이 멀리 떨어져 있다. 영월 127 km, 전주 188 km, 부산 329 km, 제주 451 km. 서울 가까운 행사(720)는 끊기지 않는다.
+- **영향**: 장거리 대중교통에서 지도의 경로선이 출발 도시에서 멈추고 다음 선은 도착 도시에서 시작한다. FE는 2026-11-21에 이런 간격을 직선 점선으로 이어서 선이 끊겨 보이지 않게 우회했다. 다만 실제 철도·도로 경로가 아니라 직선이다.
+- **우선순위**: P2 (FE 우회로 화면은 막히지 않는다)
 
-| # | 우선순위 | 요청 | 비고 |
-|---|---|---|---|
-| 5 | P2 | 프로필 수정 API (예: `PATCH /api/users/me`) | 디자인 E3·E5~E7에 "프로필 편집", 사진 변경, 저장 알림이 있는데 BE에 수정 API가 없어서 FE는 "프로필 보기"(읽기 전용)만 제공한다 |
-| 6 | P3 | 깨진 PNG(CRC 손상) 업로드를 400 `REVIEW_IMAGE_INVALID`로 처리 | 지금은 500 `COMMON_INTERNAL_ERROR`. Pillow의 `verify()`가 `SyntaxError`를 던지는데 잡지 않음. 정상 사진에는 영향 없음 |
-| 7 | 보류 | 행사 목록의 지도 영역 조회 (`has_coords`, `min_lat`·`max_lat`·`min_lng`·`max_lng`), 카드 `tags` | BE 이슈 #45. 지금 FE 지도는 목록 첫 100건만 받아서, 공연이 약 2,900건 쌓이면 일부만 보일 수 있다 |
+### B3. [P1] 태그가 단어 일부에도 붙어 잘못 분류됨 (구 B10)
 
-### 1. [P1] 길찾기 API `GET /api/directions/:eventId`
-
-> **처리됨 (2026-11-18).** BE #65, #69. 자동차는 정상, 도보·대중교통은 ODsay 서버 IP 등록 필요. 응답에 FE 타입에 없는 `path`(경로 좌표)가 추가로 오지만 FE는 아직 쓰지 않는다. 아래 "현재 동작"은 처리 전 상태다.
-
-- **요청**: 행사 위치까지의 경로(자동차·대중교통·도보 중 하나)를 반환하는 API가 필요하다.
-- **기대 명세**
-  - 인증: JWT 필요 (없으면 401). FE는 로그인 상태에서만 호출한다.
-  - 쿼리
-    - `originLat`: number, 필수, -90~90
-    - `originLng`: number, 필수, -180~180
-    - `mode`: `car` | `transit` | `walk`, 생략 시 `transit`
-  - 응답 `data` (camelCase, `src/api/types.ts` 의 `DirectionsResult`)
-    - `eventId`: int
-    - `mode`: `car` | `transit` | `walk`
-    - `departureTime`: string | null
-    - `arrivalTime`: string | null
-    - `durationMinutes`: number
-    - `distanceMeters`: number
-    - `steps`: 배열
-      - `stepNumber`: int
-      - `type`: `SUBWAY` | `BUS` | `WALK` | `DRIVE` | `OTHER` (그 외 문자열도 허용)
-      - `instruction`: string
-      - `durationMinutes`: number | null
-      - `distanceMeters`: number | null
-      - `detail`: string | object | null
-  - 상태 코드·에러 코드 (FE가 이미 처리)
-    - 200 성공
-    - 400 `COMMON_INVALID_INPUT`: 쿼리 값 오류
-    - 404 `EVENT_NOT_FOUND`: 행사 없음. FE는 '행사를 찾을 수 없어요' 화면을 띄운다.
-    - 404 `ROUTE_NOT_FOUND`: 경로 없음. FE는 '경로 없음' 상태를 띄운다.
-    - 502 `DIRECTIONS_API_ERROR`, 504 `DIRECTIONS_API_TIMEOUT`, 500 `DIRECTIONS_API_KEY_MISSING`: 외부 길찾기 서비스 오류. FE는 재시도 문구를 띄운다.
-- **현재 동작**: `GET /api/directions/1?originLat=37.5&originLng=127.0&mode=car` → `404 COMMON_NOT_FOUND` (라우트 없음).
-- **영향 화면**: `/events/:id/directions` (Figma D1·D2·D3). 항상 오류 상태로 표시된다.
-- **참고 구현**: PR #21 (`9f280b8`), 롤백 전 `235c500` 의 `app/domains/directions/` (`routes.py`, `schemas.py`).
-- **우선순위**: P1 (발표 전 필요)
-
-### 2. [P1] `GET /api/reviews/my` 항목에 `event` 정보 포함
-
-> **처리됨 (2026-11-18).** BE #64. 아래 "현재 동작"은 처리 전 상태다.
-
-- **요청**: 내 리뷰 목록의 각 항목에 리뷰가 달린 행사의 요약 정보를 포함한다.
-- **기대 명세**
-  - 기존 리뷰 필드에 `event` 객체를 추가한다 (`src/api/types.ts` 의 `MyReview.event`).
-    - `event.id`: int
-    - `event.title`: string
-    - `event.image_url`: string | null
-    - `event.end_date`: `'YYYY-MM-DD'` | null
-  - 상태 코드: 200 (인증 없으면 401, 기존과 같음)
-- **현재 동작**: 항목에 `event` 키가 없다. 실제 키는 `author, content, created_at, event_id, id, images, rating, updated_at, user_id` 이다.
-- **영향 화면**: `/my/reviews` (Figma E3)
-  - 모든 리뷰가 제목 '삭제되었거나 볼 수 없는 행사'와 그라데이션 썸네일로 표시된다 (`src/pages/MyReviews.tsx:28`).
-  - `end_date` 가 없어 '종료된 행사' 칩이 표시되지 않는다 (`src/pages/MyReviews.tsx:29`).
-- **참고 구현**: 롤백 전 `235c500` 의 `app/domains/reviews/service.py:364`.
-- **우선순위**: P1 (발표 전 필요)
-
-### 3. [P1] 행사 목록·월간 인기 카드에 `average_rating`, `review_count` 포함
-
-> **처리됨 (2026-11-18).** BE #66. 아래 "현재 동작"은 처리 전 상태다.
-
-- **요청**: 카드 응답에 평균 평점과 리뷰 수를 포함한다. 의미는 `GET /api/events/:id` 의 같은 필드와 같다.
-- **기대 명세**
-  - 대상: `GET /api/events` 의 `events[]`, `GET /api/events/monthly-top` 의 카드 항목
-  - `average_rating`: number, 소수 첫째 자리. 리뷰가 없으면 `0.0`
-  - `review_count`: int. 리뷰가 없으면 `0`
-  - 상태 코드: 기존과 같음 (200)
-- **현재 동작**: 두 응답 모두 카드에 해당 필드가 없다.
-- **영향 화면**: FE는 값이 오면 카드에 '★ 4.7 (128)'을 자동으로 표시한다 (`src/components/EventCard.tsx:59`). 현재는 숨겨진다.
-  - 홈 (Figma A1, 로그인 후 A8): '이번 달 인기 행사'(monthly-top), 지역·다가오는 행사·주말 섹션 카드(`/events`)
-  - 행사 목록 `/events` (Figma B1) 카드
-  - 제외: 캘린더(B3)와 찜 목록 카드는 `/bookmarks` 응답을 쓰므로 이 요청 대상이 아니다. 지도(B4)와 홈의 무료 카드는 평점을 표시하지 않는다.
-- **참고 구현**: 커밋 `417deca`, 롤백 전 `235c500` 의 `app/domains/events/schemas.py:148`.
-- **우선순위**: P1 (Figma 카드 디자인에 평점 표시가 있다)
-
-### 4. [P2] 리뷰 작성·수정 시 이미지 key 검증
-
-> **방식이 바뀌어 처리됨 (2026-11-18).** BE #66은 409/400 코드와 업로드 기록 테이블 대신 **업로드 API(`POST /api/reviews/images`)를 없애는 방식**으로 막았다.
-> - 리뷰 작성·수정 요청이 `multipart/form-data`(`data`: 본문 JSON, `images`: 사진 파일, 최대 5장)로 사진을 같이 받는다. 사진이 없으면 JSON이다.
-> - 서버가 key를 직접 만들므로 클라이언트는 새 key를 보낼 수 없다. 작성 요청의 `images`(key)는 `Unknown field`로 400이다.
-> - 수정 요청의 `images`는 "남길 기존 key"이고, 그 리뷰에 원래 있던 key만 허용한다(아니면 400 `COMMON_INVALID_INPUT`). 거부되면 다른 필드도 바뀌지 않는다.
-> - 그래서 아래 409 `REVIEW_IMAGE_ALREADY_ATTACHED`, 400 `REVIEW_IMAGE_NOT_UPLOADED`는 더 이상 오지 않는다. FE는 이 문구와 관련 코드를 지웠다 (FE `fix/review-photos-hyunjin`).
-> - 아래 "현재 동작"과 "영향"은 처리 전 상태다.
-
-- **요청**: `POST /api/reviews`, `PUT /api/reviews/:id` 의 `images` 에는 요청한 사용자가 직접 업로드했고 다른 리뷰에 붙지 않은 key만 허용한다.
-- **기대 명세** (FE가 이미 처리하는 에러 코드)
-  - 409 `REVIEW_IMAGE_ALREADY_ATTACHED`: 다른 리뷰에 이미 붙은 key. FE 문구: '다른 리뷰에 쓰인 이미지는 사용할 수 없어요.'
-  - 400 `REVIEW_IMAGE_NOT_UPLOADED`: 본인이 업로드하지 않았거나 업로드 기록이 만료된 key. FE는 사진을 다시 올리라고 안내한다.
-  - 거부 시 리뷰의 다른 필드도 바뀌지 않아야 한다.
-- **현재 동작**: 다른 사용자의 리뷰 이미지 key(리뷰 조회 응답의 `images` 에 노출됨)를 내 리뷰 `images` 에 넣으면 201로 성공한다 (통합 테스트에서 확인).
-- **영향**: 그 상태로 내 리뷰를 수정해 이미지를 빼거나 리뷰를 삭제하면 `app/domains/reviews/service.py` 가 `delete_review_images` 로 저장소 원본을 지운다 (현재 `develop` 기준 166·188행). 원래 작성자의 리뷰 사진이 깨진다.
-  - FE 정상 UI는 남의 key를 보내지 않으므로 발표 시연을 막지는 않는다. 직접 API를 호출하면 재현되는 보안 문제다.
-- **참고 구현**: 커밋 `afb1731` '리뷰 이미지 key 도용 차단과 업로드 검증 보완' (PR #28/#39).
-- **우선순위**: P2
-
-## 배포 참고
-
-요청이 아니라 배포할 때 확인할 내용이다.
-
-- **CORS**: 배포 시 직접 설정할 예정이다.
-- **이미지 HTTPS**
-  - 현재 `S3_PUBLIC_URL` 은 평문 HTTP 자체 호스팅 주소다. 로컬(`http://localhost`)에서는 문제가 없다.
-  - FE를 https로 서비스하면 브라우저가 http 이미지를 mixed content로 차단한다.
-  - AWS S3를 쓰면 `S3_PUBLIC_URL` 을 `https://<bucket>.s3.<region>.amazonaws.com` 또는 CloudFront 주소로 설정하고 공개 읽기를 허용한다.
-  - FE를 S3 정적 웹사이트 호스팅(http만 지원)으로 올리면서 https가 필요하면 CloudFront를 앞에 둔다.
-- **카카오 리다이렉트 URI**: FE `.env` 의 `VITE_KAKAO_REDIRECT_URI`, BE `.env`, 카카오 콘솔 설정이 글자 단위로 일치해야 한다.
+- **요청**: 태그를 붙이는 규칙(`app/domains/tour/sync_service.py:391`, `name in description`)을 단어 단위로 고친다. 예: '꽃' 앞에 '불'이 오면 제외하거나, 태그별 동의어·제외어 목록을 둔다. 그 뒤 이미 저장된 행사의 태그를 다시 붙인다(재태깅). 정확한 방식은 BE가 정한다.
+- **현재 동작**: 소개글에 사전 단어가 글자 그대로 들어 있기만 하면 태그가 붙는다. 그래서 '꽃' 태그에 불꽃축제·불빛축제·사진전이 들어간다. 반대로 '불꽃놀이' 태그는 소개글이 '불꽃축제'·'불꽃쇼'로 쓰여 있어 0건이다. 2026-11-21 개발 DB 기준 태그별 건수: 푸드트럭 1, 불꽃놀이 0, 야간 7, 음악 3, 가족 11, 꽃 3.
+- **영향**: Figma **A1 홈 '태그로 찾는 기획전'**(408:1115). 카드를 누르면 다른 주제의 행사가 섞여 나온다. FE는 `/api/events?tag=` 결과를 그대로 보여 주므로 FE에서 고칠 수 없다.
+- **우선순위**: P1
 
 ## 참고 (요청 아님)
 
+MVP 기준으로 요청하지 않는 항목이다.
+
+| 기존 ID | 한 줄 내용 | Figma 화면 |
+|---|---|---|
+| 구 B4 | 길찾기 응답 구조화 (path 형태 통일, 대중교통 단계 객체화, turnType, 합계 필드). FE가 문자열 파싱 등으로 우회 중 | 2차 A2 D1 길찾기 펼침형 경로 안내(586:2), A3 자동차·도보(587:2) — 시안의 '천안역 승차', '천안역 방면', '6개 정류장 이동', '1개 역 이동', 회전 화살표 |
+| 구 B6 | 프로필 수정 API `PATCH /api/users/me`. 디자인이 '추가 예정'이라 했고 FE는 읽기 전용 프로필만 제공 | E5 프로필 편집(434:2), E6 사진 변경(435:2), E7 저장 알림(436:2), E1 '프로필 편집' 버튼 |
+| 구 B7 | 깨진 PNG(CRC 손상) 업로드가 500. 400 `REVIEW_IMAGE_INVALID` 이 맞지만 정상 사진에는 영향 없어 치명적이지 않다고 판단 | C1·C3 리뷰 사진 첨부 (오류 상태) |
+| 구 B8 | 지도 영역 조회(`min_lat` 등). 카드 `tags` 는 필요 없으므로 목록 응답에 `tags` 를 요청하지 않는다 | B4 지도(419:2), 2차 A5 지도(589:2) — 앞 100건만 표시 |
+
+## 배포 참고 (요청 아님)
+
+- **이미지 URL**: BE `.env` 의 `S3_ENDPOINT` 가 원격 R2 를 가리키고 `S3_PUBLIC_URL` 이 비어 있으면 `images[].url` 이 1시간짜리 presigned URL 이거나 null 이 된다. 공개 URL 설정을 확인한다. 이 환경에서는 정상 이미지 업로드(PNG/JPG/WEBP)를 원격 버킷에 쓰지 않아 검증하지 못했다.
+- **이미지 HTTPS**: `S3_PUBLIC_URL` 이 평문 HTTP 이면 FE를 https로 서비스할 때 브라우저가 mixed content로 차단한다. AWS S3는 `https://<bucket>.s3.<region>.amazonaws.com` 또는 CloudFront 주소로 설정하고 공개 읽기를 허용한다. FE를 S3 정적 웹사이트 호스팅(http만 지원)으로 올리면서 https가 필요하면 CloudFront를 앞에 둔다.
+- **카카오 리다이렉트 URI**: FE `.env` 의 `VITE_KAKAO_REDIRECT_URI`, BE `.env`, 카카오 콘솔 설정이 글자 단위로 일치해야 한다.
+- **ODsay**: 로컬에서 도보·대중교통이 정상 동작한다 (2026-11-21). 배포 서버 IP를 ODsay 콘솔에 등록해야 한다.
+- **KOPIS**: 2026-11-21 User-Agent 수정 반영 (BE 커밋 `b0e8880`, 브라우저 User-Agent 추가). 수집 재개 여부는 미확인이다. 개발 DB 에는 KOPIS 행사 586건이 있다 (전체 720건 중, QA 읽기 전용 집계). 발표 전에 수집된 데이터 양을 확인한다.
+- **`/events/sidos` 공개 변경**: 로그인 전 시·도 통계용 변경이 BE에서 아직 커밋되지 않았다. 커밋이 필요하다.
 - 카카오 실제 로그인 플로우는 아직 검증하지 못했다.
