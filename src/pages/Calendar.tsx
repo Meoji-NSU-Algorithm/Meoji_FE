@@ -192,7 +192,7 @@ export default function Calendar() {
                   <li key={e.id}>
                     <EventCard
                       event={toCardData(e)}
-                      variant="small"
+                      variant="bookmark"
                       href={`/events/${e.id}`}
                       onClick={() => navigate(`/events/${e.id}`)}
                       liked={isLiked(e.id)}

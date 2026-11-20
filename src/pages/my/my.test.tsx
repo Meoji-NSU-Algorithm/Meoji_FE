@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -37,7 +37,7 @@ vi.mock('../../api/hooks', () => ({
   useToggleBookmark: () => ({ mutate: hooks.toggle }),
   useEvent: hooks.useEvent,
   useUpdateReview: () => ({ mutate: hooks.updateReview, isError: false, isPending: false }),
-  useDeleteReview: () => ({ mutate: hooks.deleteReview, isError: false, isPending: false }),
+  useDeleteReview: () => ({ mutate: hooks.deleteReview, reset: vi.fn(), isError: false, isPending: false }),
   useUpdateProfile: () => ({ mutate: hooks.updateProfile, isError: false, isPending: false }),
 }))
 
@@ -93,6 +93,27 @@ describe('MyBookmarks', () => {
       expect.anything(),
     )
   })
+  it('해제하면 되돌리기 토스트가 뜨고, 누르면 다시 찜한다', async () => {
+    hooks.bookmarks = list(item(2, '먼저 행사', '2026-11-01'))
+    hooks.toggle.mockImplementation((_v: unknown, o: { onSuccess: () => void }) => o.onSuccess())
+    wrap(<MyBookmarks />)
+    await userEvent.click(screen.getByRole('button', { name: '찜 해제' }))
+    expect(screen.getByText('찜을 해제했어요')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '되돌리기' }))
+    expect(hooks.toggle).toHaveBeenLastCalledWith(
+      expect.objectContaining({ bookmarked: false, event: expect.objectContaining({ id: 2 }) }),
+      expect.anything(),
+    )
+  })
+  it('해제에 실패하면 다시 시도 토스트를 보여준다', async () => {
+    hooks.bookmarks = list(item(2, '먼저 행사', '2026-11-01'))
+    hooks.toggle.mockImplementation((_v: unknown, o: { onError: () => void }) => o.onError())
+    wrap(<MyBookmarks />)
+    await userEvent.click(screen.getByRole('button', { name: '찜 해제' }))
+    expect(screen.getByText('찜을 해제하지 못했어요. 잠시 후 다시 시도해 주세요')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '다시 시도' }))
+    expect(hooks.toggle).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('MyReviews', () => {
@@ -123,7 +144,7 @@ describe('MyReviews', () => {
     await userEvent.click(screen.getByRole('button', { name: '수정' }))
     const textarea = screen.getByLabelText('리뷰 내용')
     await userEvent.clear(textarea)
-    const save = screen.getByRole('button', { name: '저장' })
+    const save = screen.getByRole('button', { name: '수정 완료' })
     expect(save).toBeDisabled()
     await userEvent.type(textarea, '다시 씀')
     expect(save).toBeEnabled()
@@ -137,8 +158,44 @@ describe('MyReviews', () => {
     hooks.reviews = [review]
     wrap(<MyReviews />)
     await userEvent.click(screen.getByRole('button', { name: '삭제' }))
-    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '삭제' }))
+    await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: '삭제하기' }))
     expect(hooks.deleteReview).toHaveBeenCalledWith({ id: 7, eventId: 3 }, expect.anything())
+  })
+})
+
+describe('MyReviews 삭제 모달', () => {
+  const review = {
+    id: 7, user_id: 1, event_id: 3, rating: 4.5, content: '좋았어요', created_at: '2026-10-23T01:00:00', updated_at: '',
+    author: { id: 1, nickname: '안민영', profile_image: null }, images: [],
+    event: { id: 3, title: '천안 축제', image_url: null, end_date: '2999-01-01' },
+  }
+  it('바깥을 누르면 삭제하지 않고 닫는다', async () => {
+    hooks.reviews = [review]
+    wrap(<MyReviews />)
+    await userEvent.click(screen.getByRole('button', { name: '삭제' }))
+    const dialog = screen.getByRole('dialog', { name: '리뷰 삭제 확인' })
+    expect(within(dialog).getByText('삭제한 리뷰와 사진은 다시 복구할 수 없어요.')).toBeInTheDocument()
+    fireEvent.mouseDown(dialog.parentElement!)
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    expect(hooks.deleteReview).not.toHaveBeenCalled()
+  })
+  it('삭제하면 토스트를 보여주고 모달을 닫는다', async () => {
+    hooks.reviews = [review]
+    hooks.deleteReview.mockImplementation((_v: unknown, o: { onSuccess: () => void }) => o.onSuccess())
+    wrap(<MyReviews />)
+    await userEvent.click(screen.getByRole('button', { name: '삭제' }))
+    await userEvent.click(screen.getByRole('button', { name: '삭제하기' }))
+    expect(screen.getByText('리뷰를 삭제했어요')).toBeInTheDocument()
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  })
+  it('수정 모달에 행사명이 보이고 저장하면 토스트가 뜬다', async () => {
+    hooks.reviews = [review]
+    hooks.updateReview.mockImplementation((_v: unknown, o: { onSuccess: () => void }) => o.onSuccess())
+    wrap(<MyReviews />)
+    await userEvent.click(screen.getByRole('button', { name: '수정' }))
+    expect(within(screen.getByRole('dialog', { name: '리뷰 수정' })).getByText('천안 축제')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '수정 완료' }))
+    expect(screen.getByText('리뷰를 수정했어요')).toBeInTheDocument()
   })
 })
 

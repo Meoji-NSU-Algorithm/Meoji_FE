@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { EmptyState, ErrorState, EventCard, Spinner, useToast } from '../components'
+import { EmptyState, ErrorState, EventCard, Spinner } from '../components'
 import { HeartIcon } from '../components/icons'
-import { useBookmarks, useToggleBookmark } from '../api/hooks'
+import { useBookmarks } from '../api/hooks'
+import { useBookmarkToggle } from '../lib/useBookmarkToggle'
 import { bookmarkToCard } from '../api/bookmarks'
-import type { EventCard as EventCardType } from '../api/types'
-import { errorMessage } from '../api/errors'
 import { toCardData } from './events/cardData'
 import { MyShell } from './my/MyShell'
 
@@ -13,9 +12,8 @@ type Sort = 'upcoming' | 'recent'
 
 function Content() {
   const navigate = useNavigate()
-  const toast = useToast()
-  const { data, isLoading, isError, refetch } = useBookmarks()
-  const toggle = useToggleBookmark()
+  const { data, isLoading, isError, error, refetch } = useBookmarks()
+  const { toggle } = useBookmarkToggle()
   const [sort, setSort] = useState<Sort>('upcoming')
 
   if (isLoading)
@@ -24,7 +22,7 @@ function Content() {
         <Spinner />
       </div>
     )
-  if (isError) return <ErrorState onRetry={() => void refetch()} />
+  if (isError) return <ErrorState error={error} onRetry={() => void refetch()} />
   if (!data || data.events.length === 0)
     return (
       <EmptyState
@@ -49,24 +47,6 @@ function Content() {
     sort === 'upcoming'
       ? [...data.events.map(bookmarkToCard)].sort((a, b) => (a.start_date ?? '9999').localeCompare(b.start_date ?? '9999'))
       : data.events.map(bookmarkToCard)
-
-  const unlike = (event: EventCardType) =>
-    toggle.mutate(
-      { event, bookmarked: true },
-      {
-        onError: (err) => toast.show({ message: errorMessage(err) }),
-        onSuccess: () =>
-          toast.show({
-            message: '찜을 해제했어요',
-            actionLabel: '되돌리기',
-            onAction: () =>
-              toggle.mutate(
-                { event, bookmarked: false },
-                { onError: (err) => toast.show({ message: errorMessage(err) }) },
-              ),
-          }),
-      },
-    )
 
   return (
     <>
@@ -96,11 +76,11 @@ function Content() {
           <li key={e.id}>
             <EventCard
               event={toCardData(e)}
-              variant="small"
+              variant="bookmark"
               liked
               href={`/events/${e.id}`}
               onClick={(ev) => navigate(`/events/${ev.id}`)}
-              onToggleLike={() => unlike(e)}
+              onToggleLike={() => toggle(e, true)}
             />
           </li>
         ))}
