@@ -159,15 +159,8 @@ describe('Directions', () => {
     await screen.findByTestId('route-summary')
     expect(screen.queryByRole('button', { name: /단계 보기/ })).not.toBeInTheDocument()
     await userEvent.click(screen.getByRole('tab', { name: /자동차/ }))
-    const toggle = await screen.findByRole('button', { name: '전체 8단계 보기' })
-    expect(toggle).toHaveAttribute('aria-expanded', 'false')
-    expect(screen.getAllByTestId('route-step')).toHaveLength(5)
-    await userEvent.click(toggle)
-    expect(screen.getAllByTestId('route-step')).toHaveLength(8)
-    const collapse = screen.getByRole('button', { name: '접기' })
-    expect(collapse).toHaveAttribute('aria-expanded', 'true')
-    await userEvent.click(collapse)
-    expect(screen.getAllByTestId('route-step')).toHaveLength(5)
+    await waitFor(() => expect(screen.getAllByTestId('route-step')).toHaveLength(8))
+    expect(screen.queryByRole('button', { name: /단계 보기/ })).not.toBeInTheDocument()
   })
 
   it('ROUTE_NOT_FOUND 면 경로 없음 상태를 보여준다', async () => {
