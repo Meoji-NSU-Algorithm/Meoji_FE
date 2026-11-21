@@ -140,7 +140,8 @@ describe('MapPage', () => {
     renderMap()
     expect(await screen.findByText('행사1')).toBeInTheDocument()
     expect(screen.queryByText('행사2')).not.toBeInTheDocument()
-    expect(await screen.findByText(/위치를 찾지 못한 행사 1개/)).toBeInTheDocument()
+    expect(await screen.findByText((_, el) => el?.tagName === "SPAN" && el.textContent === "위치를 찾지 못한 행사 1개는 지도에 표시되지 않아요")).toBeInTheDocument()
+    expect(screen.getByRole("link", { name: "목록에서 보기" })).toBeInTheDocument()
   })
 
   it('위치 권한이 거부되면 B5 안내를 보여주고 "지역으로 보기"로 닫는다', async () => {

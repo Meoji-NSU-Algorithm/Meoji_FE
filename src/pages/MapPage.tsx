@@ -9,14 +9,24 @@ import { loadKakaoMaps } from '../lib/kakaoMaps'
 import { FilterPanel } from './events/FilterPanel'
 import { LocateIcon, MinusIcon, PinBigIcon, PlusIcon, SearchBigIcon, WifiOffIcon } from './events/icons'
 import { outlineBtn, primaryBtn, StatePanel } from './events/StatePanel'
-import { formatPrice } from '../components'
-import { hasLoginFilters, useEventFilters } from './events/useEventFilters'
+import { formatDateRange, formatPrice } from '../components'
+import { hasLoginFilters, serializeEventParams, useEventFilters } from './events/useEventFilters'
 import { PageTitleBar } from './events/ViewTabs'
 import { MapCanvas, type MapCanvasHandle } from './map/MapCanvas'
 import { markerLabel } from './map/mapFormat'
 import { useVenueCoords } from './map/useVenueCoords'
 
 const MAP_SIZE = 100
+const NOTICE = 'flex items-center gap-2 rounded-[10px] bg-surface px-[14px] py-[10px] text-[12px] leading-[18px] text-ink shadow-[0_1px_3px_rgba(0,0,0,0.14)]'
+
+function InfoIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden className="shrink-0 text-ink-muted">
+      <circle cx="8" cy="8" r="6.5" />
+      <path d="M8 7.2v4M8 4.8v.1" strokeLinecap="round" />
+    </svg>
+  )
+}
 type Geo = 'idle' | 'loading' | 'granted' | 'denied'
 
 function Thumb({ e }: { e: EventCard }) {
@@ -80,8 +90,9 @@ export default function MapPage() {
     [located, visibleIds],
   )
   const select = useCallback(
-    (id: number, pan: boolean) => {
+    (id: number | null, pan: boolean) => {
       setSelectedId(id)
+      if (id === null) return
       const l = located.find((x) => x.event.id === id)
       if (pan && l) mapRef.current?.panTo(l.coord.lat, l.coord.lng)
       requestAnimationFrame(() => listRef.current?.querySelector(`[data-event-id="${id}"]`)?.scrollIntoView?.({ block: 'nearest' }))
@@ -128,6 +139,8 @@ export default function MapPage() {
   const countText = kakao ? (visibleIds ? visibleList.length : located.length) : events.length
 
   const showDenied = geo === 'denied' && !dismissed
+  const selected = located.find((l) => l.event.id === selectedId)?.event
+  const total = query.data?.total_count ?? 0
 
   return (
     <div className="mx-auto max-w-content px-6 pb-12">
@@ -138,9 +151,6 @@ export default function MapPage() {
       <div className="flex items-center justify-between pb-4 pt-[22px]">
         <p className="text-[14px] leading-[21px] text-ink" aria-live="polite">
           지도 영역 안 <b className="font-bold text-brand">{countText}</b>개 행사
-          {kakao && settled && unlocatedCount > 0 && (
-            <span className="pl-2 text-[12px] text-ink-subtle">위치를 찾지 못한 행사 {unlocatedCount}개는 지도에 표시되지 않아요</span>
-          )}
         </p>
       </div>
 
@@ -200,11 +210,6 @@ export default function MapPage() {
                         </span>
                       </span>
                     </button>
-                    {on && (
-                      <Link to={`/events/${e.id}`} className="block px-[10px] pb-2 text-right text-[12px] font-bold text-primary-ink">
-                        상세 보기 ›
-                      </Link>
-                    )}
                   </li>
                 )
               })}
@@ -242,6 +247,42 @@ export default function MapPage() {
                 onVisibleChange={setVisibleIds}
                 fitKey={fitKey}
               />
+              <div className="absolute inset-x-[14px] top-[14px] z-10 flex flex-col gap-2">
+                {settled && unlocatedCount > 0 && (
+                  <p className={NOTICE}>
+                    <InfoIcon />
+                    <span className="flex-1">
+                      위치를 찾지 못한 행사 <b className="font-bold">{unlocatedCount}개</b>는 지도에 표시되지 않아요
+                    </span>
+                    <Link to={`/events?${serializeEventParams(params)}`} className="font-bold text-primary-ink underline">
+                      목록에서 보기
+                    </Link>
+                  </p>
+                )}
+                {total > MAP_SIZE && (
+                  <p className={NOTICE}>
+                    <InfoIcon />
+                    <span className="flex-1">
+                      행사가 많아 <b className="font-bold">{MAP_SIZE}개</b>까지만 보여요. 지도를 확대하거나 필터를 좁혀 보세요
+                    </span>
+                  </p>
+                )}
+              </div>
+              {selected && (
+                <Link
+                  to={`/events/${selected.id}`}
+                  className="absolute bottom-[26px] left-[14px] z-10 flex w-[min(324px,calc(100%-84px))] items-center gap-3 rounded-card bg-surface p-3 shadow-float"
+                >
+                  <Thumb e={selected} />
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[14px] font-bold leading-[20px] text-ink">{selected.title}</span>
+                    <span className="block truncate text-[12px] leading-[18px] text-ink-subtle">
+                      {[formatDateRange(selected.start_date, selected.end_date), markerLabel(selected)].filter(Boolean).join(' · ')}
+                    </span>
+                    <span className="block pt-1 text-[12px] font-bold text-primary-ink">상세 보기 ›</span>
+                  </span>
+                </Link>
+              )}
               <div className="absolute bottom-[26px] right-[14px] z-10 flex flex-col gap-[6px]">
                 {[
                   { label: '내 위치', Icon: LocateIcon, onClick: requestLocation },

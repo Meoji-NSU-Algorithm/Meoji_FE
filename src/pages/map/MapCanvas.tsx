@@ -17,13 +17,16 @@ export interface MapCanvasHandle {
 const CHEONAN = { lat: 36.8151, lng: 127.1139 }
 
 const BASE = 'relative cursor-pointer whitespace-nowrap rounded-pill px-3 h-[30px] flex items-center text-[12px] font-black leading-[18px] shadow-[0_2px_4px_rgba(0,0,0,0.16)] border-0 '
-const ON = BASE + 'bg-primary-ink text-white'
+// 선택된 마커만 진한 색 + 아래 꼬리
+const ON = BASE + 'bg-ink text-white after:absolute after:left-1/2 after:top-full after:-translate-x-1/2 after:border-x-[6px] after:border-t-[6px] after:border-x-transparent after:border-t-ink after:content-[""]'
 const OFF = BASE + 'bg-white text-ink'
+const OFF_FREE = BASE + 'bg-white text-[#16834A]'
+const cls = (on: boolean, label: string) => (on ? ON : label === '무료' ? OFF_FREE : OFF)
 
 function makeMarker(label: string, selected: boolean, onClick: () => void) {
   const el = document.createElement('button')
   el.type = 'button'
-  el.className = selected ? ON : OFF
+  el.className = cls(selected, label)
   el.textContent = label
   el.addEventListener('click', onClick)
   return el
@@ -33,7 +36,8 @@ interface Props {
   kakao: any
   points: MapPoint[]
   selectedId: number | null
-  onSelect: (id: number) => void
+  /** null: 지도 빈 곳을 눌러 선택 해제 */
+  onSelect: (id: number | null) => void
   /** 지도 영역(bounds) 안에 있는 마커 id */
   onVisibleChange: (ids: number[]) => void
   /** 이 값이 바뀌면 모든 마커가 보이도록 지도를 맞춘다 */
@@ -97,6 +101,7 @@ export function MapCanvas({ kakao, points, selectedId, onSelect, onVisibleChange
     })
     map.current = m
     kakao.maps.event.addListener(m, 'idle', reportVisible)
+    kakao.maps.event.addListener(m, 'click', () => latest.current.onSelect(null))
     const store = overlays.current
     return () => {
       store.forEach(({ overlay }) => overlay.setMap(null))
@@ -131,6 +136,7 @@ export function MapCanvas({ kakao, points, selectedId, onSelect, onVisibleChange
         position: new kakao.maps.LatLng(p.lat, p.lng),
         content: el,
         yAnchor: 1.4,
+        clickable: true, // 마커 클릭이 지도 click(선택 해제)으로 번지지 않게
       })
       overlay.setMap(m)
       store.set(p.id, { overlay, el })
@@ -143,7 +149,7 @@ export function MapCanvas({ kakao, points, selectedId, onSelect, onVisibleChange
   useEffect(() => {
     overlays.current.forEach(({ el, overlay }, id) => {
       const on = id === selectedId
-      el.className = on ? ON : OFF
+      el.className = cls(on, el.textContent ?? '')
       overlay.setZIndex(on ? 10 : 0)
     })
   }, [selectedId, points])
