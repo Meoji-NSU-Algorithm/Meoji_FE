@@ -30,7 +30,8 @@ export default function Layout() {
   }, [isLoggedIn, user?.id])
 
   return (
-    <>
+    // 내용이 짧아도 푸터가 화면 바닥에 붙게 한다
+    <div className="flex min-h-dvh flex-col">
       <Header
         active={activeTab(pathname)}
         user={isLoggedIn && user ? { name: user.nickname, avatarUrl: user.profile_image ?? undefined } : null}
@@ -39,11 +40,11 @@ export default function Layout() {
         searchValue={pathname === '/events' ? (params.get('q') ?? '') : undefined}
         onSearchSubmit={(q) => navigate(`/events?q=${encodeURIComponent(q)}`)}
       />
-      <main>
+      <main className="flex-1">
         <Outlet />
       </main>
       <Footer />
       <LoginPromptModal open={isLoginPromptOpen} onClose={closeLoginPrompt} />
-    </>
+    </div>
   )
 }
