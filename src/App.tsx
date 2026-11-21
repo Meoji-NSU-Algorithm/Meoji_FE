@@ -18,6 +18,7 @@ const MyReviews = lazy(() => import('./pages/MyReviews'))
 const MyProfile = lazy(() => import('./pages/MyProfile'))
 const MyWithdraw = lazy(() => import('./pages/MyWithdraw'))
 const MyWithdrawDone = lazy(() => import('./pages/MyWithdrawDone'))
+const Policy = lazy(() => import('./pages/Policy'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 export default function App() {
@@ -41,6 +42,8 @@ export default function App() {
           </Route>
           {/* 탈퇴 직후에는 이미 로그아웃 상태이므로 가드 밖에 둔다. */}
           <Route path="my/withdraw/done" element={<MyWithdrawDone />} />
+          <Route path="terms" element={<Policy kind="terms" />} />
+          <Route path="privacy" element={<Policy kind="privacy" />} />
           <Route path="auth/login" element={<Login />} />
           <Route path="auth/kakao/callback" element={<KakaoCallback />} />
           <Route path="auth/terms" element={<Terms />} />

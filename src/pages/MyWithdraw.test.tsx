@@ -35,17 +35,16 @@ afterEach(() => tokenStorage.clear())
 describe('MyWithdraw', () => {
   it('실제 찜/리뷰 개수를 보여주고 동의해야 탈퇴할 수 있다', async () => {
     setup()
-    expect(await screen.findByText('찜한 행사 6개와 캘린더 일정이 모두 삭제돼요')).toBeInTheDocument()
-    expect(screen.getByText(/작성한 리뷰 3개/)).toBeInTheDocument()
+    expect(await screen.findByText('찜한 행사 6개')).toBeInTheDocument()
+    expect(await screen.findByText('작성한 리뷰 3개')).toBeInTheDocument()
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument()
     const submit = screen.getByRole('button', { name: '탈퇴하기' })
-    expect(submit).toBeDisabled()
-    await userEvent.click(screen.getByRole('radio', { name: '사용하기 불편해요' }))
     expect(submit).toBeDisabled()
     await userEvent.click(screen.getByRole('checkbox'))
     expect(submit).toBeEnabled()
   })
 
-  it('탈퇴하면 토큰을 지우고 완료 화면을 보여준다 (사유는 보내지 않는다)', async () => {
+  it('탈퇴하면 토큰을 지우고 완료 화면을 보여준다 ', async () => {
     let called = 0
     let bodyText = 'unset'
     server.use(
@@ -56,11 +55,10 @@ describe('MyWithdraw', () => {
       }),
     )
     setup()
-    await userEvent.click(await screen.findByRole('radio', { name: '기타' }))
-    await userEvent.click(screen.getByRole('checkbox'))
+    await userEvent.click(await screen.findByRole('checkbox'))
     await userEvent.click(screen.getByRole('button', { name: '탈퇴하기' }))
     expect(await screen.findByText('탈퇴가 완료됐어요')).toBeInTheDocument()
-    expect(screen.getByText('찜·리뷰·캘린더 정보가 모두 삭제됐고, 카카오 계정 연결도 해제됐어요.')).toBeInTheDocument()
+    expect(screen.getByText('찜한 행사와 작성한 리뷰가 모두 삭제됐고, 카카오 계정 연결도 해제됐어요.')).toBeInTheDocument()
     expect(called).toBe(1)
     expect(bodyText).toBe('')
     expect(tokenStorage.getAccessToken()).toBeNull()

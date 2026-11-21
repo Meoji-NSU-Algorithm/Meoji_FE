@@ -171,7 +171,7 @@ export default function Login() {
               ))}
             </ul>
             <p className="pt-[22px] text-[12px] leading-[19.2px] text-ink-subtle">
-              로그인 후 <u>이용약관</u>과 <u>개인정보처리방침</u> 동의 절차가 이어져요.
+              처음 로그인하면 이용약관·개인정보처리방침 동의 화면이 이어져요.
             </p>
           </div>
         </div>

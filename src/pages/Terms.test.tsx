@@ -39,7 +39,7 @@ describe('Terms', () => {
     setup()
     const start = await screen.findByRole('button', { name: '동의하고 시작하기' })
     expect(start).toBeDisabled()
-    await userEvent.click(screen.getByRole('checkbox', { name: /서비스 이용약관/ }))
+    await userEvent.click(screen.getByRole('checkbox', { name: /이용약관/ }))
     expect(start).toBeDisabled()
     await userEvent.click(screen.getByRole('checkbox', { name: /개인정보/ }))
     expect(start).toBeEnabled()
@@ -54,7 +54,7 @@ describe('Terms', () => {
       }),
     )
     setup()
-    await userEvent.click(await screen.findByRole('checkbox', { name: '전체 동의' }))
+    await userEvent.click(await screen.findByRole('checkbox', { name: '모두 동의하기' }))
     await userEvent.click(screen.getByRole('button', { name: '동의하고 시작하기' }))
     expect(await screen.findByText('홈 화면')).toBeInTheDocument()
     expect(body).toEqual({ terms: true, privacy: true, marketing: true })
@@ -63,10 +63,21 @@ describe('Terms', () => {
   it('저장 실패 시 에러 문구를 보여주고 이동하지 않는다', async () => {
     server.use(http.post('*/api/users/me/consents', () => fail(400, 'COMMON_INVALID_INPUT')))
     setup()
-    await userEvent.click(await screen.findByRole('checkbox', { name: '전체 동의' }))
+    await userEvent.click(await screen.findByRole('checkbox', { name: '모두 동의하기' }))
     await userEvent.click(screen.getByRole('button', { name: '동의하고 시작하기' }))
-    expect(await screen.findByRole('alert')).toHaveTextContent('입력한 내용을 다시 확인해 주세요')
+    expect(await screen.findByRole('alert')).toHaveTextContent('동의 내용을 저장하지 못했어요')
+    expect(screen.getByRole('button', { name: '다시 시도' })).toBeInTheDocument()
     expect(screen.queryByText('홈 화면')).not.toBeInTheDocument()
+  })
+
+  it('처음엔 모두 해제돼 있고 보기를 누르면 본문 모달이 열린다', async () => {
+    setup()
+    const boxes = await screen.findAllByRole('checkbox')
+    boxes.forEach((b) => expect(b).toHaveAttribute('aria-checked', 'false'))
+    await userEvent.click(screen.getAllByRole('button', { name: '보기' })[0])
+    expect(screen.getByRole('dialog', { name: '이용약관' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '확인' }))
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
   })
 
   it('취소하면 로그아웃하고 홈으로 간다', async () => {

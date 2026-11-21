@@ -7,15 +7,6 @@ import { CheckIcon } from '../components/icons'
 import { Avatar } from './my/Avatar'
 import { LoginRequired } from './my/LoginRequired'
 
-/** 사유는 UI에서만 고르며 서버로 보내지 않는다(BE에 필드가 없다). */
-const REASONS = [
-  '찾는 행사가 별로 없어요',
-  '행사 정보가 정확하지 않아요',
-  '사용하기 불편해요',
-  '자주 사용하지 않아요',
-  '기타',
-]
-
 function Bullet({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-[10px]">
@@ -31,7 +22,6 @@ function Withdraw() {
   const bookmarks = useBookmarks()
   const reviews = useMyReviews()
   const withdraw = useWithdraw()
-  const [reason, setReason] = useState<string | null>(null)
   const [agreed, setAgreed] = useState(false)
   if (!user) return null
 
@@ -64,49 +54,32 @@ function Withdraw() {
 
       <div className="mt-4 flex flex-col gap-[10px] rounded-[14px] bg-primary-tint px-[18px] py-4">
         <p className="text-[14px] font-bold leading-[1.5] text-primary-ink">탈퇴하면 이렇게 돼요</p>
-        <Bullet>찜한 행사 {bookmarkCount}개와 캘린더 일정이 모두 삭제돼요</Bullet>
-        <Bullet>작성한 리뷰 {reviewCount}개가 삭제되며 다시 복구할 수 없어요</Bullet>
+        {/* 0개인 항목은 문구에서 뺀다 */}
+        {bookmarkCount > 0 && reviewCount > 0 && (
+          <Bullet>
+            <b>찜한 행사 {bookmarkCount}개</b>와 <b>작성한 리뷰 {reviewCount}개</b>가 삭제돼요
+          </Bullet>
+        )}
+        {bookmarkCount > 0 && reviewCount === 0 && (
+          <Bullet>
+            <b>찜한 행사 {bookmarkCount}개</b>가 삭제돼요
+          </Bullet>
+        )}
+        {bookmarkCount === 0 && reviewCount > 0 && (
+          <Bullet>
+            <b>작성한 리뷰 {reviewCount}개</b>가 삭제돼요
+          </Bullet>
+        )}
+        <Bullet>삭제된 정보는 다시 복구할 수 없어요</Bullet>
         <Bullet>카카오 계정 연결이 해제돼요. 언제든 다시 가입할 수 있어요</Bullet>
       </div>
-
-      <fieldset className="flex flex-col gap-2 pt-[26px]">
-        <legend className="flex gap-1 pb-2 text-[13px] leading-[1.5]">
-          <span className="font-bold text-ink">떠나시는 이유를 알려 주세요</span>
-          <span className="text-ink-subtle text-[12px]">(선택)</span>
-        </legend>
-        {REASONS.map((r) => {
-          const on = reason === r
-          return (
-            <button
-              key={r}
-              type="button"
-              role="radio"
-              aria-checked={on}
-              onClick={() => setReason(r)}
-              className={`flex h-[46px] items-center gap-[10px] rounded-[10px] border px-[14px] text-left text-[14px] leading-[1.5] ${
-                on ? 'border-primary-border bg-primary-tint-strong font-bold text-primary-ink' : 'border-line bg-surface text-ink'
-              }`}
-            >
-              <span
-                aria-hidden
-                className={`flex size-[18px] shrink-0 items-center justify-center rounded-full border ${
-                  on ? 'border-brand' : 'border-ink-disabled'
-                }`}
-              >
-                {on && <span className="size-[10px] rounded-full bg-brand" />}
-              </span>
-              {r}
-            </button>
-          )
-        })}
-      </fieldset>
 
       <button
         type="button"
         role="checkbox"
         aria-checked={agreed}
         onClick={() => setAgreed((v) => !v)}
-        className="mt-[22px] flex items-center gap-[10px] text-left"
+        className="mt-[26px] flex items-center gap-[10px] text-left"
       >
         <span
           aria-hidden
