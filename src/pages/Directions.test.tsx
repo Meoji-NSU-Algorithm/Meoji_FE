@@ -90,7 +90,7 @@ describe('Directions', () => {
     const summary = screen.getByTestId('route-summary')
     expect(summary).toHaveTextContent('35분')
     expect(summary).toHaveTextContent('12.0km')
-    expect(summary).toHaveTextContent('09:35')
+    expect(summary).toHaveTextContent('오전 9:35')
     expect(screen.getAllByTestId('route-step')).toHaveLength(3)
     expect(screen.getByText('출발역 2번 출구')).toBeInTheDocument()
     expect(screen.getByText('교차로 · 좌회전')).toBeInTheDocument()

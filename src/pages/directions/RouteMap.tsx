@@ -1,14 +1,16 @@
 import { useEffect, useRef, useState } from 'react'
 import { loadKakaoMaps } from '../../lib/kakaoMaps'
+import type { DirectionsResult } from '../../api/types'
 import { MinusIcon, PlusIcon } from '../detail/icons'
 
 interface Props {
   from: { lat: number; lng: number; label: string } | null
   to: { lat: number; lng: number; label: string }
+  path?: DirectionsResult['path']
 }
 
 /** D1 지도. SDK/키 실패 시 Figma의 정적 회색 지도 + 라벨 카드로 대체한다. */
-export function RouteMap({ from, to }: Props) {
+export function RouteMap({ from, to, path }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
   const [failed, setFailed] = useState(false)
@@ -46,17 +48,34 @@ export function RouteMap({ from, to }: Props) {
           bounds.extend(start)
           pin(start)
           label(start, `출발 · ${from.label}`, '#2a2320')
-          // BE 는 경로 좌표를 주지 않으므로 출발-도착을 잇는 점선은 방향 참고용일 뿐 실제 경로가 아니다.
-          {
+          // BE path: 자동차·도보는 [[lat,lng]], 대중교통은 [{type, coordinates}]. 없으면 방향 참고용 점선.
+          const segs = !path?.length ? [] : Array.isArray(path[0]) ? [{ type: 'LINE', coordinates: path as [number, number][] }] : (path as { type: string; coordinates: [number, number][] }[])
+          const drawn = segs.filter((g) => g.coordinates.length > 1)
+          // BE 가 일부 구간(기차 등)의 좌표를 빼면 선이 끊기므로, 앞 구간 끝과 다음 구간 시작이 멀면 점선으로 잇는다.
+          for (let i = drawn.length - 1; i > 0; i--) {
+            const [aLat, aLng] = drawn[i - 1].coordinates.at(-1)!
+            const [bLat, bLng] = drawn[i].coordinates[0]
+            if (Math.abs(aLat - bLat) + Math.abs(aLng - bLng) > 0.003) {
+              drawn.splice(i, 0, { type: 'WALK', coordinates: [[aLat, aLng], [bLat, bLng]] })
+            }
+          }
+          for (const g of drawn.length ? drawn : [{ type: 'WALK', coordinates: null }]) {
+            const pts = g.coordinates ? g.coordinates.map(([la, ln]) => new kakao.maps.LatLng(la, ln)) : [start, dest]
+            const guess = !g.coordinates || g.type === 'WALK'
+            pts.forEach((pt: any) => bounds.extend(pt))
+            // A2: 탈것은 주황 실선, 도보는 주황 점선. 흰 테두리를 깔아 지도 위에서 잘 보이게 한다.
+            const outline = guess ? null : new kakao.maps.Polyline({ path: pts, strokeWeight: 9, strokeColor: '#ffffff', strokeOpacity: 1, strokeStyle: 'solid' })
             const line = new kakao.maps.Polyline({
-              path: [start, dest],
-              strokeWeight: 3,
-              strokeColor: '#9a928c',
-              strokeOpacity: 0.7,
-              strokeStyle: 'dash',
+              path: pts,
+              strokeWeight: 5,
+              strokeColor: '#f0562c',
+              strokeOpacity: 1,
+              strokeStyle: guess ? 'shortdot' : 'solid',
             })
-            line.setMap(map)
-            overlays.push(line)
+            for (const l of outline ? [outline, line] : [line]) {
+              l.setMap(map)
+              overlays.push(l)
+            }
           }
           map.setBounds(bounds, 80, 80, 80, 80)
         } else {
@@ -70,7 +89,7 @@ export function RouteMap({ from, to }: Props) {
       cancelled = true
       overlays.forEach((o) => o.setMap(null))
     }
-  }, [from, to.lat, to.lng, to.label])
+  }, [from, to.lat, to.lng, to.label, path])
 
   return (
     <div
@@ -86,7 +105,7 @@ export function RouteMap({ from, to }: Props) {
       ) : (
         <div ref={ref} data-testid="route-map" className="absolute inset-0" />
       )}
-      {!failed && from && (
+      {!failed && from && !path?.length && (
         <p
           data-testid="route-map-caption"
           className="absolute inset-x-0 bottom-2 z-10 mx-auto w-fit max-w-[calc(100%-80px)] rounded-md bg-surface/90 px-2 py-1 text-center text-[12px] text-ink-muted"

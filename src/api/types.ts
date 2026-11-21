@@ -180,6 +180,12 @@ export interface DirectionsQuery {
   originLng: number
   mode?: DirectionsMode
 }
+/** 지도 경로선 좌표 [lat, lng]. 자동차·도보는 좌표 배열, 대중교통은 구간 배열. */
+export type DirectionsPoint = [number, number]
+export interface DirectionsPathSegment {
+  type: string
+  coordinates: DirectionsPoint[]
+}
 export interface DirectionsResult {
   eventId: number
   mode: DirectionsMode
@@ -188,4 +194,5 @@ export interface DirectionsResult {
   distanceMeters: number
   arrivalTime: string | null
   steps: DirectionsStep[]
+  path?: DirectionsPoint[] | DirectionsPathSegment[]
 }

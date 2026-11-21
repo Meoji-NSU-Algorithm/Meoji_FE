@@ -59,3 +59,18 @@ export function compactSteps(steps: DirectionsStep[]): DirectionsStep[] {
   }
   return out.map((s, i) => ({ ...s, stepNumber: i + 1 }))
 }
+
+/** "17:05" → "오후 5:05" (A2·A3 요약 줄 표기) */
+export function toAmPm(hhmm: string) {
+  const [h, m] = hhmm.split(':').map(Number)
+  return `${h < 12 ? '오전' : '오후'} ${h % 12 || 12}:${String(m).padStart(2, '0')}`
+}
+
+/** 자동차·도보 단계의 방향 화살표 종류. 안내문/turn 에 좌·우회전·유턴이 없으면 직진. */
+export function turnOf(s: DirectionsStep): 'left' | 'right' | 'uturn' | 'straight' {
+  const text = `${s.instruction} ${detailText(s.detail) ?? ''}`
+  if (/유턴/.test(text)) return 'uturn'
+  if (/좌회전|왼쪽/.test(text)) return 'left'
+  if (/우회전|오른쪽/.test(text)) return 'right'
+  return 'straight'
+}

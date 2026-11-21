@@ -66,6 +66,10 @@ export function OriginPicker({ notice, onSelect, onCancel }: Props) {
           placeholder="출발지 장소나 주소를 입력하세요"
           className="min-w-0 flex-1 bg-transparent text-[14px] text-ink outline-none"
         />
+        {/* D2: 글자마다 조회하지 않고 Enter 나 검색 버튼으로만 찾는다. */}
+        <button type="submit" disabled={busy} className="text-[12px] font-bold text-primary-ink">
+          검색
+        </button>
         {onCancel && (
           <button type="button" onClick={onCancel} className="text-[12px] text-ink-muted">
             취소

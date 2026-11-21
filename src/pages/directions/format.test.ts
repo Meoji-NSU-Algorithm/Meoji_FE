@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DirectionsStep } from '../../api/types'
-import { compactSteps } from './format'
+import { compactSteps, toAmPm, turnOf } from './format'
 
 const st = (n: number, instruction: string, d: number | null, t: number | null, type = 'DRIVE'): DirectionsStep => ({
   stepNumber: n, type, instruction, distanceMeters: d, durationMinutes: t, detail: null,
@@ -27,5 +27,19 @@ describe('compactSteps', () => {
     const a = [st(1, '직진', 100, 1), st(2, '직진', 50, 1)]
     compactSteps(a)
     expect(a[0].distanceMeters).toBe(100)
+  })
+})
+
+describe('toAmPm / turnOf', () => {
+  it('24시간 표기를 오전·오후로 바꾼다', () => {
+    expect(toAmPm('00:05')).toBe('오전 12:05')
+    expect(toAmPm('09:35')).toBe('오전 9:35')
+    expect(toAmPm('12:00')).toBe('오후 12:00')
+    expect(toAmPm('17:42')).toBe('오후 5:42')
+  })
+  it('안내문에서 방향을 고른다', () => {
+    expect(turnOf(st(1, '두정역 사거리에서 좌회전', 1, 1))).toBe('left')
+    expect(turnOf(st(1, '성환 방향으로 우회전', 1, 1))).toBe('right')
+    expect(turnOf(st(1, '천안대로 진입 후 직진', 1, 1))).toBe('straight')
   })
 })

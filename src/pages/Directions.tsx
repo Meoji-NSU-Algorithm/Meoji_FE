@@ -11,7 +11,7 @@ import { OriginPicker } from './directions/OriginPicker'
 import type { Origin } from './directions/OriginPicker'
 import { RouteMap } from './directions/RouteMap'
 import { getCurrentPosition } from './directions/geocode'
-import { STEP_LABEL, compactSteps, detailText, formatDistance, formatDuration, formatKstTime } from './directions/format'
+import { STEP_LABEL, compactSteps, detailText, formatDistance, formatDuration, formatKstTime, toAmPm, turnOf } from './directions/format'
 
 const MODES: Array<{ key: DirectionsMode; label: string; Icon: typeof BusIcon }> = [
   { key: 'transit', label: '대중교통', Icon: BusIcon },
@@ -39,63 +39,101 @@ function stepMeta(s: DirectionsStep) {
 
 const STEP_PREVIEW = 5
 
-function RouteSteps({ route }: { route: DirectionsResult }) {
+const TURN_PATH = {
+  straight: 'M12 20V5M6 11l6-6 6 6',
+  right: 'M7 20v-7a4 4 0 0 1 4-4h8M15 5l4 4-4 4',
+  left: 'M17 20v-7a4 4 0 0 0-4-4H5M9 5 5 9l4 4',
+  uturn: 'M8 20V9a4 4 0 0 1 8 0v4M12 10l4 4 4-4',
+}
+
+/** A3: 자동차·도보 단계의 방향 화살표 */
+function TurnIcon({ step }: { step: DirectionsStep }) {
+  return (
+    <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={TURN_PATH[turnOf(step)]} />
+    </svg>
+  )
+}
+
+const Pill = ({ children, className }: { children: string; className: string }) => (
+  <span className={`shrink-0 rounded-full px-[9px] py-[3px] text-[11px] font-bold leading-[16px] text-white ${className}`}>{children}</span>
+)
+
+function RouteSteps({ route, originLabel, destLabel }: { route: DirectionsResult; originLabel: string; destLabel: string }) {
   const arrival = formatKstTime(route.arrivalTime)
   const departure = formatKstTime(route.departureTime)
   const [expanded, setExpanded] = useState(false)
   const steps = useMemo(() => compactSteps(route.steps), [route.steps])
   const collapsible = steps.length > STEP_PREVIEW
   const visible = collapsible && !expanded ? steps.slice(0, STEP_PREVIEW) : steps
+  const transit = route.mode === 'transit'
+  // A2 요약: 대중교통은 도보 시간·환승 횟수, 자동차·도보는 단계 수를 거리와 함께 보여준다.
+  const rides = steps.filter((s) => s.type === 'BUS' || s.type === 'SUBWAY').length
+  const walkMin = steps.filter((s) => s.type === 'WALK').reduce((a, s) => a + (s.durationMinutes ?? 0), 0)
+  const sub = transit
+    ? [walkMin ? `도보 ${formatDuration(walkMin)}` : null, rides > 1 ? `환승 ${rides - 1}회` : null, formatDistance(route.distanceMeters)]
+    : [formatDistance(route.distanceMeters), `${steps.length}단계`]
   return (
-    <>
-      <div className="mt-3 grid grid-cols-3 rounded-lg bg-surface-card p-4" data-testid="route-summary">
-        <div>
-          <p className="text-[20px] font-black leading-[30px] text-ink">{formatDuration(route.durationMinutes)}</p>
-          <p className="text-[12px] leading-[18px] text-ink-muted">총 소요시간</p>
-        </div>
-        <div>
-          <p className="text-[20px] font-black leading-[30px] text-ink">{formatDistance(route.distanceMeters)}</p>
-          <p className="text-[12px] leading-[18px] text-ink-muted">이동 거리</p>
-        </div>
-        <div>
-          <p className="text-[20px] font-black leading-[30px] text-ink">{arrival ?? '-'}</p>
-          <p className="text-[12px] leading-[18px] text-ink-muted">{departure ? `${departure} 출발 · 도착 예정` : '도착 예정'}</p>
-        </div>
+    <div className="mt-3 overflow-hidden rounded-lg border border-line">
+      <div className="bg-surface-card px-4 py-4" data-testid="route-summary">
+        <p className="flex items-baseline gap-2">
+          <span className="text-[28px] font-black leading-[36px] text-ink">{formatDuration(route.durationMinutes)}</span>
+          <span className="text-[13px] text-ink-muted">{sub.filter(Boolean).join(' · ')}</span>
+        </p>
+        {arrival && (
+          <p className="pt-1 text-[13px] text-ink">
+            {departure && `${toAmPm(departure)} 출발 → `}
+            <b>{toAmPm(arrival)} 도착 예정</b>
+          </p>
+        )}
       </div>
-      <h3 className="pt-[18px] text-[16px] font-black leading-[24px] text-ink">경로 안내</h3>
-      <ol className="mt-[6px] max-h-[360px] overflow-y-auto pr-1" data-testid="route-step-list">
+      <h3 className="sr-only">경로 안내</h3>
+      <ol data-testid="route-step-list">
+        <li className="flex items-center gap-3 border-t border-line px-4 py-3">
+          <Pill className="bg-ink">출발</Pill>
+          <span className="truncate text-[14px] font-bold text-ink">{originLabel}</span>
+        </li>
         {visible.map((s, i) => {
           const detail = detailText(s.detail)
           const label = STEP_LABEL[s.type as keyof typeof STEP_LABEL] ?? STEP_LABEL.OTHER
           return (
-            <li key={s.stepNumber ?? i} className="relative flex gap-3 py-3" data-testid="route-step">
-              {i < visible.length - 1 && <span className="absolute left-[13px] top-[40px] h-[35px] w-[2px] bg-line" aria-hidden="true" />}
-              <span className={`flex size-7 shrink-0 items-center justify-center rounded-full ${stepColor(s.type)}`} title={label}>
-                <StepIcon type={s.type} />
-              </span>
+            <li key={s.stepNumber ?? i} className="flex items-center gap-3 border-t border-line px-4 py-3" data-testid="route-step">
+              {transit ? (
+                <span className={`flex size-7 shrink-0 items-center justify-center rounded-full ${stepColor(s.type)}`} title={label}>
+                  <StepIcon type={s.type} />
+                </span>
+              ) : (
+                <span className="flex w-7 shrink-0 justify-center text-ink" title={label}><TurnIcon step={s} /></span>
+              )}
               <div className="min-w-0">
-                <p className="text-[14px] font-bold leading-[21px] text-ink">
-                  <span className="pr-1 text-[12px] font-bold text-ink-subtle">{label}</span>
-                  {s.instruction}
-                </p>
+                <p className="text-[14px] font-bold leading-[21px] text-ink">{s.instruction}</p>
                 <p className="text-[12px] leading-[18px] text-ink-subtle">{stepMeta(s)}</p>
                 {detail && <p className="text-[12px] leading-[18px] text-ink-muted">{detail}</p>}
               </div>
             </li>
           )
         })}
+        {visible.length === steps.length && (
+          <li className="flex items-center gap-3 border-t border-line px-4 py-3">
+            <Pill className="bg-brand">도착</Pill>
+            <span className="min-w-0">
+              <span className="block truncate text-[14px] font-bold text-ink">{destLabel}</span>
+              {arrival && <span className="block text-[12px] text-ink-subtle">{toAmPm(arrival)} 도착 예정</span>}
+            </span>
+          </li>
+        )}
       </ol>
       {collapsible && (
         <button
           type="button"
           aria-expanded={expanded}
           onClick={() => setExpanded((v) => !v)}
-          className="mt-2 w-full rounded-lg border border-line py-2 text-[13px] font-bold text-ink"
+          className="w-full border-t border-line py-3 text-[13px] font-bold text-ink"
         >
           {expanded ? '접기' : `전체 ${steps.length}단계 보기`}
         </button>
       )}
-    </>
+    </div>
   )
 }
 
@@ -217,8 +255,7 @@ export default function Directions() {
           <div className="mt-3 grid grid-cols-3 gap-[6px]" role="tablist" aria-label="이동 수단">
             {MODES.map(({ key, label, Icon }) => {
               const selected = mode === key
-              // 선택한 수단만 조회하므로 소요시간은 선택된 탭에만 표시한다.
-              const sub = selected ? (route ? formatDuration(route.durationMinutes) : routeNotFound ? '경로 없음' : '-') : '-'
+              // A2: 탭에는 시간을 표시하지 않고, 누른 수단만 조회해 아래에 보여준다.
               return (
                 <button
                   key={key}
@@ -226,11 +263,10 @@ export default function Directions() {
                   role="tab"
                   aria-selected={selected}
                   onClick={() => setMode(key)}
-                  className={`flex flex-col items-center gap-[2px] rounded-card py-[6px] ${selected ? 'border-2 border-brand bg-primary-tint' : 'border border-line'}`}
+                  className={`flex h-[54px] items-center justify-center gap-[6px] rounded-card ${selected ? 'border-2 border-brand bg-primary-tint text-primary-ink' : 'border border-line text-ink'}`}
                 >
-                  <Icon size={18} />
-                  <span className="text-[13px] font-bold leading-[19.5px] text-ink">{label}</span>
-                  <span className="text-[12px] leading-[18px] text-ink-muted">{sub}</span>
+                  <Icon size={16} />
+                  <span className="text-[14px] font-bold leading-[21px]">{label}</span>
                 </button>
               )
             })}
@@ -243,7 +279,18 @@ export default function Directions() {
           ) : dir.isLoading ? (
             <div className="flex justify-center py-10"><Spinner /></div>
           ) : dir.isError && !routeNotFound ? (
-            <div className="mt-3" data-testid="directions-error"><ErrorState onRetry={() => void dir.refetch()} message={errorMessage(dirError)} /></div>
+            // C4: 경로 없음과 같은 자리·모양, 아이콘만 새로고침으로 구분한다.
+            <div className="mt-3 flex flex-col items-center rounded-lg border border-line px-6 py-8 text-center" data-testid="directions-error">
+              <span className="flex size-10 items-center justify-center rounded-card bg-primary-tint text-primary">
+                <svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5" /></svg>
+              </span>
+              <p className="pt-4 text-[15px] font-bold leading-[22px] text-ink">경로를 불러오지 못했어요</p>
+              <p className="pt-1 text-[12px] leading-[18px] text-ink-muted">{errorMessage(dirError)}</p>
+              <div className="flex w-full gap-2 pt-4">
+                <Link to={`/events/${id}`} className="flex h-11 flex-1 items-center justify-center rounded-card border border-line text-[14px] font-bold text-ink">행사 상세로</Link>
+                <button type="button" onClick={() => void dir.refetch()} className="h-11 flex-1 rounded-card bg-primary text-[14px] font-bold text-white">다시 시도</button>
+              </div>
+            </div>
           ) : showNoRoute ? (
             <div className="mt-3 flex flex-col items-center rounded-lg border border-line px-6 py-8 text-center" data-testid="no-route">
               <span className="flex size-10 items-center justify-center rounded-card bg-primary-tint text-primary"><WarnIcon size={22} /></span>
@@ -255,14 +302,24 @@ export default function Directions() {
               </div>
             </div>
           ) : showRoute ? (
-            <RouteSteps key={route.mode} route={route} />
+            <RouteSteps key={route.mode} route={route} originLabel={origin.label} destLabel={destLabel} />
           ) : null}
         </div>
 
-        <RouteMap
-          from={origin}
-          to={{ lat: lat ?? 36.8151, lng: lng ?? 127.1139, label: destLabel }}
-                  />
+        <div>
+          <RouteMap
+            from={origin}
+            path={route?.path}
+            to={{ lat: lat ?? 36.8151, lng: lng ?? 127.1139, label: destLabel }}
+                    />
+          {!!route?.path?.length && (
+            <p className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-dashed border-line px-4 py-3 text-[12px] text-ink-muted" data-testid="route-legend">
+              <span className="rounded-full bg-primary-tint px-2 py-[2px] font-bold text-primary-ink">경로선</span>
+              <span className="flex items-center gap-[6px]"><span className="h-[4px] w-8 rounded-full bg-brand" />버스·지하철·자동차 (실선)</span>
+              <span className="flex items-center gap-[6px]"><span className="w-8 border-t-[4px] border-dotted border-brand" />도보 (점선)</span>
+            </p>
+          )}
+        </div>
       </div>
     </div>
   )
