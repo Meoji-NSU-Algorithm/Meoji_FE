@@ -93,7 +93,7 @@ describe('EventDetail', () => {
     renderAt('/events/1')
     await userEvent.click(await screen.findByRole('button', { name: '삭제' }))
     expect(screen.getByRole('dialog', { name: '리뷰 삭제 확인' })).toBeInTheDocument()
-    await userEvent.click(screen.getAllByRole('button', { name: '삭제' }).at(-1)!)
+    await userEvent.click(screen.getByRole('button', { name: '삭제하기' }))
     expect(await screen.findByText('리뷰를 삭제했어요')).toBeInTheDocument()
   })
 
@@ -186,7 +186,7 @@ describe('리뷰 사진', () => {
     renderAt('/events/1')
     const input = await screen.findByTestId('review-image-input')
     await userEvent.upload(input, new File(['x'], 'a.gif', { type: 'image/gif' }), { applyAccept: false })
-    expect(await screen.findByRole('alert')).toHaveTextContent('jpg, png, webp')
+    expect(await screen.findByRole('alert')).toHaveTextContent('JPG, PNG, WEBP 사진만 올릴 수 있어요')
     const big = new File(['x'], 'b.png', { type: 'image/png' })
     Object.defineProperty(big, 'size', { value: 11 * 1024 * 1024 })
     await userEvent.upload(input, big)

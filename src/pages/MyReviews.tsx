@@ -1,15 +1,13 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { EmptyState, ErrorState, Modal, RatingStars, Spinner, useToast } from '../components'
+import { EmptyState, ErrorState, RatingStars, Spinner, useToast } from '../components'
 import { errorMessage } from '../api/errors'
-import { useDeleteReview, useMyReviews, useUpdateReview } from '../api/hooks'
+import { useDeleteReview, useMyReviews } from '../api/hooks'
 import type { MyReview } from '../api/types'
-import { ReviewImagePicker } from './detail/ReviewImagePicker'
+import { useAuth } from '../auth'
+import { DeleteReviewDialog, ReviewEditModal } from './detail/ReviewDialogs'
 import { ReviewPhotos } from './detail/ReviewPhotos'
-import { useReviewImages } from './detail/useReviewImages'
 import { MyShell } from './my/MyShell'
-
-const MAX_CONTENT = 1000
 
 const fmtDate = (iso: string) => {
   const d = new Date(iso)
@@ -26,6 +24,7 @@ const btn = 'h-8 rounded-md border border-line px-3 text-[12px] text-ink'
 function ReviewRow({ review, onEdit, onDelete }: { review: MyReview; onEdit: () => void; onDelete: () => void }) {
   const event = review.event
   const title = event?.title ?? '삭제되었거나 볼 수 없는 행사'
+  const { user } = useAuth()
   const ended = !!event?.end_date && event.end_date.slice(0, 10) < todayStr()
   return (
     <li className="grid grid-cols-[96px_1fr_auto] gap-4 border-b border-line py-5">
@@ -54,7 +53,10 @@ function ReviewRow({ review, onEdit, onDelete }: { review: MyReview; onEdit: () 
           </span>
         </div>
         <p className="whitespace-pre-line break-words pt-2 text-[14px] leading-[23.8px] text-ink">{review.content}</p>
-        <ReviewPhotos images={review.images ?? []} />
+        <ReviewPhotos
+          images={review.images ?? []}
+          owner={{ name: user?.nickname ?? '나', avatar: user?.profile_image, caption: [event?.title, fmtDate(review.created_at)].filter(Boolean).join(' · ') }}
+        />
       </div>
       <div className="flex items-start gap-[6px]">
         <button type="button" className={btn} onClick={onEdit}>
@@ -68,102 +70,27 @@ function ReviewRow({ review, onEdit, onDelete }: { review: MyReview; onEdit: () 
   )
 }
 
-function EditModal({ review, onClose }: { review: MyReview; onClose: () => void }) {
-  const toast = useToast()
-  const update = useUpdateReview()
-  const [rating, setRating] = useState(review.rating)
-  const [content, setContent] = useState(review.content)
-  const pics = useReviewImages(review.images ?? [])
-  const trimmed = content.trim()
-  const valid = rating >= 0.5 && trimmed.length >= 1 && trimmed.length <= MAX_CONTENT
-
-  const submit = () =>
-    update.mutate(
-      { id: review.id, eventId: review.event_id, rating, content: trimmed, images: pics.keys, files: pics.files },
-      {
-        onSuccess: () => {
-          toast.show({ message: '리뷰를 수정했어요' })
-          onClose()
-        },
-      },
-    )
-
-  return (
-    <Modal open onClose={onClose} title="리뷰 수정">
-      <div className="flex flex-col items-center gap-4 pt-5">
-        <RatingStars value={rating} size={32} onChange={setRating} />
-        <textarea
-          aria-label="리뷰 내용"
-          value={content}
-          maxLength={MAX_CONTENT}
-          onChange={(e) => setContent(e.target.value)}
-          rows={5}
-          className="w-full resize-none rounded-[12px] border border-line p-3 text-[14px] text-ink outline-none focus:border-ink"
-        />
-        <p className="self-end text-[12px] text-ink-subtle">
-          {content.length}/{MAX_CONTENT}
-        </p>
-        <div className="w-full">
-          <ReviewImagePicker state={pics} />
-        </div>
-        {update.isError && (
-          <p role="alert" className="text-[13px] text-primary-ink">
-            {errorMessage(update.error)}
-          </p>
-        )}
-        <div className="flex w-full gap-2">
-          <button type="button" onClick={onClose} className="h-11 flex-1 rounded-[12px] border border-line text-[14px] font-bold">
-            취소
-          </button>
-          <button
-            type="button"
-            disabled={!valid || update.isPending}
-            onClick={submit}
-            className="h-11 flex-1 rounded-[12px] bg-primary text-[14px] font-bold text-white disabled:opacity-40"
-          >
-            저장
-          </button>
-        </div>
-      </div>
-    </Modal>
-  )
-}
-
 function DeleteModal({ review, onClose }: { review: MyReview; onClose: () => void }) {
   const toast = useToast()
   const del = useDeleteReview()
   return (
-    <Modal open onClose={onClose} title="리뷰를 삭제할까요?">
-      <p className="pt-2 text-center text-[14px] text-ink-muted">삭제한 리뷰는 되돌릴 수 없어요</p>
-      {del.isError && (
-        <p role="alert" className="pt-3 text-center text-[13px] text-primary-ink">
-          {errorMessage(del.error)}
-        </p>
-      )}
-      <div className="flex gap-2 pt-6">
-        <button type="button" onClick={onClose} className="h-11 flex-1 rounded-[12px] border border-line text-[14px] font-bold">
-          취소
-        </button>
-        <button
-          type="button"
-          disabled={del.isPending}
-          onClick={() =>
-            del.mutate(
-              { id: review.id, eventId: review.event_id },
-              {
-                onSuccess: () => {
-                  toast.show({ message: '리뷰를 삭제했어요' })
-                  onClose()
-                },
-              },
-            )
-          }
-          className="h-11 flex-1 rounded-[12px] bg-primary text-[14px] font-bold text-white disabled:opacity-40"
-        >
-          삭제
-        </button>
-      </div>
-    </Modal>
+    <DeleteReviewDialog
+      open
+      onCancel={onClose}
+      busy={del.isPending}
+      error={del.isError ? errorMessage(del.error) : null}
+      onConfirm={() =>
+        del.mutate(
+          { id: review.id, eventId: review.event_id },
+          {
+            onSuccess: () => {
+              toast.show({ message: '리뷰를 삭제했어요' })
+              onClose()
+            },
+          },
+        )
+      }
+    />
   )
 }
 
@@ -189,7 +116,7 @@ function Content() {
           <ReviewRow key={r.id} review={r} onEdit={() => setEditing(r)} onDelete={() => setDeleting(r)} />
         ))}
       </ul>
-      {editing && <EditModal review={editing} onClose={() => setEditing(null)} />}
+      {editing && <ReviewEditModal review={editing} eventTitle={editing.event?.title} onClose={() => setEditing(null)} />}
       {deleting && <DeleteModal review={deleting} onClose={() => setDeleting(null)} />}
     </>
   )

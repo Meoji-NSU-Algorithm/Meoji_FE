@@ -19,3 +19,8 @@ export const TargetIcon = (p: P) => <Svg {...p}><circle cx="12" cy="12" r="3" />
 export const PlusIcon = (p: P) => <Svg {...p}><path d="M12 5v14M5 12h14" /></Svg>
 export const MinusIcon = (p: P) => <Svg {...p}><path d="M5 12h14" /></Svg>
 export const CameraIcon = (p: P) => <Svg {...p}><path d="M4 8h3l2-3h6l2 3h3v11H4z" /><circle cx="12" cy="13" r="3.5" /></Svg>
+export const TrashIcon = (p: P) => <Svg {...p}><path d="M4 7h16M10 11v6M14 11v6M5 7l1 13h12l1-13M9 7V4h6v3" /></Svg>
+export const PencilIcon = (p: P) => <Svg {...p}><path d="M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4" /></Svg>
+export const RetryIcon = (p: P) => <Svg {...p}><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5" /></Svg>
+export const AlertIcon = (p: P) => <Svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 8v4M12 16h.01" /></Svg>
+export const ChevronRightIcon = (p: P) => <Svg {...p}><path d="m9 18 6-6-6-6" /></Svg>

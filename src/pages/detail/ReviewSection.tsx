@@ -1,9 +1,12 @@
 import { useState } from 'react'
 import { errorMessage } from '../../api/errors'
-import { useCreateReview, useDeleteReview, useUpdateReview } from '../../api/hooks'
+import { useCreateReview, useDeleteReview } from '../../api/hooks'
 import type { Review } from '../../api/types'
 import { useAuth, useRequireLogin } from '../../auth'
-import { Modal, RatingStars, useToast } from '../../components'
+import { RatingStars, useToast } from '../../components'
+import { Avatar } from '../my/Avatar'
+import { AlertIcon, RetryIcon } from './icons'
+import { DeleteReviewDialog, MAX_REVIEW_CONTENT, ReviewEditModal } from './ReviewDialogs'
 import { ReviewImagePicker } from './ReviewImagePicker'
 import { ReviewPhotos } from './ReviewPhotos'
 import { useReviewImages } from './useReviewImages'
@@ -11,25 +14,23 @@ import { useReviewImages } from './useReviewImages'
 /** review.author 가 없을 때만 쓰는 대체 라벨 */
 export const ANONYMOUS_LABEL = '방문자'
 
-const MAX_CONTENT = 1000
-
 function formatDate(iso: string) {
   return iso.slice(0, 10).replaceAll('-', '.')
 }
 
 interface Props {
   eventId: number
+  eventTitle: string
   reviews: Review[]
   averageRating: number | null
   reviewCount: number
 }
 
-export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: Props) {
+export function ReviewSection({ eventId, eventTitle, reviews, averageRating, reviewCount }: Props) {
   const { user, isLoggedIn } = useAuth()
   const requireLogin = useRequireLogin()
   const toast = useToast()
   const create = useCreateReview()
-  const update = useUpdateReview()
   const remove = useDeleteReview()
   const pics = useReviewImages()
 
@@ -37,21 +38,16 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
   const [rating, setRating] = useState(0)
   const [content, setContent] = useState('')
   const [error, setError] = useState<string | null>(null)
-  const [editingId, setEditingId] = useState<number | null>(null)
+  /** 등록 요청이 실패했을 때 서버 문구. 쓴 글과 사진은 그대로 둔다. */
+  const [failed, setFailed] = useState<string | null>(null)
+  const [editing, setEditing] = useState<Review | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Review | null>(null)
-
-  const startEdit = (r: Review) => {
-    setEditingId(r.id)
-    setRating(r.rating)
-    setContent(r.content)
-    pics.reset(r.images ?? [])
-    setError(null)
-  }
 
   const submitCreate = () => {
     if (rating <= 0) return setError('별점을 선택해 주세요.')
     if (!content.trim()) return setError('후기를 입력해 주세요.')
     setError(null)
+    setFailed(null)
     create.mutate(
       { event_id: eventId, rating, content: content.trim(), files: pics.files },
       {
@@ -61,27 +57,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
           pics.reset()
           toast.show({ message: '리뷰가 등록됐어요!' })
         },
-        onError: (e) => setError(errorMessage(e)),
-      },
-    )
-  }
-
-  const submitEdit = () => {
-    if (editingId === null) return
-    if (rating <= 0) return setError('별점을 선택해 주세요.')
-    if (!content.trim()) return setError('후기를 입력해 주세요.')
-    setError(null)
-    update.mutate(
-      { id: editingId, eventId, rating, content: content.trim(), images: pics.keys, files: pics.files },
-      {
-        onSuccess: () => {
-          setEditingId(null)
-          setRating(0)
-          setContent('')
-          pics.reset()
-          toast.show({ message: '리뷰를 수정했어요' })
-        },
-        onError: (e) => setError(errorMessage(e)),
+        onError: (e) => setFailed(errorMessage(e)),
       },
     )
   }
@@ -104,7 +80,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
   }
 
   const average = averageRating ?? 0
-  const formDisabled = create.isPending
+  const busy = create.isPending
 
   return (
     <section className="pt-14" aria-label="리뷰">
@@ -132,6 +108,7 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
       {!mine && (
         <div className="mt-[14px] rounded-lg border border-line p-5">
           <h3 className="text-[15px] font-bold leading-[22.5px] text-ink">이 행사는 어떠셨나요?</h3>
+          <fieldset disabled={busy} className="disabled:opacity-60">
           <div className="flex flex-wrap items-center gap-3 pb-3 pt-[10px]">
             <RatingStars value={rating} size={30} onChange={(v) => requireLogin(() => setRating(v))} />
             <span className="text-[18px] font-bold leading-[27px] text-ink">{rating > 0 ? `${rating}점` : '별점을 선택해 주세요'}</span>
@@ -140,26 +117,42 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
           <textarea
             aria-label="리뷰 내용"
             value={content}
-            maxLength={MAX_CONTENT}
+            maxLength={MAX_REVIEW_CONTENT}
             onChange={(e) => setContent(e.target.value)}
             onFocus={() => requireLogin()}
             placeholder="방문 후기를 자유롭게 남겨 주세요"
             className="h-24 min-h-24 w-full resize-y rounded-card border border-line bg-[#fcfbfa] p-[14px] text-[14px] leading-[21px] text-ink outline-none placeholder:text-[#757575] focus:border-primary"
           />
+          <p className="text-right text-[12px] leading-[18px] text-ink-subtle">
+            {content.length}/{MAX_REVIEW_CONTENT}
+          </p>
           {error && (
             <p role="alert" className="pt-2 text-[13px] text-primary-ink">
               {error}
             </p>
           )}
-          <div className="flex items-start justify-between pt-3">
-            <ReviewImagePicker state={pics} />
+          <div className="pt-3">
+            <ReviewImagePicker state={pics} disabled={busy} />
+          </div>
+          </fieldset>
+          {failed && (
+            <div role="alert" className="mt-4 flex gap-2 rounded-[10px] bg-primary-tint px-4 py-3 text-primary-ink">
+              <AlertIcon size={16} className="mt-[2px] shrink-0" />
+              <div>
+                <p className="text-[13px] leading-[19.5px]">리뷰를 등록하지 못했어요</p>
+                <p className="text-[12px] leading-[18px] text-ink-muted">{failed} 쓴 글과 고른 사진은 그대로 있어요.</p>
+              </div>
+            </div>
+          )}
+          <div className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4">
+            <p className="text-[12px] text-ink-subtle">{busy && pics.files.length > 0 ? '사진이 많으면 몇 초 걸릴 수 있어요' : ''}</p>
             <button
               type="button"
-              disabled={formDisabled}
+              disabled={busy}
               onClick={() => requireLogin(submitCreate)}
-              className="h-11 rounded-card bg-primary px-[18px] text-[14px] font-bold text-white disabled:opacity-60"
+              className="inline-flex h-11 shrink-0 items-center gap-[6px] rounded-card bg-primary px-[18px] text-[14px] font-bold text-white disabled:opacity-60"
             >
-              리뷰 등록
+              {busy ? '등록 중…' : failed ? <><RetryIcon size={16} /> 다시 등록</> : '리뷰 등록'}
             </button>
           </div>
         </div>
@@ -171,17 +164,10 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
             const own = !!user && r.user_id === user.id
             const name = r.author?.nickname || (own ? user?.nickname : undefined) || ANONYMOUS_LABEL
             const avatar = r.author?.profile_image ?? null
-            const editing = editingId === r.id
             return (
               <li key={r.id} className="border-b border-line py-5" data-testid="review-item">
                 <div className="flex items-center gap-[10px]">
-                  {avatar ? (
-                    <img src={avatar} alt="" className="size-9 rounded-full object-cover" />
-                  ) : (
-                    <span className="flex size-9 items-center justify-center rounded-full bg-primary-tint text-[13px] font-bold text-primary-ink" aria-hidden="true">
-                      {name.slice(0, 1)}
-                    </span>
-                  )}
+                  <Avatar name={name} src={avatar} size={36} />
                   <div className="min-w-0 flex-1">
                     <p className="text-[14px] font-bold leading-[21px] text-ink">{name}</p>
                     <p className="flex h-[18px] items-center gap-[6px] text-[12px] text-ink-subtle">
@@ -189,63 +175,28 @@ export function ReviewSection({ eventId, reviews, averageRating, reviewCount }: 
                       {r.rating} · {formatDate(r.created_at)}
                     </p>
                   </div>
-                  {own && !editing && (
+                  {own && (
                     <div className="flex gap-[10px] text-[12px] text-ink-subtle">
-                      <button type="button" onClick={() => startEdit(r)}>수정</button>
+                      <button type="button" onClick={() => setEditing(r)}>수정</button>
                       <button type="button" onClick={() => setDeleteTarget(r)}>삭제</button>
                     </div>
                   )}
                 </div>
-                {editing ? (
-                  <div className="pt-[10px]">
-                    <RatingStars value={rating} size={26} onChange={setRating} />
-                    <textarea
-                      aria-label="리뷰 수정 내용"
-                      value={content}
-                      maxLength={MAX_CONTENT}
-                      onChange={(e) => setContent(e.target.value)}
-                      className="mt-2 h-24 w-full resize-y rounded-card border border-line bg-[#fcfbfa] p-[14px] text-[14px] leading-[21px] text-ink outline-none focus:border-primary"
-                    />
-                    {error && (
-                      <p role="alert" className="pt-2 text-[13px] text-primary-ink">
-                        {error}
-                      </p>
-                    )}
-                    <div className="pt-2">
-                      <ReviewImagePicker state={pics} />
-                    </div>
-                    <div className="flex justify-end gap-2 pt-2">
-                      <button type="button" onClick={() => { setEditingId(null); setError(null); pics.reset() }} className="h-10 rounded-card border border-line px-4 text-[14px] font-bold text-ink">
-                        취소
-                      </button>
-                      <button type="button" disabled={update.isPending} onClick={submitEdit} className="h-10 rounded-card bg-primary px-4 text-[14px] font-bold text-white disabled:opacity-60">
-                        수정 완료
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <p className="whitespace-pre-wrap pt-[10px] text-[14px] leading-[23.8px] text-ink">{r.content}</p>
-                    <ReviewPhotos images={r.images ?? []} />
-                  </>
-                )}
+                <p className="whitespace-pre-wrap pt-[10px] text-[14px] leading-[23.8px] text-ink">{r.content}</p>
+                <ReviewPhotos images={r.images ?? []} owner={{ name, avatar, caption: `${eventTitle} · ${formatDate(r.created_at)}` }} />
               </li>
             )
           })}
         </ul>
       )}
 
-      <Modal open={!!deleteTarget} onClose={() => setDeleteTarget(null)} title="리뷰를 삭제할까요?" ariaLabel="리뷰 삭제 확인">
-        <p className="pt-2 text-center text-[14px] leading-[21px] text-ink-muted">삭제한 리뷰는 되돌릴 수 없어요.</p>
-        <div className="flex gap-2 pt-5">
-          <button type="button" onClick={() => setDeleteTarget(null)} className="h-11 flex-1 rounded-card border border-line text-[14px] font-bold text-ink">
-            취소
-          </button>
-          <button type="button" disabled={remove.isPending} onClick={confirmDelete} className="h-11 flex-1 rounded-card bg-primary text-[14px] font-bold text-white disabled:opacity-60">
-            삭제
-          </button>
-        </div>
-      </Modal>
+      <DeleteReviewDialog
+        open={!!deleteTarget}
+        onCancel={() => setDeleteTarget(null)}
+        onConfirm={confirmDelete}
+        busy={remove.isPending}
+      />
+      {editing && <ReviewEditModal review={editing} eventTitle={eventTitle} onClose={() => setEditing(null)} />}
     </section>
   )
 }

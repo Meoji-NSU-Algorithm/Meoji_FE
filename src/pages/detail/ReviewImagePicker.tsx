@@ -1,11 +1,11 @@
 import { useRef } from 'react'
-import { CameraIcon } from './icons'
+import { AlertIcon, CameraIcon } from './icons'
 import { MAX_REVIEW_IMAGES } from './useReviewImages'
 import type { useReviewImages } from './useReviewImages'
 
 type State = ReturnType<typeof useReviewImages>
 
-/** 사진 추가 버튼 + 첨부한 사진 썸네일(삭제 가능). 사진은 리뷰를 등록·수정할 때 같이 올라간다. */
+/** 첨부한 사진 썸네일(삭제 가능) + 사진 추가 타일. 사진은 리뷰를 등록·수정할 때 같이 올라간다. */
 export function ReviewImagePicker({ state, disabled }: { state: State; disabled?: boolean }) {
   const input = useRef<HTMLInputElement>(null)
   const full = state.images.length >= MAX_REVIEW_IMAGES
@@ -23,35 +23,48 @@ export function ReviewImagePicker({ state, disabled }: { state: State; disabled?
           e.target.value = ''
         }}
       />
-      <button
-        type="button"
-        disabled={disabled || full}
-        onClick={() => input.current?.click()}
-        className="inline-flex h-10 items-center gap-[6px] rounded-[10px] border border-dashed border-[#d5cfcb] px-[14px] text-[13px] text-ink-muted disabled:cursor-not-allowed disabled:text-ink-disabled"
-      >
-        <CameraIcon size={18} /> 사진 추가 ({state.images.length}/{MAX_REVIEW_IMAGES})
-      </button>
-      {state.error && (
-        <p role="alert" className="pt-2 text-[13px] text-primary-ink">
-          {state.error}
-        </p>
-      )}
-      {state.images.length > 0 && (
-        <ul className="flex flex-wrap gap-2 pt-2">
-          {state.images.map((img, i) => (
-            <li key={img.key} className="relative size-16">
-              <img src={img.url} alt={`첨부 사진 ${i + 1}`} className="size-full rounded-md object-cover" />
+      <ul className="flex flex-wrap gap-[10px]">
+        {state.images.map((img, i) => (
+          <li key={img.key} className="relative size-20">
+            <img src={img.url} alt={`첨부 사진 ${i + 1}`} className="size-full rounded-[10px] object-cover" />
+            {!disabled && (
               <button
                 type="button"
                 aria-label={`첨부 사진 ${i + 1} 삭제`}
                 onClick={() => state.remove(img.key)}
-                className="absolute -right-1 -top-1 flex size-5 items-center justify-center rounded-full bg-ink text-[12px] leading-none text-white"
+                className="absolute right-[6px] top-[6px] flex size-[22px] items-center justify-center rounded-full bg-ink/80 text-[13px] leading-none text-white"
               >
                 ×
               </button>
-            </li>
-          ))}
-        </ul>
+            )}
+          </li>
+        ))}
+        <li>
+            <button
+              type="button"
+              disabled={disabled || full}
+              aria-label={`사진 추가 (${state.images.length}/${MAX_REVIEW_IMAGES})`}
+              onClick={() => input.current?.click()}
+              className="flex size-20 flex-col items-center justify-center gap-1 rounded-[10px] border border-dashed border-[#d5cfcb] text-[12px] text-ink-muted disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <CameraIcon size={18} />
+              <span>
+                <b className="text-ink">{state.images.length}</b>/{MAX_REVIEW_IMAGES}
+              </span>
+            </button>
+        </li>
+      </ul>
+      <p className="pt-2 text-[12px] leading-[18px] text-ink-subtle">
+        JPG·PNG·WEBP, 한 장에 10MB까지, 최대 {MAX_REVIEW_IMAGES}장 · 리뷰를 등록할 때 함께 올라가요
+      </p>
+      {state.error && (
+        <div role="alert" className="mt-2 flex gap-2 rounded-[10px] bg-primary-tint px-4 py-3 text-primary-ink">
+          <AlertIcon size={16} className="mt-[2px] shrink-0" />
+          <div>
+            <p className="text-[13px] leading-[19.5px]">{state.error.title}</p>
+            {state.error.hint && <p className="text-[12px] leading-[18px] text-ink-muted">{state.error.hint}</p>}
+          </div>
+        </div>
       )}
     </div>
   )
