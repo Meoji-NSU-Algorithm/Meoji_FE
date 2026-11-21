@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
-import { Chip, ErrorState, EventCard, Header, Modal, RatingStars, ToastView, formatDateRange } from '.'
+import { Chip, ErrorState, EventCard, Header, Modal, RatingStars, ToastView, categoryGradient, formatDateRange } from '.'
 import type { EventCardData } from '.'
 
 const event: EventCardData = {
@@ -44,7 +44,14 @@ describe('EventCard', () => {
     expect(within(photo).queryByText('무료')).not.toBeInTheDocument()
     expect(screen.getAllByText('무료')).toHaveLength(1)
     expect(screen.getByText('무료')).toHaveClass('text-free')
-    expect(screen.getByText('충남 · 축제')).toBeInTheDocument()
+    // 사진 없는 카드: 사진 자리(분류 색 그라데이션)와 정보 줄 칩에 같은 '시·도 · 분류'
+    expect(screen.getAllByText('충남 · 축제')).toHaveLength(2)
+  })
+
+  it('사진 없는 카드는 분류 색 그라데이션을 쓰고 모르는 분류는 축제 색', () => {
+    expect(categoryGradient('전시')).toContain('#2f2b2a')
+    expect(categoryGradient('기타')).toBe(categoryGradient('축제'))
+    expect(categoryGradient(null)).toBe(categoryGradient('축제'))
   })
 
   it('rating/review_count 필드가 없어도 크래시 없이 별점 줄을 숨긴다', () => {

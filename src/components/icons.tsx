@@ -96,6 +96,28 @@ export function CheckIcon(p: IconProps) {
   )
 }
 
+/** 토스트 실패 아이콘(느낌표) */
+export function AlertIcon(p: IconProps) {
+  return (
+    <svg {...base(p, 12, 12)}>
+      <path d="M6 3.5V6.5M6 8.5H6.005" strokeWidth="1.5" {...stroke} />
+    </svg>
+  )
+}
+
+/** 토스트 찜 해제 아이콘(빈 하트 12px) */
+export function SmallHeartIcon(p: IconProps) {
+  return (
+    <svg {...base(p, 12, 12)}>
+      <path
+        d="M6 10C6 10 2.5 7.8 2.5 5C2.505 4.596 2.632 4.202 2.864 3.872C3.097 3.541 3.424 3.289 3.804 3.148C4.183 3.007 4.595 2.985 4.987 3.083C5.38 3.182 5.733 3.397 6 3.7C6.267 3.397 6.62 3.182 7.013 3.083C7.405 2.985 7.817 3.007 8.197 3.148C8.576 3.289 8.903 3.541 9.136 3.872C9.368 4.202 9.495 4.596 9.5 5C9.5 7.8 6 10 6 10Z"
+        strokeWidth="1.2"
+        {...stroke}
+      />
+    </svg>
+  )
+}
+
 export function CloseIcon(p: IconProps) {
   return (
     <svg {...base(p, 20, 20)}>

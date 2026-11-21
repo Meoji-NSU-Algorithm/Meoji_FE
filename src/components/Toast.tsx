@@ -1,23 +1,29 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
-import { CheckIcon } from './icons'
+import { AlertIcon, CheckIcon, SmallHeartIcon } from './icons'
 
 export interface ToastViewProps {
   message: ReactNode
   /** 되돌리기/보러 가기 같은 액션 */
   actionLabel?: string
   onAction?: () => void
+  /** success: 주황 체크(기본), error: 주황 느낌표, unlike: 흰 원 빈 하트 (C4) */
+  icon?: 'success' | 'error' | 'unlike'
 }
 
 /** 표현 전용 토스트 (F2). 위치는 호출 측에서 잡는다 */
-export function ToastView({ message, actionLabel, onAction }: ToastViewProps) {
+export function ToastView({ message, actionLabel, onAction, icon = 'success' }: ToastViewProps) {
   return (
     <div
       role="status"
       className="inline-flex h-[52px] items-center gap-3 rounded-[14px] bg-ink pl-[18px] pr-[10px] text-white"
     >
-      <span className="flex size-[22px] items-center justify-center rounded-full bg-primary">
-        <CheckIcon />
+      <span
+        className={`flex size-[22px] items-center justify-center rounded-full ${
+          icon === 'unlike' ? 'bg-white text-ink' : 'bg-primary'
+        }`}
+      >
+        {icon === 'error' ? <AlertIcon /> : icon === 'unlike' ? <SmallHeartIcon /> : <CheckIcon />}
       </span>
       <span className="text-[14px] font-medium leading-[21px] whitespace-nowrap">{message}</span>
       {actionLabel && (
@@ -72,6 +78,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <ToastView
             message={toast.message}
             actionLabel={toast.actionLabel}
+            icon={toast.icon}
             onAction={() => {
               toast.onAction?.()
               dismiss()

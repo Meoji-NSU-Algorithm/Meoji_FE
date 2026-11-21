@@ -1,9 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Chip, SectionHeader, formatDateRange } from '../../components'
-import { PhotoIcon, CardHeartIcon } from '../../components/icons'
+import { useQueries } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
+import { Chip, SectionHeader, categoryGradient, formatDateRange } from '../../components'
+import { CardHeartIcon } from '../../components/icons'
 import { useAuth } from '../../auth'
-import { useMonthlyTop } from '../../api/hooks'
+import { qk, useMonthlyTop } from '../../api/hooks'
+import { getEvents } from '../../api/events'
 import type { EventCard } from '../../api/types'
 import { HomeCard } from './HomeCard'
 import { SectionState } from './SectionState'
@@ -151,11 +153,10 @@ function FreeCard({ event }: { event: EventCard }) {
         {event.image_url ? (
           <img src={event.image_url} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center text-white/40" style={{ background: 'var(--gradient-festival)' }}>
-            <PhotoIcon />
+          <div className="absolute inset-0 overflow-hidden" style={{ background: categoryGradient(event.category) }}>
+            <span className="absolute left-[42%] top-[30%] aspect-square w-[67%] rounded-full border-2 border-white/22" />
           </div>
         )}
-        <span className="absolute bottom-[10px] left-[10px] rounded-md bg-ink/80 px-2 py-[2px] text-[12px] font-bold text-white">무료</span>
         <button
           type="button"
           aria-label={liked ? '찜 해제' : '찜하기'}
@@ -233,31 +234,41 @@ export function WeekendSection({ events, state }: { events: EventCard[]; state: 
   )
 }
 
+/** 태그 카드 위 흐린 빛 원 두 개 (A6 DR4). 모든 카드에 같은 값 */
+const glow = (alpha: number) => `radial-gradient(circle, rgba(255,236,200,${alpha}), transparent 70%)`
+
 export function TagSection() {
-  const navigate = useNavigate()
+  const { isLoggedIn } = useAuth()
+  // 결과 0건 태그만 숨긴다. 태그 검색은 로그인이 필요해서(BE JWT) 비로그인이면 전부 보인다
+  const counts = useQueries({
+    queries: TAG_PROMOS.map((t) => ({
+      queryKey: qk.events({ tag: t.tag, size: 1 }),
+      queryFn: () => getEvents({ tag: t.tag, size: 1 }),
+      enabled: isLoggedIn,
+      staleTime: 10 * 60 * 1000,
+    })),
+  })
+  const tags = TAG_PROMOS.filter((_, i) => counts[i].data?.total_count !== 0)
+  if (tags.length === 0) return null
   return (
     <section className="pb-20 pt-12" aria-label="태그로 찾는 기획전">
       <SectionHeader title="태그로 찾는 기획전" moreLabel={null} />
-      <div className="grid grid-cols-3 gap-[14px] pt-[14px]">
-        {TAG_PROMOS.map((t) => (
+      <div className="grid grid-cols-5 gap-[14px] pt-[14px]">
+        {tags.map((t) => (
           <Link
             key={t.tag}
             to={`/events?tag=${encodeURIComponent(t.tag)}`}
-            onClick={(e) => {
-              e.preventDefault()
-              navigate(`/events?tag=${encodeURIComponent(t.tag)}`)
-            }}
-            className="relative flex h-[211px] flex-col justify-end overflow-hidden rounded-[18px] p-[18px] text-white"
+            className="relative flex h-[168px] flex-col justify-end overflow-hidden rounded-[16px] p-[18px] pb-[14px] text-white"
             style={{ background: t.gradient }}
           >
-            <span className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
-            <span className="absolute left-[14px] top-[14px] rounded-md bg-black/35 px-[10px] py-[3px] text-[12px] font-bold">#{t.tag}</span>
-            <span className="relative text-[20px] font-black leading-[30px] tracking-[-0.4px]">{t.title}</span>
-            <span className="relative text-[12px] leading-[18px] opacity-90">행사 모아보기 ›</span>
+            <span className="absolute -right-[30px] -top-[40px] size-[150px] rounded-full" style={{ background: glow(0.5) }} />
+            <span className="absolute right-[80px] top-[56px] size-[90px] rounded-full" style={{ background: glow(0.38) }} />
+            <span className="absolute left-[18px] top-4 rounded-full bg-white/22 px-[10px] py-1 text-[12px] font-bold">#{t.tag}</span>
+            <span className="relative truncate text-[18px] font-black leading-[23.4px] tracking-[-0.36px]">{t.title}</span>
+            <span className="relative pt-1 text-[12px] opacity-90">행사 모아보기 ›</span>
           </Link>
         ))}
       </div>
     </section>
   )
 }
-

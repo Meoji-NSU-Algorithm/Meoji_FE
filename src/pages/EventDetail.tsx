@@ -4,7 +4,7 @@ import { useEvent, useIsBookmarked } from '../api/hooks'
 import { ApiError } from '../api/client'
 import { useAuth, useRequireLogin } from '../auth'
 import { useBookmarkToggle } from '../lib/useBookmarkToggle'
-import { EmptyState, ErrorState, Spinner, Tag, formatDateRange, formatPrice, useToast } from '../components'
+import { EmptyState, ErrorState, Spinner, Tag, categoryGradient, formatDateRange, formatPrice, useToast } from '../components'
 import { CalendarIcon, HeartIcon, MapPinIcon, StarIcon } from '../components/icons'
 import { MiniMap } from './detail/MiniMap'
 import { ReviewSection } from './detail/ReviewSection'
@@ -112,7 +112,7 @@ export default function EventDetail() {
       <div
         data-testid="detail-hero"
         className="relative h-[438px] overflow-hidden rounded-card bg-surface-muted"
-        style={hero ? undefined : { backgroundImage: 'var(--gradient-festival)' }}
+        style={hero ? undefined : { background: categoryGradient(event.category) }}
       >
         {hero ? (
           <img src={hero} alt={event.title} className="size-full object-cover" />
@@ -223,7 +223,7 @@ export default function EventDetail() {
         </aside>
       </div>
 
-      <ReviewSection eventId={event.id} reviews={event.reviews ?? []} averageRating={event.average_rating} reviewCount={event.review_count} />
+      <ReviewSection eventId={event.id} eventTitle={event.title} reviews={event.reviews ?? []} averageRating={event.average_rating} reviewCount={event.review_count} />
       <div className="h-20" />
     </div>
   )

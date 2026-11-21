@@ -1,6 +1,6 @@
 import type { MouseEvent } from 'react'
-import { CardHeartIcon, PhotoIcon, StarIcon } from './icons'
-import { formatDateRange, formatPrice } from './eventFormat'
+import { CardHeartIcon, StarIcon } from './icons'
+import { categoryGradient, formatDateRange, formatPrice } from './eventFormat'
 
 /** BE 카드 응답 형태 (+ 선택적 평점/리뷰 수/조회수) */
 export interface EventCardData {
@@ -92,7 +92,7 @@ export function EventCard({
             className="absolute inset-0 size-full object-cover"
           />
         ) : (
-          <ThumbnailPlaceholder title={event.title} category={event.category} />
+          <ThumbnailPlaceholder title={event.title} label={meta} category={event.category} />
         )}
         {categoryPill && event.category && (
           <span className="absolute left-3 top-3 flex h-6 items-center rounded-[7px] bg-surface px-[9px] text-[12px] font-bold text-ink">
@@ -164,25 +164,17 @@ export function EventCard({
   )
 }
 
-/** 썸네일이 없을 때: 그라데이션 + 영문 카테고리 느낌의 라벨 (A1 카드 스타일), 큰 이미지 영역은 '사진 없음' 아이콘 */
-function ThumbnailPlaceholder({ title, category }: { title: string; category: string }) {
+/** 썸네일이 없을 때: 분류 색 그라데이션 + 시·도 · 분류 + 제목 + 흰 테두리 원 (A4) */
+function ThumbnailPlaceholder({ title, label, category }: { title: string; label: string; category: string }) {
   return (
     <div
       data-testid="thumbnail-placeholder"
-      className="absolute inset-0 text-white"
-      style={{ background: 'var(--gradient-festival)' }}
+      className="absolute inset-0 overflow-hidden p-4 text-white"
+      style={{ background: categoryGradient(category) }}
     >
-      <div className="absolute left-[14px] right-[14px] top-[15px]">
-        {category && (
-          <p className="text-[10.5px] font-extrabold uppercase leading-[12.8px] tracking-[1.05px] opacity-85 font-display">
-            {category}
-          </p>
-        )}
-        <p className="mt-1 line-clamp-2 text-[17px] font-black leading-[20.7px] tracking-[-0.34px]">
-          {title}
-        </p>
-      </div>
-      <PhotoIcon className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-white/40" />
+      {label && <p className="text-[12px] font-bold opacity-92">{label}</p>}
+      <p className="mt-1 line-clamp-2 text-[19px] font-black leading-[23.75px] tracking-[-0.38px]">{title}</p>
+      <span className="pointer-events-none absolute left-[42%] top-[53%] aspect-square w-[85%] rounded-full border-2 border-white/22" />
     </div>
   )
 }
