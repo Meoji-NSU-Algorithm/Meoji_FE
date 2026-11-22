@@ -18,7 +18,7 @@ export function EmptyState({ title, description, icon, action, variant = 'defaul
   return (
     <div className="flex flex-col items-center gap-[6px] px-6 py-16 text-center">
       {feature ? (
-        <span data-testid="empty-state-tile" className="mb-[10px] flex size-[84px] items-center justify-center rounded-[24px] bg-primary-tint text-primary">
+        <span data-testid="empty-state-tile" className="mb-[10px] flex size-[84px] items-center justify-center rounded-[28px] bg-primary-tint text-brand">
           {icon ?? <PhotoIcon />}
         </span>
       ) : (
@@ -95,6 +95,8 @@ export interface ErrorStateProps {
   error?: unknown
   /** 페이지 전체가 아니라 일부 영역 안에 넣는 작은 크기 (카드형에서만) */
   compact?: boolean
+  /** 404 전체 화면(F1)처럼 바깥에서 여백과 높이를 정할 때 자체 여백을 없앤다 */
+  flush?: boolean
 }
 
 /** 오류/404 (F1 스타일), 또는 kind·error 가 있으면 실패·안내 카드 (C4) */
@@ -108,6 +110,7 @@ export function ErrorState({
   kind,
   error,
   compact = false,
+  flush = false,
 }: ErrorStateProps) {
   const k = code ? undefined : (kind ?? errorKind(error))
   if (k) {
@@ -152,7 +155,7 @@ export function ErrorState({
     )
   }
   return (
-    <div role="alert" className="flex flex-col items-center px-6 py-20 text-center">
+    <div role="alert" className={`flex flex-col items-center text-center ${flush ? '' : 'px-6 py-20'}`}>
       {code && (
         <p className="font-display text-[150px] font-black leading-[150px] tracking-[-9px] text-brand">
           {code}

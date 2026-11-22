@@ -140,22 +140,22 @@ export default function EventDetail() {
             <div className="flex flex-wrap items-center gap-[18px] pt-[10px] text-[14px] leading-[21px] text-ink-muted">
               {dates && (
                 <span className="inline-flex items-center gap-[5px]">
-                  <CalendarIcon size={14} /> {dates}
+                  <CalendarIcon size={16} /> {dates}
                 </span>
               )}
               {event.venue_name && (
                 <span className="inline-flex items-center gap-[5px]">
-                  <MapPinIcon size={14} /> {event.venue_name}
+                  <MapPinIcon size={16} /> {event.venue_name}
                 </span>
               )}
               {event.review_count > 0 ? (
                 <span className="inline-flex items-center gap-[5px]">
-                  <StarIcon size={14} className="text-star" />
+                  <StarIcon size={16} className="text-star" />
                   <b className="text-ink">{(event.average_rating ?? 0).toFixed(1)}</b> ({event.review_count}개 리뷰)
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-[5px]">
-                  <StarIcon size={14} className="text-star" /> - 아직 리뷰가 없어요
+                  <StarIcon size={16} className="text-star" /> - 아직 리뷰가 없어요
                 </span>
               )}
             </div>

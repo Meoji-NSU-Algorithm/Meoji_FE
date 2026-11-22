@@ -29,7 +29,7 @@ export function ReviewPhotos({ images, authorName, authorImage, caption }: Props
                 type="button"
                 aria-label={`리뷰 사진 ${i + 1} 크게 보기${last ? `, ${more}장 더 있음` : ''}`}
                 onClick={() => setOpen(i)}
-                className="relative block size-24 overflow-hidden rounded-[10px] bg-surface-muted"
+                className="relative block size-20 overflow-hidden rounded-[10px] bg-surface-muted"
               >
                 <img src={img.url} alt="" className="size-full object-cover" />
                 {last && (

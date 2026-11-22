@@ -10,7 +10,7 @@ export function PolicyArticles({ policy, compact = false }: { policy: PolicyData
     <>
       {policy.articles.map((a) => (
         <section key={a.id} id={a.id} className={compact ? 'pb-[10px]' : 'pb-[22px]'}>
-          <h3 className={compact ? 'text-[14px] font-bold leading-[23.8px] text-ink' : 'text-[16px] font-black text-ink'}>
+          <h3 className={compact ? 'text-[14px] font-bold leading-[23.8px] text-ink' : 'text-[16px] font-black leading-[19px] text-ink'}>
             {a.title}
           </h3>
           {a.paragraphs.map((p, i) => (
@@ -119,7 +119,9 @@ export default function Policy({ policyKey }: { policyKey: PolicyKey }) {
             </Link>
           )
         })}
-        <p className="ml-auto text-[13px] text-ink-muted">시행일 {POLICY_EFFECTIVE_DATE}</p>
+        <p className="ml-auto text-[13px] text-ink-muted">
+          시행일 <b className="font-bold text-ink">{POLICY_EFFECTIVE_DATE}</b>
+        </p>
       </div>
       <div className="mt-6 grid grid-cols-1 gap-10 border-t border-line pt-7 md:grid-cols-[220px_minmax(0,1fr)]">
         <nav aria-label="조항 목차" className="flex flex-col md:sticky md:top-6 md:self-start">
@@ -128,7 +130,7 @@ export default function Policy({ policyKey }: { policyKey: PolicyKey }) {
               key={a.id}
               type="button"
               onClick={() => go(a.id)}
-              className={`rounded-lg px-[10px] py-[7px] text-left text-[13px] ${
+              className={`rounded-md px-[10px] py-[7px] text-left text-[13px] leading-4 ${
                 a.id === current ? 'bg-primary-tint font-bold text-primary-ink' : 'text-ink-muted'
               }`}
             >
@@ -136,7 +138,7 @@ export default function Policy({ policyKey }: { policyKey: PolicyKey }) {
             </button>
           ))}
         </nav>
-        <article className="max-w-[640px]">
+        <article className="max-w-[600px]">
           <PolicyArticles policy={policy} />
         </article>
       </div>

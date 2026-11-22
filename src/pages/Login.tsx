@@ -90,17 +90,18 @@ function Collage() {
 
 /**
  * 로그인 화면 하단 숫자는 모두 실제 데이터에서 가져온다(행사 수, 시·도 수, 분류 수).
- * /events/sidos 는 JWT 가 필요해서 비로그인 상태에서는 실패할 수 있고, 그때는 '-' 로 보인다.
+ * /events/sidos 는 공개 API 다. 숫자를 못 받은 통계 칸은 '-' 대신 칸째 숨긴다(Figma 3차 DR8).
  */
 function useStats(): string[][] {
   const total = useEvents({ page: 1, size: 1 }).data?.total_count
   const categories = useCategories().data?.length
   const sidos = useQuery({ queryKey: ['sidos', 'public'], queryFn: getSidos, retry: false, staleTime: 60 * 60 * 1000 }).data?.length
-  return [
-    [total != null ? total.toLocaleString() : '-', '진행 중·예정 행사'],
-    [sidos != null ? String(sidos) : '-', '전국 시·도'],
-    [categories != null ? String(categories) : '-', '행사 분류'],
+  const stats: Array<[number | undefined, string]> = [
+    [total, '진행 중·예정 행사'],
+    [sidos, '전국 시·도'],
+    [categories, '행사 분류'],
   ]
+  return stats.flatMap(([n, label]) => (n != null ? [[n.toLocaleString(), label]] : []))
 }
 
 export default function Login() {
@@ -144,8 +145,8 @@ export default function Login() {
 
         <div className="flex items-center justify-center px-6 py-10">
           <div className="w-[380px] max-w-full">
-            <p className="font-display text-[40px] font-black leading-[40px] tracking-[-2px] text-brand">meoji</p>
-            <h1 className="pt-[26px] text-[28px] font-black leading-[42px] tracking-[-0.56px] text-ink">3초 만에 시작하기</h1>
+            <p className="relative -top-[7px] font-display text-[40px] font-black leading-[40px] tracking-[-2px] text-brand">meoji</p>
+            <h1 className="pt-[28px] text-[28px] font-black leading-[42px] tracking-[-0.56px] text-ink">3초 만에 시작하기</h1>
             <p className="pt-[6px] text-[14px] leading-[21px] text-ink-muted">카카오 계정 하나면 가입과 로그인이 한 번에 끝나요</p>
             <button
               type="button"

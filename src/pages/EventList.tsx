@@ -117,7 +117,7 @@ export default function EventList() {
   }
 
   return (
-    <div className="mx-auto max-w-content px-6 pb-12">
+    <div className="mx-auto max-w-content px-6 pb-20">
       <PageTitleBar active="list" />
       <EventSearchBar value={params.q ?? ''} onSubmit={(q) => requireLogin(() => patch({ q: q || undefined }))} />
       <div className="pt-4">

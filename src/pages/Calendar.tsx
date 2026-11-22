@@ -60,7 +60,7 @@ export default function Calendar() {
   }
 
   return (
-    <div className="mx-auto max-w-content px-6 pb-12">
+    <div className="mx-auto max-w-content px-6 pb-20">
       <PageTitleBar active="calendar" />
       {!isLoggedIn ? (
         <StatePanel
@@ -130,7 +130,7 @@ export default function Calendar() {
                   key={wi}
                   role="row"
                   className={`relative grid grid-cols-7 ${wi < weeks.length - 1 ? 'border-b border-line' : ''}`}
-                  style={{ minHeight: Math.max(104, 34 + week.lanes * LANE_H + 8) }}
+                  style={{ minHeight: Math.max(104, 30 + week.lanes * LANE_H + 8) }}
                 >
                   {week.days.map((d, di) => (
                     <div
@@ -143,13 +143,13 @@ export default function Calendar() {
                           {d.day}
                         </span>
                       ) : (
-                        <span className={`text-[12px] font-bold leading-[18px] ${d.inMonth ? 'text-ink' : 'text-[#c9c3bf]'}`}>
+                        <span className={`block text-[12px] font-bold leading-[18px] ${d.inMonth ? 'text-ink' : 'text-[#c9c3bf]'}`}>
                           {!d.inMonth && (d.day === 1 || (wi === 0 && di === 0)) ? `${Number(d.date.slice(5, 7))}월 ${d.day}` : d.day}
                         </span>
                       )}
                     </div>
                   ))}
-                  <div className="pointer-events-none absolute inset-x-0 top-[34px] grid grid-cols-7 gap-y-[2px] px-2">
+                  <div className="pointer-events-none absolute inset-x-0 top-[30px] grid grid-cols-7 gap-y-[2px] px-2">
                     {week.segments.map((s) => (
                       <Link
                         key={`${s.event.id}-${wi}`}

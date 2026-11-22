@@ -32,7 +32,7 @@
   --color-line: #eeebe9;
 
   /* 의미색 */
-  --color-free: #1f8a5b;
+  --color-free: #16834a;
   --color-star: #ffb800;
   --color-star-empty: #e5e0dc; /* Figma에 빈 별 색 없음: 임의 지정 */
   --color-kakao: #fee500;
@@ -66,4 +66,31 @@ body {
   color: var(--color-ink);
   background: var(--color-surface);
   -webkit-font-smoothing: antialiased;
+}
+
+/* 태그 기획전 카드의 흐린 빛 원 2개 (Figma 3차 DR4 보드 CSS 그대로) */
+.promo-card {
+  position: relative;
+  overflow: hidden;
+}
+.promo-card::before,
+.promo-card::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.promo-card::before {
+  width: 150px;
+  height: 150px;
+  right: -30px;
+  top: -40px;
+  background: radial-gradient(circle, rgba(255, 236, 200, 0.5), transparent 70%);
+}
+.promo-card::after {
+  width: 90px;
+  height: 90px;
+  right: 80px;
+  top: 56px;
+  background: radial-gradient(circle, rgba(255, 236, 200, 0.38), transparent 70%);
 }
