@@ -60,7 +60,7 @@ EC2에서 백엔드 저장소 폴더로 이동해서 진행한다.
      -H 'Access-Control-Request-Headers: authorization'
    ```
    - 첫 번째는 200, 두 번째 응답 헤더에 `Access-Control-Allow-Origin: https://meoji.spectodocs.cloud` 가 있어야 한다. 없으면 `CORS_ORIGINS` 오타 또는 재시작 누락이다.
-6. **이미지 저장소(R2) 쓰기 권한 확인** (필수): 2026-11-22 로컬 테스트에서 정상 사진 업로드가 `AccessDenied` 로 실패했다(`docs/backend-requests.md` B2). 운영 서버의 R2 키가 해당 버킷에 **쓰기** 권한(Object Read & Write)이 있어야 프로필·리뷰 사진이 올라간다. 배포 후 6단계 체크리스트의 사진 업로드 항목으로 확인한다.
+6. **이미지 저장소(R2) 쓰기 권한 확인** (필수): 2026-11-22 로컬 테스트에서 정상 사진 업로드가 `AccessDenied` 로 실패했다(`docs/backend-requests.md` 해결된 항목의 'R2 쓰기 권한'). 운영 서버의 R2 키가 해당 버킷에 **쓰기** 권한(Object Read & Write)이 있어야 프로필·리뷰 사진이 올라간다. 로컬 키는 권한을 고친 뒤 같은 날 다시 테스트해 통과했다. 운영 서버 키는 따로 확인해야 한다. 배포 후 6단계 체크리스트의 사진 업로드 항목으로 확인한다.
 7. 기타 점검 (`docs/backend-requests.md` 의 '배포 참고'):
    - AWS 보안 그룹에서 80, 443 포트가 열려 있어야 Caddy가 인증서를 받는다.
    - `S3_PUBLIC_URL` 이 비어 있으면 사진 URL은 1시간 뒤 만료되는 임시 주소다. 값을 넣는다면 `https://` 로 시작해야 한다(`http://` 이면 브라우저가 사진을 차단한다).
