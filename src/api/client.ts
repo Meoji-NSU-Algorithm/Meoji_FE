@@ -1,7 +1,9 @@
 import { tokenStorage } from '../auth/tokenStorage'
 import type { ApiFailure, TokenPair } from './types'
 
-export const API_BASE = import.meta.env.VITE_API_BASE ?? '/api'
+// 개발: 지정하지 않으면 '/api' (Vite 프록시). 운영: 백엔드 주소(예: https://api.spectodocs.cloud/api).
+// 끝의 '/' 는 요청 주소가 '//events' 가 되지 않도록 지운다.
+export const API_BASE = (import.meta.env.VITE_API_BASE ?? '/api').replace(/\/+$/, '')
 
 export class ApiError extends Error {
   status: number
