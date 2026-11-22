@@ -34,9 +34,10 @@ const MESSAGES: Record<string, string> = {
   REVIEW_NOT_FOUND: '리뷰를 찾을 수 없어요. 이미 삭제됐는지 확인해 주세요.',
   REVIEW_FORBIDDEN: '내가 쓴 리뷰만 수정하거나 삭제할 수 있어요. 내 리뷰인지 확인해 주세요.',
   REVIEW_ALREADY_EXISTS: '이미 이 행사에 리뷰를 작성했어요. 쓴 리뷰는 수정할 수 있어요.',
-  REVIEW_IMAGE_INVALID: 'JPG, PNG, WEBP 사진만 올릴 수 있어요. 다른 사진으로 바꿔 주세요.',
-  REVIEW_IMAGE_TOO_LARGE: '10MB 이하 사진만 올릴 수 있어요. 더 작은 사진으로 바꿔 주세요.',
-  REVIEW_IMAGE_STORAGE_UNAVAILABLE: '이미지 저장소를 잠시 사용할 수 없어요. 잠시 후 다시 시도해 주세요.',
+  // BE가 리뷰·프로필 사진 모두 같은 코드를 쓴다 (이전 이름은 REVIEW_IMAGE_*)
+  IMAGE_INVALID: 'JPG, PNG, WEBP 사진만 올릴 수 있어요. 다른 사진으로 바꿔 주세요.',
+  IMAGE_TOO_LARGE: '10MB 이하 사진만 올릴 수 있어요. 더 작은 사진으로 바꿔 주세요.',
+  IMAGE_STORAGE_UNAVAILABLE: '이미지 저장소를 잠시 사용할 수 없어요. 잠시 후 다시 시도해 주세요.',
 }
 
 const FALLBACK = '잠시 문제가 생겼어요. 잠시 후 다시 시도해 주세요.'
@@ -48,7 +49,7 @@ export function errorMessage(errOrCode: unknown): string {
   if (code) {
     if (MESSAGES[code]) return MESSAGES[code]
     if (code.startsWith('DIRECTIONS_API_')) return MESSAGES.DIRECTIONS_API_ERROR
-    if (code.startsWith('REVIEW_IMAGE_')) return '사진을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.'
+    if (code.startsWith('IMAGE_')) return '사진을 처리하지 못했어요. 잠시 후 다시 시도해 주세요.'
   }
   if (errOrCode instanceof ApiError && errOrCode.status === 413) return MESSAGES.COMMON_PAYLOAD_TOO_LARGE
   return FALLBACK

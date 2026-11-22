@@ -144,8 +144,8 @@ describe('에러 문구', () => {
   it('길찾기·리뷰 사진 코드를 문구로 바꾸고, 모르는 코드는 일반 문구를 쓴다', () => {
     expect(errorMessage('DIRECTIONS_API_TIMEOUT')).toContain('늦어지고')
     expect(errorMessage('DIRECTIONS_API_SOMETHING_NEW')).toContain('길찾기 서비스에 문제')
-    expect(errorMessage('REVIEW_IMAGE_STORAGE_UNAVAILABLE')).toContain('이미지 저장소')
-    expect(errorMessage('REVIEW_IMAGE_WHATEVER')).toContain('사진을 처리하지 못했어요')
+    expect(errorMessage('IMAGE_STORAGE_UNAVAILABLE')).toContain('이미지 저장소')
+    expect(errorMessage('IMAGE_WHATEVER')).toContain('사진을 처리하지 못했어요')
     expect(errorMessage(new ApiError(413, 'X', 'x'))).toContain('너무 커요')
     expect(errorMessage(new ApiError(500, 'ZZZ', 'x'))).toContain('잠시 문제가 생겼어요')
     expect(errorMessage(undefined)).toContain('잠시 문제가 생겼어요')

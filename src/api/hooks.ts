@@ -12,7 +12,7 @@ import {
   getMyReviews,
   updateReview,
 } from './reviews'
-import { getConsents, saveConsents, withdrawAccount } from './users'
+import { getConsents, putProfileImage, putProfileImageSource, saveConsents, withdrawAccount } from './users'
 import type { BookmarkList, DirectionsQuery, EventCard, EventListParams, ReviewInput } from './types'
 
 export const qk = {
@@ -196,3 +196,8 @@ export function useSaveConsents() {
 export function useWithdraw() {
   return useMutation({ mutationFn: withdrawAccount })
 }
+
+// ---- 프로필 사진 ----
+// 응답이 갱신된 User 이므로, 호출하는 쪽에서 useAuth().refreshUser() 로 화면의 user 를 바꾼다.
+export const useUploadProfileImage = () => useMutation({ mutationFn: putProfileImage })
+export const useResetProfileImage = () => useMutation({ mutationFn: putProfileImageSource })

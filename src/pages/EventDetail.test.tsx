@@ -199,7 +199,7 @@ describe('리뷰 사진', () => {
   it('사진 관련 등록 에러 코드를 문구로 바꿔 보여준다', async () => {
     server.use(
       http.get('*/api/events/1', () => ok(emptyEvent)),
-      http.post('*/api/reviews', () => fail(503, 'REVIEW_IMAGE_STORAGE_UNAVAILABLE')),
+      http.post('*/api/reviews', () => fail(503, 'IMAGE_STORAGE_UNAVAILABLE')),
     )
     renderAt('/events/1')
     await userEvent.upload(await screen.findByTestId('review-image-input'), png())

@@ -86,4 +86,11 @@ export const directionsFixture = (over: Record<string, unknown> = {}) => ({
 export const handlers = [
   http.get('*/api/events/categories', () => ok([{ id: 1, name: '공연', sort_order: 1 }])),
   http.get('*/api/users/me', () => ok({ id: 1, email: 'a@b.c', nickname: '테스터', profile_image: null })),
+  // BE: multipart 필드 `image` 한 장. 응답은 /users/me 와 같은 User
+  http.put('*/api/users/me/profile-image', () =>
+    ok({ id: 1, email: 'a@b.c', nickname: '테스터', profile_image: 'https://img.test/profiles/new.webp' }),
+  ),
+  http.put('*/api/users/me/profile-image/source', () =>
+    ok({ id: 1, email: 'a@b.c', nickname: '테스터', profile_image: null }),
+  ),
 ]
