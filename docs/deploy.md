@@ -60,7 +60,8 @@ EC2에서 백엔드 저장소 폴더로 이동해서 진행한다.
      -H 'Access-Control-Request-Headers: authorization'
    ```
    - 첫 번째는 200, 두 번째 응답 헤더에 `Access-Control-Allow-Origin: https://meoji.spectodocs.cloud` 가 있어야 한다. 없으면 `CORS_ORIGINS` 오타 또는 재시작 누락이다.
-6. 기타 점검 (`docs/backend-requests.md` 의 '배포 참고'):
+6. **이미지 저장소(R2) 쓰기 권한 확인** (필수): 2026-11-22 로컬 테스트에서 정상 사진 업로드가 `AccessDenied` 로 실패했다(`docs/backend-requests.md` B2). 운영 서버의 R2 키가 해당 버킷에 **쓰기** 권한(Object Read & Write)이 있어야 프로필·리뷰 사진이 올라간다. 배포 후 6단계 체크리스트의 사진 업로드 항목으로 확인한다.
+7. 기타 점검 (`docs/backend-requests.md` 의 '배포 참고'):
    - AWS 보안 그룹에서 80, 443 포트가 열려 있어야 Caddy가 인증서를 받는다.
    - `S3_PUBLIC_URL` 이 비어 있으면 사진 URL은 1시간 뒤 만료되는 임시 주소다. 값을 넣는다면 `https://` 로 시작해야 한다(`http://` 이면 브라우저가 사진을 차단한다).
    - 태그 재분류가 필요하면 `docker compose run --rm api flask --app wsgi retag-events`.
@@ -114,6 +115,7 @@ EC2에서 백엔드 저장소 폴더로 이동해서 진행한다.
 | 로그인 후 화면이 비거나 `/users/me` 500 | 마이그레이션 `flask db upgrade` 미적용 |
 | 카카오 로그인 중 오류 | Redirect URI 세 곳 불일치(4단계 3번) |
 | 지도 영역이 회색/빈 화면 | 카카오 콘솔 Web 플랫폼 도메인에 `https://meoji.spectodocs.cloud` 누락, 또는 `VITE_KAKAO_JS_KEY` 오타 |
+| 사진 올리면 '이미지 저장소를 잠시 사용할 수 없어요' (503) | R2 키에 쓰기 권한이 없다. BE 로그에 `AccessDenied` / `PutObject` 가 있으면 확인됨 (3단계 6번) |
 | 사진이 안 보이고 콘솔에 mixed content | `S3_PUBLIC_URL` 이 `http://` |
 | 사진이 한 시간 뒤 사라짐 | `S3_PUBLIC_URL` 이 비어 임시 주소를 쓰는 중 |
 | 길찾기 502 | ODsay 콘솔에 EC2 IP 미등록 |

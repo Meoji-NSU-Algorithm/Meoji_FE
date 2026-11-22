@@ -29,6 +29,15 @@ FE가 이미 우회한 것(필드명 camelCase/snake_case 혼재, 북마크 응�
 | # | 우선순위 | 요청 |
 |---|---|---|
 | B1 | P2 | 자동차 길찾기가 일부 출발지·도착지에서 404 `ROUTE_NOT_FOUND` (원인 미확인) |
+| B2 | P1 | 이미지 저장소(R2) `PutObject` 가 `AccessDenied` — 프로필·리뷰 사진 업로드가 모두 503 |
+
+### B2. [P1] 이미지 저장소(R2) 쓰기 권한 없음
+
+- **재현 (2026-11-22, 로컬 BE, 사용자 승인 후 1회)**: 정상 PNG(256×256, 21KB) 한 장으로 `PUT /api/users/me/profile-image` 를 호출하면 503 `IMAGE_STORAGE_UNAVAILABLE`. BE 로그: `이미지 저장 실패: key=profiles/<uuid>.webp` / `botocore.errorfactory.AccessDenied: An error occurred (AccessDenied) when calling the PutObject operation: Access Denied` (`app/core/storage.py:58`).
+- **원인 (확인됨)**: BE `.env` 의 R2 액세스 키가 이 버킷에 쓰기(PutObject) 권한이 없다. 읽기용 토큰이거나 버킷 정책에서 막혔을 가능성이 크다. 사진 변환(webp)까지는 통과했고 저장 단계에서 실패했다.
+- **영향**: 프로필 사진 업로드와 리뷰 사진 첨부가 모두 서버에서 실패한다. 이전 QA(11/18~21)는 원격 버킷에 쓰지 않아 이 문제를 발견하지 못했다. **운영 서버가 같은 키를 쓰면 운영에서도 사진 기능이 동작하지 않는다.** FE는 '이미지 저장소를 잠시 사용할 수 없어요. 잠시 후 다시 시도해 주세요.' 를 보여 주고 화면은 막히지 않는다.
+- **요청**: R2 API 토큰 권한을 해당 버킷의 **Object Read & Write** 로 바꾸거나 새 토큰을 발급해 BE `.env` 에 넣고, 업로드가 200인지 확인해 달라. 운영 서버 키도 같은 방식으로 확인한다.
+- **우선순위**: P1 (사진 기능 전체가 막힘)
 
 ### B1. [P2] 자동차 길찾기 404 `ROUTE_NOT_FOUND`
 
