@@ -50,7 +50,7 @@ EC2에서 백엔드 저장소 폴더로 이동해서 진행한다.
    - 이전에 `http://meoji.spectodocs.cloud`(https 아님)로 적혀 있었다면 `https://` 로 고친다.
 3. **DB 마이그레이션**(필수): `docker compose run --rm api flask db upgrade`
    - 이번 배포에는 프로필 사진 컬럼을 추가하는 `e7a4c9b2d815` 가 들어 있다. 적용하지 않으면 `/api/users/me` 도 500으로 실패해서 로그인 직후 화면이 깨진다.
-4. 다시 띄운다: `docker compose up -d`
+4. 다시 띄운다: `docker compose up -d`. `.env` 는 서버가 시작할 때만 읽으므로, 이미 배포되어 있고 `.env` 를 바꾸지 않았다면 다시 띄울 필요 없다.
 5. 확인:
    ```
    curl -i https://api.spectodocs.cloud/api/health
@@ -77,7 +77,7 @@ EC2에서 백엔드 저장소 폴더로 이동해서 진행한다.
 
 ## 5. 프론트엔드 (Vercel)
 
-1. vercel.com 에 GitHub로 로그인 > **Add New > Project** > `Merge-NSU-Algorithm/Merge_FE` 를 Import한다.
+1. vercel.com 에 GitHub로 로그인 > **Add New > Project** > `Meoji-NSU-Algorithm/Meoji_FE` 를 Import한다. (저장소가 `Merge-NSU-Algorithm/Merge_FE` 에서 이 이름으로 옮겨졌다.)
    - 조직 저장소가 안 보이면 Vercel의 GitHub 앱 설정에서 조직 접근을 허용한다. 무료(Hobby) 플랜은 조직 저장소 배포에 제한이 있을 수 있다. 막히면 저장소 소유자 계정에서 진행하거나 Pro 플랜을 쓴다.
 2. 설정은 자동 감지된다(Framework: Vite, Build: `npm run build`, Output: `dist`). 코드 저장소의 `vercel.json` 이 `/events/1` 같은 주소를 새로고침해도 404가 나지 않게 해 준다.
 3. **Environment Variables** (Production)에 넣는다:
@@ -102,7 +102,7 @@ EC2에서 백엔드 저장소 폴더로 이동해서 진행한다.
 - [ ] 카카오 로그인 > 약관 동의 > 홈으로 돌아와 로그인 상태가 유지된다.
 - [ ] 지도 화면에서 카카오 지도가 보인다.
 - [ ] 행사 상세에서 사진이 보인다(자물쇠 아이콘 경고 없음).
-- [ ] 마이페이지 > 프로필에서 사진을 올리고, 새로고침해도 유지된다. '기본 이미지로 변경'도 동작한다.
+- [ ] 마이페이지 > 프로필에서 사진을 고르면 '사진 자르기' 창이 뜨고, 적용하면 올라가며, 새로고침해도 유지된다. '기본 이미지로 변경'도 동작한다.
 - [ ] 길찾기(대중교통)가 열린다. 외부 API 한도를 아끼려고 한두 번만 확인한다.
 
 ## 7. 문제가 생기면
