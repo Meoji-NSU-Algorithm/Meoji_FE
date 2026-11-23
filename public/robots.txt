@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /my
+Disallow: /auth/
+
+Sitemap: https://meoji.spectodocs.cloud/sitemap.xml
