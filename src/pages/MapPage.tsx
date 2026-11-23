@@ -163,7 +163,7 @@ export default function MapPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[380px_1fr] lg:h-[max(600px,calc(100dvh-460px))]">
+      <div className="grid gap-4 lg:grid-cols-[380px_1fr] lg:h-[600px]">
         <aside className="h-[360px] overflow-y-auto rounded-lg border border-line p-2 lg:h-auto" aria-label="행사 목록">
           {needsLogin ? (
             <StatePanel
