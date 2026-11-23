@@ -68,18 +68,6 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* 넓은 화면(QHD 이상, 4K)에서 콘텐츠가 작게 보이지 않도록 FHD(1920px)와 비슷한 비율로 키운다.
-   크기를 px로 적어 둬서 rem 대신 zoom을 쓴다. */
-@media (min-width: 2400px) {
-  html { zoom: 1.25; }
-}
-@media (min-width: 3200px) {
-  html { zoom: 1.5; }
-}
-@media (min-width: 3600px) {
-  html { zoom: 2; }
-}
-
 /* 태그 기획전 카드의 흐린 빛 원 2개 (Figma 3차 DR4 보드 CSS 그대로) */
 .promo-card {
   position: relative;
