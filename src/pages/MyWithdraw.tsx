@@ -45,7 +45,7 @@ function Withdraw() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[520px] rounded-[22px] border border-line bg-surface px-8 py-9">
+    <div className="mx-auto w-full max-w-[520px] rounded-[22px] border border-line bg-surface px-5 py-7 md:px-8 md:py-9">
       <h1 className="text-[24px] font-black leading-[1.5] text-ink">회원 탈퇴</h1>
       <p className="pt-1 text-[14px] leading-[1.5] text-ink-muted">탈퇴하기 전에 아래 내용을 꼭 확인해 주세요</p>
 
@@ -120,7 +120,7 @@ function Withdraw() {
 
 export default function MyWithdraw() {
   return (
-    <div className="px-6 pb-[100px] pt-[60px]">
+    <div className="px-4 pb-12 pt-8 md:px-6 md:pb-[100px] md:pt-[60px]">
       <LoginRequired>
         <Withdraw />
       </LoginRequired>

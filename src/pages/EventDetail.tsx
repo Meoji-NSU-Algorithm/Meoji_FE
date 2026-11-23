@@ -20,7 +20,7 @@ function status(start: string | null, end: string | null, permanent: boolean) {
 
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="grid grid-cols-[96px_1fr] border-b border-line py-[14px] text-[14px] leading-[21px]">
+    <div className="grid grid-cols-[72px_1fr] border-b md:grid-cols-[96px_1fr] border-line py-[14px] text-[14px] leading-[21px]">
       <dt className="text-ink-muted">{label}</dt>
       <dd className="text-ink">{children}</dd>
     </div>
@@ -50,7 +50,7 @@ export default function EventDetail() {
   }
   if (!isLoggedIn) {
     return (
-      <div className="mx-auto max-w-content px-6 py-10">
+      <div className="mx-auto max-w-content px-4 md:px-6 py-10">
         <EmptyState
           title="로그인하면 행사 상세를 볼 수 있어요"
           description="카카오로 간편하게 로그인하고 행사 정보와 리뷰를 확인해 보세요"
@@ -102,14 +102,14 @@ export default function EventDetail() {
   }
 
   return (
-    <div className="mx-auto max-w-content px-6">
+    <div className="mx-auto max-w-content px-4 md:px-6">
       <div className="flex h-[57.5px] items-end pb-[14px]">
         <Link to="/events" className="inline-flex items-center gap-1 text-[13px] text-ink-muted">
           <ChevronLeftIcon /> 행사 목록으로
         </Link>
       </div>
 
-      <div data-testid="detail-hero" className="relative h-[438px] overflow-hidden rounded-card bg-surface-muted">
+      <div data-testid="detail-hero" className="relative h-[240px] overflow-hidden md:h-[438px] rounded-card bg-surface-muted">
         {hero ? (
           <img src={hero} alt={event.title} className="size-full object-cover" />
         ) : (

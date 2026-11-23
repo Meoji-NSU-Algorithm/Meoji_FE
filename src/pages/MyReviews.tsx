@@ -25,11 +25,11 @@ function ReviewRow({ review, onEdit, onDelete }: { review: MyReview; onEdit: () 
   const title = event?.title ?? '삭제되었거나 볼 수 없는 행사'
   const ended = !!event?.end_date && event.end_date.slice(0, 10) < todayStr()
   return (
-    <li className="grid grid-cols-[96px_1fr_auto] gap-4 border-b border-line py-5">
+    <li className="grid grid-cols-[64px_1fr] gap-3 md:grid-cols-[96px_1fr_auto] md:gap-4 border-b border-line py-5">
       <Link
         to={`/events/${review.event_id}`}
         aria-label={`${title} 상세 보기`}
-        className="size-24 overflow-hidden rounded-card bg-gradient-to-br from-[#e8461c] to-[#f7a04b]"
+        className="size-16 overflow-hidden md:size-24 rounded-card bg-gradient-to-br from-[#e8461c] to-[#f7a04b]"
       >
         {event?.image_url && <img src={event.image_url} alt="" className="size-full object-cover" />}
       </Link>
@@ -58,7 +58,7 @@ function ReviewRow({ review, onEdit, onDelete }: { review: MyReview; onEdit: () 
           caption={[event?.title, fmtDate(review.created_at)].filter(Boolean).join(' · ')}
         />
       </div>
-      <div className="flex items-start gap-[6px]">
+      <div className="col-start-2 flex items-start gap-[6px] md:col-start-auto">
         <button type="button" className={btn} onClick={onEdit}>
           수정
         </button>

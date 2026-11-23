@@ -29,11 +29,11 @@ function HeroEvent({ event, today, onOpen }: { event: EventCard; today: string; 
           : { backgroundImage: 'linear-gradient(180deg, rgba(0,0,0,0) 40%, rgba(0,0,0,0.42) 100%), var(--gradient-festival)' }
       }
     >
-      <span className="absolute left-[30px] top-[80.9px] text-[12px] font-bold leading-[18px] opacity-90">
+      <span className="absolute left-5 top-[60px] md:left-[30px] md:top-[80.9px] text-[12px] font-bold leading-[18px] opacity-90">
         {ending ? '이번 주말' : '진행 중'}
         {event.sido ? ` · ${event.sido}` : ''}
       </span>
-      <span className="absolute left-[30px] right-[30px] top-[106.9px] line-clamp-2 text-[26px] font-black leading-[33.8px] tracking-[-0.52px]">
+      <span className="absolute left-5 right-5 top-[84px] line-clamp-2 text-[22px] md:left-[30px] md:right-[30px] md:top-[106.9px] md:text-[26px] font-black leading-[33.8px] tracking-[-0.52px]">
         {event.title}
         {ending && (
           <>
@@ -42,7 +42,7 @@ function HeroEvent({ event, today, onOpen }: { event: EventCard; today: string; 
           </>
         )}
       </span>
-      <span className="absolute bottom-[28px] left-[30px] right-[30px] truncate text-[13px] leading-[19.5px] opacity-90">{meta}</span>
+      <span className="absolute bottom-5 left-5 right-5 truncate md:bottom-[28px] md:left-[30px] md:right-[30px] text-[13px] leading-[19.5px] opacity-90">{meta}</span>
     </button>
   )
 }
@@ -89,7 +89,7 @@ export function HeroCarousel({ events, today }: { events: EventCard[]; today: st
     return () => window.clearInterval(t)
   }, [count, paused])
   if (slides.length === 0) return isLoggedIn ? null : (
-    <div className="grid grid-cols-2 gap-4 pt-[18px]">
+    <div className="grid grid-cols-1 gap-4 pt-[18px] md:grid-cols-2">
       <SignupBanner />
     </div>
   )
@@ -107,19 +107,22 @@ export function HeroCarousel({ events, today }: { events: EventCard[]; today: st
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
-      <div className="relative grid grid-cols-2 gap-4">
+      <div className="relative grid grid-cols-1 gap-4 md:grid-cols-2">
         {count > 1 && (
           <>
-            <button type="button" aria-label="이전 배너" onClick={() => go(-1)} className={`${arrow} -left-5`}>
+            <button type="button" aria-label="이전 배너" onClick={() => go(-1)} className={`${arrow} left-2 md:-left-5`}>
               ‹
             </button>
-            <button type="button" aria-label="다음 배너" onClick={() => go(1)} className={`${arrow} -right-5`}>
+            <button type="button" aria-label="다음 배너" onClick={() => go(1)} className={`${arrow} right-2 md:-right-5`}>
               ›
             </button>
           </>
         )}
         <HeroEvent event={left} today={today} onOpen={() => openEvent(left)} />
-        {right && right.id !== left.id ? <HeroEvent event={right} today={today} onOpen={() => openEvent(right)} /> : <SignupBanner />}
+        {/* 모바일은 한 칸만 */}
+        <div className="hidden md:contents">
+          {right && right.id !== left.id ? <HeroEvent event={right} today={today} onOpen={() => openEvent(right)} /> : <SignupBanner />}
+        </div>
       </div>
       <div className="flex items-center justify-center gap-3 pt-[14px]">
         <div className="flex gap-[5px]">

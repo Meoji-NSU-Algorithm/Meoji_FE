@@ -13,7 +13,7 @@ function Profile() {
   const reviews = useMyReviews()
   if (!user) return null
   return (
-    <section className="flex flex-wrap items-center gap-[18px] rounded-[20px] bg-surface-card p-6">
+    <section className="flex flex-wrap items-center gap-[18px] rounded-[20px] bg-surface-card p-5 md:p-6">
       <Avatar name={user.nickname} src={user.profile_image} size={72} />
       <div className="min-w-0">
         <p className="truncate text-[20px] font-black leading-[30px] text-ink">{user.nickname}</p>
@@ -22,7 +22,7 @@ function Profile() {
           {user.email ?? '카카오 계정'}
         </p>
       </div>
-      <dl className="flex gap-7 pl-6">
+      <dl className="flex gap-7 md:pl-6">
         <div className="text-center">
           <dd className="text-[20px] font-black leading-[30px] text-ink">{bookmarks.data?.totalCount ?? 0}</dd>
           <dt className="text-[12px] leading-[18px] text-ink-muted">찜한 행사</dt>
@@ -32,17 +32,17 @@ function Profile() {
           <dt className="text-[12px] leading-[18px] text-ink-muted">작성한 리뷰</dt>
         </div>
       </dl>
-      <div className="ml-auto flex gap-2">
+      <div className="flex w-full gap-2 md:ml-auto md:w-auto">
         <Link
           to="/my/profile"
-          className="flex h-11 items-center rounded-[12px] border border-line bg-surface px-[18px] text-[14px] font-bold text-ink"
+          className="flex h-11 flex-1 items-center justify-center rounded-[12px] border md:flex-none border-line bg-surface px-[18px] text-[14px] font-bold text-ink"
         >
           프로필 보기
         </Link>
         <button
           type="button"
           onClick={() => void logout().then(() => navigate('/'))}
-          className="h-11 rounded-[12px] bg-surface-muted px-[18px] text-[14px] font-bold text-ink"
+          className="h-11 flex-1 rounded-[12px] bg-surface-muted px-[18px] md:flex-none text-[14px] font-bold text-ink"
         >
           로그아웃
         </button>
@@ -60,9 +60,9 @@ export function MyShell({ tab, children }: { tab: MyTab; children: React.ReactNo
     { key: 'reviews', label: '내가 쓴 리뷰', to: '/my/reviews', count: reviews.data?.length },
   ]
   return (
-    <div className="mx-auto max-w-content px-6 pb-20">
+    <div className="mx-auto max-w-content px-4 pb-10 md:px-6 md:pb-20">
       <LoginRequired>
-        <h1 className="pb-[18px] pt-9 text-[28px] font-black leading-[42px] tracking-[-0.56px] text-ink">
+        <h1 className="pb-[18px] pt-6 text-[24px] md:pt-9 md:text-[28px] font-black leading-[42px] tracking-[-0.56px] text-ink">
           마이페이지
         </h1>
         <Profile />

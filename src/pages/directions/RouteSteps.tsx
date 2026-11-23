@@ -9,7 +9,6 @@ import { parseTransitStep } from './transit'
 
 const BUS = '#2e7d32'
 const SUBWAY = '#1f5dd8'
-const STEP_PREVIEW = 5
 const ROW = 'flex gap-[10px] border-t border-[#f0ebe7] py-3 pl-[10px] pr-4'
 
 function Svg({ size, children }: { size: number; children: ReactNode }) {
@@ -175,7 +174,6 @@ function Terminal({ label, color, children, sub }: { label: string; color: strin
 }
 
 export function RouteSteps({ route, originLabel, destLabel }: { route: DirectionsResult; originLabel: string; destLabel: string }) {
-  const [expanded, setExpanded] = useState(false)
   const steps = useMemo(() => compactSteps(route.steps ?? []), [route.steps])
   const transit = route.mode === 'transit'
 
@@ -191,8 +189,6 @@ export function RouteSteps({ route, originLabel, destLabel }: { route: Direction
     : [formatDistance(route.distanceMeters) || null, steps.length ? `${steps.length}단계` : null]
   ).filter(Boolean).join(' · ')
 
-  const collapsible = !transit && steps.length >= 6
-  const visible = collapsible && !expanded ? steps.slice(0, STEP_PREVIEW) : steps
 
   // 각 단계가 끝나는 시각을 누적 소요시간으로 추정한다.
   const offsets = steps.reduce<number[]>((acc, s) => [...acc, (acc[acc.length - 1] ?? 0) + (s.durationMinutes ?? 0)], [])
@@ -212,11 +208,14 @@ export function RouteSteps({ route, originLabel, destLabel }: { route: Direction
           </p>
         )}
       </div>
-      <ol data-testid="route-step-list">
+      {/* 단계가 많으면 페이지 대신 목록만 스크롤 */}
+      <ol data-testid="route-step-list" className="max-h-[60vh] overflow-y-auto lg:max-h-[350px] overscroll-contain">
+
+
         <Terminal label="출발" color="#2a2320">{originLabel}</Terminal>
         {transit
-          ? visible.map((s, i) => <TransitStep key={s.stepNumber ?? i} step={s} clockAt={(o) => clockAt((offsets[i] ?? 0) - (s.durationMinutes ?? 0) + o)} nextIsTransit={isRide(steps[i + 1])} />)
-          : visible.map((s, i) => (
+          ? steps.map((s, i) => <TransitStep key={s.stepNumber ?? i} step={s} clockAt={(o) => clockAt((offsets[i] ?? 0) - (s.durationMinutes ?? 0) + o)} nextIsTransit={isRide(steps[i + 1])} />)
+          : steps.map((s, i) => (
               <li key={s.stepNumber ?? i} className={`${ROW} items-center`} data-testid="route-step">
                 <span className="flex w-11 shrink-0 justify-center text-ink"><TurnIcon turn={turnOf(s.instruction)} /></span>
                 <div className="min-w-0 flex-1">
@@ -226,14 +225,8 @@ export function RouteSteps({ route, originLabel, destLabel }: { route: Direction
                 </div>
               </li>
             ))}
-        {(!collapsible || expanded) && <Terminal label="도착" color="#f0562c" sub={arrival ? `${arrival} 도착 예정` : null}>{destLabel}</Terminal>}
+        <Terminal label="도착" color="#f0562c" sub={arrival ? `${arrival} 도착 예정` : null}>{destLabel}</Terminal>
       </ol>
-      {collapsible && (
-        <button type="button" aria-expanded={expanded} onClick={() => setExpanded((v) => !v)} className="flex h-[47px] w-full items-center justify-center gap-[6px] border-t border-[#f0ebe7] text-[13px] font-bold text-ink">
-          {expanded ? '접기' : `전체 ${steps.length}단계 보기`}
-          <Chevron up={expanded} />
-        </button>
-      )}
     </div>
   )
 }

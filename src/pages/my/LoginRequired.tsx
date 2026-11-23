@@ -20,7 +20,7 @@ export function LoginRequired({ children }: { children: React.ReactNode }) {
   }
   if (!isLoggedIn) {
     return (
-      <div className="mx-auto max-w-content px-6 py-20">
+      <div className="mx-auto max-w-content px-4 py-20 md:px-6">
         <EmptyState
           title="로그인이 필요해요"
           description="로그인하면 찜한 행사와 내가 쓴 리뷰를 볼 수 있어요"

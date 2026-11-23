@@ -90,9 +90,9 @@ describe('길찾기 보강', () => {
     await waitFor(() => expect(modes).toEqual(['transit', 'car']))
   })
 
-  it('단계가 5개면 접기 없이 모두, 6개부터 전체 n단계 보기가 생긴다', async () => {
+  it('단계가 많아도 접지 않고 모두 보여준다(목록 스크롤)', async () => {
     geo()
-    for (const [n, hasToggle] of [[5, false], [6, true]] as const) {
+    for (const n of [5, 8]) {
       server.use(
         http.get('*/api/events/1', () => ok(eventDetailFixture({ id: 1 }))),
         http.get('*/api/directions/1', () => ok(directionsFixture({ mode: 'car', steps: steps(n) }))),
@@ -100,8 +100,8 @@ describe('길찾기 보강', () => {
       const { unmount } = renderDirections()
       await screen.findByTestId('route-summary')
       await userEvent.click(screen.getByRole('tab', { name: /자동차/ }))
-      await waitFor(() => expect(screen.getAllByTestId('route-step').length).toBe(Math.min(n, 5)))
-      expect(!!screen.queryByRole('button', { name: `전체 ${n}단계 보기` })).toBe(hasToggle)
+      await waitFor(() => expect(screen.getAllByTestId('route-step').length).toBe(n))
+      expect(screen.queryByRole('button', { name: /단계 보기/ })).not.toBeInTheDocument()
       unmount()
     }
   })

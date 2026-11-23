@@ -19,7 +19,7 @@ interface ListState {
   isError: boolean
   refetch: () => void
 }
-const grid5 = 'grid grid-cols-5 gap-x-[14px] gap-y-6'
+const grid5 = 'grid grid-cols-2 gap-x-[14px] gap-y-6 md:grid-cols-5'
 
 export function PopularSection() {
   const q = useMonthlyTop({ size: 5 })
@@ -51,7 +51,7 @@ export function LoginStrip() {
   const { isLoggedIn } = useAuth()
   if (isLoggedIn) return null
   return (
-    <div className="mt-8 flex h-14 items-center justify-center gap-3 rounded-lg bg-surface-muted text-[13px] leading-[19.5px] text-ink-muted">
+    <div className="mt-8 flex flex-wrap items-center justify-center gap-3 rounded-lg px-4 py-3 md:h-14 md:py-0 bg-surface-muted text-[13px] leading-[19.5px] text-ink-muted">
       <span>
         <b className="font-bold text-ink">로그인하고</b> 관심 행사를 찜해 보세요
       </span>
@@ -185,7 +185,7 @@ export function FreeSection({ events, state }: { events: EventCard[]; state: Lis
             skeletonCount={4}
             cols={4}
           >
-            <div className="grid grid-cols-4 gap-[14px]">
+            <div className="grid grid-cols-2 gap-[14px] md:grid-cols-4">
               {list.map((e) => (
                 <FreeCard key={e.id} event={e} />
               ))}
@@ -205,7 +205,7 @@ export function WeekendSection({ events, state }: { events: EventCard[]; state: 
   return (
     <section className="pt-12" aria-label="이번 주말">
       <SectionHeader title="이번 주말 뭐 하지?" moreHref="/events" />
-      <div className="flex gap-[6px] pb-[14px] pt-[14px]">
+      <div className="flex flex-wrap gap-[6px] pb-[14px] pt-[14px]">
         {tabs.map((t) => (
           <Chip key={t.key} selected={t.key === current.key} onClick={() => setTab(t.key)}>
             {t.label}
@@ -222,7 +222,7 @@ export function WeekendSection({ events, state }: { events: EventCard[]; state: 
         skeletonCount={4}
         cols={4}
       >
-        <div className="grid grid-cols-4 gap-[14px]">
+        <div className="grid grid-cols-2 gap-[14px] md:grid-cols-4">
           {list.map((e) => (
             <HomeCard key={e.id} event={e} variant="small" />
           ))}
@@ -241,7 +241,7 @@ export function TagSection() {
   return (
     <section className="pb-20 pt-12" aria-label="태그로 찾는 기획전">
       <SectionHeader title="태그로 찾는 기획전" moreLabel={null} />
-      <div className="grid grid-cols-5 gap-[14px] pt-[14px]">
+      <div className="grid grid-cols-2 gap-[14px] pt-[14px] md:grid-cols-5">
         {visible.map((t) => (
           <Link
             key={t.tag}

@@ -14,7 +14,7 @@ interface Props {
   children: ReactNode
 }
 
-const colClass = { 4: 'grid-cols-4', 5: 'grid-cols-5' } as const
+const colClass = { 4: 'grid-cols-2 md:grid-cols-4', 5: 'grid-cols-2 md:grid-cols-5' } as const
 
 /** 섹션별 로딩/에러/빈 상태 공통 처리 */
 export function SectionState({

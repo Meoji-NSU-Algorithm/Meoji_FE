@@ -60,7 +60,7 @@ export default function Calendar() {
   }
 
   return (
-    <div className="mx-auto max-w-content px-6 pb-20">
+    <div className="mx-auto max-w-content px-4 pb-12 md:px-6 md:pb-20">
       <PageTitleBar active="calendar" />
       {!isLoggedIn ? (
         <StatePanel
@@ -88,7 +88,7 @@ export default function Calendar() {
         />
       ) : (
         <>
-          <div className="flex items-center justify-between pb-[14px] pt-[6px]">
+          <div className="flex flex-wrap items-center justify-between gap-2 pb-[14px] pt-[6px]">
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -116,7 +116,8 @@ export default function Calendar() {
             </p>
           </div>
 
-          <div className="overflow-x-auto">
+          {/* 폰에서는 페이지 대신 달력만 가로 스크롤 */}
+          <div className="overflow-x-auto overscroll-x-contain">
             <div role="grid" aria-label={`${cursor.year}년 ${cursor.month}월`} className="min-w-[760px] overflow-hidden rounded-lg border border-line">
               <div role="row" className="grid grid-cols-7 border-b border-line bg-surface-card">
                 {WEEKDAYS.map((w, i) => (

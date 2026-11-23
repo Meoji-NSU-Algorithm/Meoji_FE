@@ -114,7 +114,7 @@ function Profile() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-[460px] rounded-[22px] border border-line bg-surface px-8 py-9">
+    <div className="mx-auto w-full max-w-[460px] rounded-[22px] border border-line bg-surface px-5 py-7 md:px-8 md:py-9">
       <h1 className="text-[24px] font-black leading-9 tracking-[-0.48px] text-ink">내 프로필</h1>
       <p className="pt-1 text-[14px] leading-[21px] text-ink-muted">다른 사람에게 보이는 이름과 사진이에요</p>
 
@@ -199,7 +199,7 @@ function Profile() {
 
 export default function MyProfile() {
   return (
-    <div className="px-6 pb-[100px] pt-[60px]">
+    <div className="px-4 pb-12 pt-8 md:px-6 md:pb-[100px] md:pt-[60px]">
       <LoginRequired>
         <Profile />
       </LoginRequired>

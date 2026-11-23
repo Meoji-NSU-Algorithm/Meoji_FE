@@ -69,12 +69,13 @@ export function Header({
 
   return (
     <header className="border-b border-line bg-surface">
-      <div className="mx-auto flex h-[72px] w-full max-w-content items-center gap-[26px] px-6">
-        <a href={h.home} onClick={go(h.home)} aria-label="meoji 홈" className="shrink-0">
+      {/* 모바일: 1줄 로고·아이콘, 2줄 메뉴, 3줄 검색. md부터 한 줄 */}
+      <div className="mx-auto flex w-full max-w-content flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3 md:h-[72px] md:flex-nowrap md:gap-[26px] md:px-6 md:py-0">
+        <a href={h.home} onClick={go(h.home)} aria-label="meoji 홈" className="order-1 shrink-0 md:order-none">
           <Logo size={31} />
         </a>
 
-        <nav aria-label="주 메뉴" className="flex shrink-0 gap-1">
+        <nav aria-label="주 메뉴" className="order-3 flex shrink-0 gap-1 md:order-none">
           {navItems.map(({ key, label }) => (
             <a
               key={key}
@@ -92,7 +93,7 @@ export function Header({
 
         <form
           role="search"
-          className="flex h-[42px] min-w-0 max-w-[380px] flex-1 items-center gap-[10px] rounded-pill bg-surface-muted px-4 text-ink-muted"
+          className="order-4 flex h-[42px] min-w-0 basis-full items-center md:order-none md:max-w-[380px] md:flex-1 md:basis-auto gap-[10px] rounded-pill bg-surface-muted px-4 text-ink-muted"
           onSubmit={(e) => {
             e.preventDefault()
             onSearchSubmit?.(q.trim())
@@ -112,7 +113,7 @@ export function Header({
           />
         </form>
 
-        <div className="flex flex-1 justify-end">
+        <div className="order-2 flex flex-1 justify-end md:order-none">
           <div className="flex items-center gap-4">
             {utility.map(({ label, href, icon }) => (
               <a

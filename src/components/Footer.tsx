@@ -18,7 +18,7 @@ const DEFAULT_LINKS: FooterLink[] = [
 export function Footer({ links = DEFAULT_LINKS }: FooterProps) {
   return (
     <footer className="border-t border-line bg-surface-sunken">
-      <div className="mx-auto flex w-full max-w-content justify-between px-6 pb-[42px] pt-[34px]">
+      <div className="mx-auto flex w-full max-w-content flex-col gap-4 px-4 pb-[42px] pt-[34px] md:flex-row md:justify-between md:px-6">
         <div>
           <Logo size={24} />
           <p className="mt-[10px] text-[12px] leading-[20.4px] text-ink-muted">
@@ -29,7 +29,7 @@ export function Footer({ links = DEFAULT_LINKS }: FooterProps) {
         </div>
         <nav aria-label="푸터 메뉴" className="flex gap-[18px]">
           {links.map((l) => (
-            <Link key={l.label} to={l.href} className="text-[12px] font-medium leading-[18px] text-ink">
+            <Link key={l.label} to={l.href} className="whitespace-nowrap text-[12px] font-medium leading-[18px] text-ink">
               {l.label}
             </Link>
           ))}

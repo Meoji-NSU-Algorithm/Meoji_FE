@@ -60,7 +60,7 @@ describe('TagSection (태그로 찾는 기획전, Figma 3차 DR3·DR4)', () => {
     const links = screen.getAllByRole('link')
     expect(links.map((l) => l.querySelector('span')?.textContent?.slice(1))).toEqual([...BE_TAG_DICTIONARY])
     expect(links[0]).toHaveTextContent('하늘을 수놓는 밤')
-    expect(links[0].parentElement).toHaveClass('grid-cols-5')
+    expect(links[0].parentElement).toHaveClass('grid-cols-2', 'md:grid-cols-5')
     expect(links[0]).toHaveClass('promo-card', 'h-[168px]')
   })
 

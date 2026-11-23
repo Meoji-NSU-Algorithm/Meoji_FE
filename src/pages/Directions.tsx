@@ -69,7 +69,7 @@ export default function Directions() {
   if (authLoading) return <div className="flex justify-center py-32"><Spinner /></div>
   if (!isLoggedIn) {
     return (
-      <div className="mx-auto max-w-content px-6 py-10">
+      <div className="mx-auto max-w-content px-4 md:px-6 py-10">
         <EmptyState
           title="로그인하면 길찾기를 이용할 수 있어요"
           action={<button type="button" onClick={openLoginPrompt} className="h-11 rounded-card bg-primary px-[18px] text-[14px] font-bold text-white">로그인하기</button>}
@@ -93,7 +93,7 @@ export default function Directions() {
   const showRoute = !!route && dir.isSuccess
 
   return (
-    <div className="mx-auto max-w-content px-6 pb-10">
+    <div className="mx-auto max-w-content px-4 md:px-6 pb-10">
       <div className="flex h-[57.5px] items-end pb-[14px]">
         <Link to={`/events/${id}`} className="inline-flex items-center gap-1 text-[13px] text-ink-muted">
           <ChevronLeftIcon /> 행사 상세로 돌아가기

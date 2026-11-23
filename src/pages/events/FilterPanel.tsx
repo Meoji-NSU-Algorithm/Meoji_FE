@@ -9,7 +9,7 @@ type Patch = Partial<EventListParams>
 
 function Row({ label, children, last }: { label: string; children: React.ReactNode; last?: boolean }) {
   return (
-    <div className={`flex items-center gap-[14px] py-[10px] ${last ? '' : 'border-b border-line'}`}>
+    <div className={`flex flex-wrap items-center gap-x-[14px] gap-y-[10px] py-[10px] md:flex-nowrap ${last ? '' : 'border-b border-line'}`}>
       <span className="w-[44px] shrink-0 text-[13px] font-bold leading-[19.5px] text-ink">{label}</span>
       {children}
     </div>
@@ -89,7 +89,9 @@ export function FilterPanel({ params, onPatch }: { params: EventListParams; onPa
             유료
           </Chip>
         </div>
-        <span className="shrink-0 pl-[10px] text-[13px] font-bold leading-[19.5px] text-ink">기간</span>
+        {/* 모바일에서는 기간을 다음 줄로 내린다 */}
+        <div className="flex basis-full items-center gap-[14px] md:basis-auto">
+        <span className="w-[44px] shrink-0 text-[13px] font-bold leading-[19.5px] text-ink md:w-auto md:pl-[10px]">기간</span>
         <div ref={dateRef} className="relative shrink-0">
           <button
             type="button"
@@ -103,7 +105,7 @@ export function FilterPanel({ params, onPatch }: { params: EventListParams; onPa
             {hasRange ? `${params.start_date ?? ''} ~ ${params.end_date ?? ''}` : '날짜 선택'}
           </button>
           {dateOpen && (
-            <div className="absolute right-0 top-[38px] z-20 flex w-[280px] flex-col gap-3 rounded-card border border-line bg-surface p-4 shadow-float">
+            <div className="absolute left-0 top-[38px] z-20 flex w-[280px] md:left-auto md:right-0 flex-col gap-3 rounded-card border border-line bg-surface p-4 shadow-float">
               <label className="flex flex-col gap-1 text-[12px] text-ink-muted">
                 시작일
                 <input
@@ -145,6 +147,7 @@ export function FilterPanel({ params, onPatch }: { params: EventListParams; onPa
               </div>
             </div>
           )}
+        </div>
         </div>
       </Row>
     </section>

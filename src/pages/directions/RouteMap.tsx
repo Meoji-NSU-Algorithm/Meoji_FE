@@ -98,7 +98,7 @@ export function RouteMap({ from, to, segments = NO_SEGMENTS }: Props) {
 
   return (
     <div
-      className="relative h-[640px] overflow-hidden rounded-[18px] bg-[#eef0ea]"
+      className="relative h-[320px] overflow-hidden lg:h-[640px] rounded-[18px] bg-[#eef0ea]"
       style={{ backgroundImage: 'linear-gradient(162deg, #eef0ea 8%, #e6ede0 54%, #eef0ea 92%)' }}
     >
       {failed ? (
