@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { DirectionsStep } from '../../api/types'
-import { parseTransitStep, shortLine } from './transit'
+import { parseTransitStep, shortLine, splitLines } from './transit'
 
 const st = (type: string, instruction: string, detail: DirectionsStep['detail'] = null): DirectionsStep => ({
   stepNumber: 1, type, instruction, durationMinutes: 5, distanceMeters: 100, detail,
@@ -9,12 +9,12 @@ const st = (type: string, instruction: string, detail: DirectionsStep['detail'] 
 describe('parseTransitStep', () => {
   it('버스 안내문에서 번호·승하차 정류장·경유 정류장 수를 뽑는다', () => {
     expect(parseTransitStep(st('BUS', '24번 버스 이용: 남서울대 승차 → 천안역 하차', '경유 정류장 정보 6개'))).toEqual({
-      kind: 'bus', lines: '24', board: '남서울대', alight: '천안역', passStops: 6,
+      kind: 'bus', lines: ['24'], board: '남서울대', alight: '천안역', passStops: 6,
     })
   })
 
   it('승차만 있는 버스도 처리한다', () => {
-    expect(parseTransitStep(st('BUS', '24, 100번 버스 이용: 남서울대 승차'))).toMatchObject({ lines: '24, 100', board: '남서울대', alight: null })
+    expect(parseTransitStep(st('BUS', '24, 100번 버스 이용: 남서울대 승차'))).toMatchObject({ lines: ['24', '100'], board: '남서울대', alight: null })
   })
 
   it('지하철 안내문에서 노선·하차역·방면을 뽑는다', () => {
@@ -41,6 +41,21 @@ describe('parseTransitStep', () => {
   })
 })
 
+describe('버스 노선 분리', () => {
+  it('쉼표로 이어진 노선을 배열로 나누고 공백·빈 값을 버린다', () => {
+    expect(parseTransitStep(st('BUS', '24, 100,200 , ,400번 버스 이용: 가 승차 → 나 하차'))).toMatchObject({ lines: ['24', '100', '200', '400'] })
+    expect(splitLines(' , ')).toEqual([])
+  })
+
+  it('한 개·긴 노선명도 그대로 하나의 항목이다', () => {
+    expect(parseTransitStep(st('BUS', '광역급행1234번 버스 이용: 가 승차'))).toMatchObject({ lines: ['광역급행1234'] })
+  })
+
+  it('지하철은 여러 노선이어도 문자열 하나로 해석한다', () => {
+    expect(parseTransitStep(st('SUBWAY', '수도권 1호선, 수도권 4호선 탑승 (신창 방면)'))).toMatchObject({ kind: 'subway', lineNo: '1호선', direction: '신창' })
+  })
+})
+
 describe('shortLine', () => {
   it('호선이 없으면 접두어만 걷어낸다', () => {
     expect(shortLine('지하철 신분당선')).toBe('신분당선')
@@ -51,7 +66,7 @@ describe('shortLine', () => {
 describe('실제 BE 대중교통 응답(2026-11-21 점검)', () => {
   it('"7011번 버스 이용: 시청역1호선.서울시청 승차 → 합정한강아파트 하차"를 해석한다', () => {
     expect(parseTransitStep(st('BUS', '7011번 버스 이용: 시청역1호선.서울시청 승차 → 합정한강아파트 하차', '경유 정류장 정보 18개'))).toEqual({
-      kind: 'bus', lines: '7011', board: '시청역1호선.서울시청', alight: '합정한강아파트', passStops: 18,
+      kind: 'bus', lines: ['7011'], board: '시청역1호선.서울시청', alight: '합정한강아파트', passStops: 18,
     })
   })
 

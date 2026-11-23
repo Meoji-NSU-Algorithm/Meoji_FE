@@ -6,14 +6,15 @@ import type { useReviewImages } from './useReviewImages'
 type State = ReturnType<typeof useReviewImages>
 
 /**
- * 리뷰 사진 첨부 보드 (Figma C2). 88px 썸네일 + 삭제(×) + 'n/5' 추가 칸 + 형식·용량 안내,
+ * 리뷰 사진 첨부 보드 (Figma C2·E4). 썸네일 + 삭제(×) + 'n/5' 추가 칸 + 형식·용량 안내,
  * 규칙에 어긋난 사진은 사진 줄 아래에 안내를 한 줄씩 보여 준다.
- * 사진은 리뷰를 등록·수정할 때 같이 올라간다.
+ * 작성 폼은 80px, 수정 모달(compact)은 72px 이다. 사진은 리뷰를 등록·수정할 때 같이 올라간다.
  */
-export function ReviewImagePicker({ state, disabled }: { state: State; disabled?: boolean }) {
+export function ReviewImagePicker({ state, disabled, compact }: { state: State; disabled?: boolean; compact?: boolean }) {
   const input = useRef<HTMLInputElement>(null)
   const count = state.images.length
   const full = count >= MAX_REVIEW_IMAGES
+  const cell = compact ? 'size-[72px] rounded-[10px]' : 'size-[80px] rounded-[12px]'
   return (
     <div>
       <input
@@ -28,18 +29,18 @@ export function ReviewImagePicker({ state, disabled }: { state: State; disabled?
           e.target.value = ''
         }}
       />
-      <ul className="flex flex-wrap gap-[10px]">
+      <ul className={`flex flex-wrap ${compact ? 'gap-2' : 'gap-[10px]'}`}>
         {state.images.map((img, i) => (
-          <li key={img.key} className="relative size-[88px] overflow-hidden rounded-[12px] bg-surface-muted">
+          <li key={img.key} className={`relative overflow-hidden bg-surface-muted ${cell}`}>
             <img src={img.url} alt={`첨부 사진 ${i + 1}`} className="size-full object-cover" />
             <button
               type="button"
               aria-label={`첨부 사진 ${i + 1} 삭제`}
               disabled={disabled}
               onClick={() => state.remove(img.key)}
-              className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-ink/80 text-white disabled:opacity-50"
+              className={`absolute right-1 top-1 flex items-center justify-center rounded-full bg-ink/80 text-white disabled:opacity-50 ${compact ? 'size-[22px]' : 'size-6'}`}
             >
-              <XIcon size={12} strokeWidth={2.6} />
+              <XIcon size={compact ? 11 : 12} strokeWidth={2.6} />
             </button>
           </li>
         ))}
@@ -49,9 +50,9 @@ export function ReviewImagePicker({ state, disabled }: { state: State; disabled?
             aria-label={`사진 추가 (${count}/${MAX_REVIEW_IMAGES})`}
             disabled={disabled || full}
             onClick={() => input.current?.click()}
-            className="flex size-[88px] flex-col items-center justify-center gap-1 rounded-[12px] border border-dashed border-[#cfc7c2] bg-surface text-ink disabled:cursor-not-allowed disabled:text-ink-disabled"
+            className={`flex flex-col items-center justify-center border border-dashed border-[#cfc7c2] bg-surface text-ink disabled:cursor-not-allowed disabled:text-ink-disabled ${cell} ${compact ? 'gap-[2px]' : 'gap-1'}`}
           >
-            <CameraIcon size={22} />
+            <CameraIcon size={compact ? 20 : 22} />
             <span aria-hidden="true" className="text-[12px] font-bold">
               {count}
               <span className="font-normal text-ink-muted">/{MAX_REVIEW_IMAGES}</span>
@@ -59,7 +60,7 @@ export function ReviewImagePicker({ state, disabled }: { state: State; disabled?
           </button>
         </li>
       </ul>
-      <p className="pt-3 text-[12px] leading-[18px] text-ink-subtle">JPG·PNG·WEBP, 한 장에 10MB까지, 최대 {MAX_REVIEW_IMAGES}장</p>
+      <p className="pt-3 text-[12px] leading-[18px] text-ink-subtle">JPG·PNG·WEBP, 한 장에 10MB까지, 최대 {MAX_REVIEW_IMAGES}장{!compact && ' · 리뷰를 등록할 때 함께 올라가요'}</p>
       {state.notices.length > 0 && (
         <div role="alert" className="mt-2 flex flex-col gap-2">
           {state.notices.map((n) => (

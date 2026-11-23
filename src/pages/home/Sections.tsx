@@ -9,6 +9,7 @@ import type { EventCard } from '../../api/types'
 import { HomeCard } from './HomeCard'
 import { SectionState } from './SectionState'
 import { useEventActions } from './useEventActions'
+import { useTagCounts } from './useTagCounts'
 import { startKakaoLogin } from './kakaoLogin'
 import { KakaoIcon } from '../../components/icons'
 import { REGIONS, TAG_PROMOS, dLabel, inRegion, isOnAnyDate, weekendTabs } from './utils'
@@ -233,11 +234,15 @@ export function WeekendSection({ events, state }: { events: EventCard[]; state: 
 
 export function TagSection() {
   const navigate = useNavigate()
+  const counts = useTagCounts(TAG_PROMOS.map((t) => t.tag))
+  // 결과가 0건인 태그만 숨기고, 나머지는 사전 순서 그대로 왼쪽부터 채운다
+  const visible = TAG_PROMOS.filter((t) => counts[t.tag] !== 0)
+  if (visible.length === 0) return null
   return (
     <section className="pb-20 pt-12" aria-label="태그로 찾는 기획전">
       <SectionHeader title="태그로 찾는 기획전" moreLabel={null} />
-      <div className="grid grid-cols-2 gap-[14px] pt-[14px] md:grid-cols-3">
-        {TAG_PROMOS.map((t) => (
+      <div className="grid grid-cols-2 gap-[14px] pt-[14px] md:grid-cols-5">
+        {visible.map((t) => (
           <Link
             key={t.tag}
             to={`/events?tag=${encodeURIComponent(t.tag)}`}
@@ -245,17 +250,15 @@ export function TagSection() {
               e.preventDefault()
               navigate(`/events?tag=${encodeURIComponent(t.tag)}`)
             }}
-            className="relative flex h-[160px] flex-col md:h-[211px] justify-end overflow-hidden rounded-[18px] p-[18px] text-white"
+            className="promo-card flex h-[168px] flex-col justify-end rounded-lg px-[18px] pb-4 text-white"
             style={{ background: t.gradient }}
           >
-            <span className="absolute inset-0 bg-gradient-to-b from-transparent to-black/30" />
-            <span className="absolute left-[14px] top-[14px] rounded-md bg-black/35 px-[10px] py-[3px] text-[12px] font-bold">#{t.tag}</span>
-            <span className="relative text-[20px] font-black leading-[30px] tracking-[-0.4px]">{t.title}</span>
-            <span className="relative text-[12px] leading-[18px] opacity-90">행사 모아보기 ›</span>
+            <span className="absolute left-[18px] top-4 z-[1] rounded-pill bg-white/[0.22] px-[10px] py-1 text-[12px] font-bold leading-[14px]">#{t.tag}</span>
+            <span className="relative z-[1] text-[18px] font-black leading-[23.4px] tracking-[-0.36px]">{t.title}</span>
+            <span className="relative z-[1] pt-1 text-[12px] leading-[14px] opacity-90">행사 모아보기 ›</span>
           </Link>
         ))}
       </div>
     </section>
   )
 }
-

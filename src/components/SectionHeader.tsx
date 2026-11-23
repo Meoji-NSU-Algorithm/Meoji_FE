@@ -26,7 +26,7 @@ export function SectionHeader({
       <h3 className="flex items-center gap-[10px]">
         <span className="text-[21px] font-black leading-[31.5px] tracking-[-0.42px] text-ink">
           {title}
-          {emphasis && <em className="ml-[10px] text-brand">{emphasis}</em>}
+          {emphasis && <em className="ml-[10px] text-brand not-italic">{emphasis}</em>}
         </span>
         {hint && <span className="text-[12px] leading-[18px] tracking-[-0.42px] text-ink-subtle">{hint}</span>}
       </h3>

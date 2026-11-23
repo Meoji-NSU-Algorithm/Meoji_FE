@@ -100,14 +100,26 @@ export function inRegion(e: EventCard, label: string): boolean {
 /** BE(Meoji_BE/app/domains/tour/sync_service.py TAG_KEYWORDS)가 만드는 태그 사전. BE와 항상 동기화할 것. */
 export const BE_TAG_DICTIONARY = ['불꽃놀이', '푸드트럭', '야간', '체험', '가족', '공연', '전시', '음악', '꽃', '먹거리'] as const
 
-/** 태그 기획전 (정적). 클릭 시 /events?tag= 로 이동 */
+/**
+ * 태그 기획전 (Figma 3차 DR3·DR4). 태그 사전 10개를 사전 순서 그대로 모두 나열하고, 결과 0건인 태그만 숨긴다.
+ * 카드는 그라데이션(146deg) + 흐린 빛 원 2개(index.css .promo-card).
+ */
+const promo = (tag: (typeof BE_TAG_DICTIONARY)[number], title: string, from: string, to: string) => ({
+  tag,
+  title,
+  gradient: `linear-gradient(146deg, ${from} 0%, ${to} 100%)`,
+})
 export const TAG_PROMOS = [
-  { tag: '푸드트럭', title: '먹으러 가는 축제', gradient: 'linear-gradient(155deg,#e8461c 8.5%,#f7a04b 91.5%)' },
-  { tag: '체험', title: '직접 해 보는 체험', gradient: 'linear-gradient(155deg,#1c2147 8.5%,#5b3c8c 91.5%)' },
-  { tag: '야간', title: '퇴근 후 밤 나들이', gradient: 'linear-gradient(155deg,#7a2257 8.5%,#e87a9a 91.5%)' },
-  { tag: '음악', title: '음악이 흐르는 주말', gradient: 'linear-gradient(155deg,#2f5d34 8.5%,#b6d27a 91.5%)' },
-  { tag: '가족', title: '주말 가족 나들이', gradient: 'linear-gradient(155deg,#2e6fd8 8.5%,#9cd3f5 91.5%)' },
-  { tag: '꽃', title: '꽃 보러 가는 길', gradient: 'linear-gradient(155deg,#b9771a 8.5%,#f4cf6a 91.5%)' },
+  promo('불꽃놀이', '하늘을 수놓는 밤', '#1c2147', '#5b3c8c'),
+  promo('푸드트럭', '먹으러 가는 축제', '#e8461c', '#f7a04b'),
+  promo('야간', '퇴근 후 밤 나들이', '#3e1a57', '#c2457a'),
+  promo('체험', '직접 해 보는 체험', '#d9483b', '#f59a8b'),
+  promo('가족', '주말 가족 나들이', '#2f6fd8', '#8cc4f2'),
+  promo('공연', '무대 앞에서 보내는 저녁', '#b9771a', '#f4cf6a'),
+  promo('전시', '천천히 둘러보는 전시', '#2f2b2a', '#6b625e'),
+  promo('음악', '음악이 흐르는 주말', '#0e6e6a', '#6ccbae'),
+  promo('꽃', '꽃 보러 가는 길', '#d2416a', '#f6a7b8'),
+  promo('먹거리', '지역 맛 따라 한 바퀴', '#2f5d34', '#a9cc6b'),
 ]
 
 /** 카테고리 스트립 항목. categoryName 은 BE categories 의 name 과 매칭해 category_id 링크를 만든다. */

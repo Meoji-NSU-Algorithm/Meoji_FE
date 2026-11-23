@@ -152,7 +152,7 @@ export default function MapPage() {
   const showDenied = geo === 'denied' && !dismissed
 
   return (
-    <div className="mx-auto max-w-content px-4 pb-12 md:px-6">
+    <div className="mx-auto max-w-content px-4 pb-12 md:px-6 md:pb-20">
       <PageTitleBar active="map" />
       <div className="pt-[18px]">
         <FilterPanel params={params} onPatch={patch} />

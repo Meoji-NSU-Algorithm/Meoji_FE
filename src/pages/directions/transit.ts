@@ -2,10 +2,13 @@ import type { DirectionsStep } from '../../api/types'
 import { detailText } from './format'
 
 export type ParsedStep =
-  | { kind: 'bus'; lines: string; board: string | null; alight: string | null; passStops: number | null }
+  | { kind: 'bus'; lines: string[]; board: string | null; alight: string | null; passStops: number | null }
   | { kind: 'subway'; line: string; lineNo: string; alight: string | null; direction: string | null }
   | { kind: 'walk'; guides: string[] }
   | { kind: 'raw' }
+
+/** '24, 100, 200' 처럼 쉼표로 이어진 노선 문자열을 노선별 배열로 나눈다. */
+export const splitLines = (raw: string) => raw.split(',').map((l) => l.trim()).filter(Boolean)
 
 const clean = (s: string | undefined | null) => (s ?? '').trim() || null
 
@@ -33,7 +36,7 @@ export function parseTransitStep(step: DirectionsStep): ParsedStep {
       const board = clean(/([^:→]+?)\s*승차/.exec(rest)?.[1])
       const alight = clean(/([^:→]+?)\s*하차/.exec(rest)?.[1])
       const stops = /경유 정류장 정보\s*(\d+)\s*개/.exec(detail)
-      return { kind: 'bus', lines: m[1].trim(), board, alight, passStops: stops ? Number(stops[1]) : null }
+      return { kind: 'bus', lines: splitLines(m[1]), board, alight, passStops: stops ? Number(stops[1]) : null }
     }
 
     if (step.type === 'SUBWAY') {

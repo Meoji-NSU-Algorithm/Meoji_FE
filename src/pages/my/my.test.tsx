@@ -38,6 +38,8 @@ vi.mock('../../api/hooks', () => ({
   useEvent: hooks.useEvent,
   useUpdateReview: () => ({ mutate: hooks.updateReview, isError: false, isPending: false }),
   useDeleteReview: () => ({ mutate: hooks.deleteReview, reset: vi.fn(), isError: false, isPending: false }),
+  useUploadProfileImage: () => ({ mutateAsync: vi.fn() }),
+  useResetProfileImage: () => ({ mutateAsync: vi.fn() }),
   useUpdateProfile: () => ({ mutate: hooks.updateProfile, isError: false, isPending: false }),
 }))
 
@@ -212,11 +214,11 @@ describe('회원 탈퇴 링크', () => {
 })
 
 describe('MyProfile', () => {
-  it('카카오 프로필을 읽기 전용으로 보여준다', () => {
+  it('이름과 이메일을 읽기 전용으로 보여준다', () => {
     wrap(<MyProfile />)
     expect(screen.getByText('안민영')).toBeInTheDocument()
     expect(screen.getByText('a@b.c')).toBeInTheDocument()
-    expect(screen.getByText(/카카오 프로필과 연동돼요/)).toBeInTheDocument()
+    expect(screen.getByText(/이름과 이메일은 카카오에서 바꾸면/)).toBeInTheDocument()
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '저장' })).not.toBeInTheDocument()
   })

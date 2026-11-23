@@ -158,8 +158,19 @@ describe('사진 첨부 검증', () => {
 
   it('안내 문구와 0/5 를 보여준다', async () => {
     await open()
-    expect(screen.getByText('JPG·PNG·WEBP, 한 장에 10MB까지, 최대 5장')).toBeInTheDocument()
+    expect(screen.getByText('JPG·PNG·WEBP, 한 장에 10MB까지, 최대 5장 · 리뷰를 등록할 때 함께 올라가요')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '사진 추가 (0/5)' })).toBeInTheDocument()
+  })
+
+  it('썸네일과 추가 칸은 80px 이고, 글자 수는 n/1000 으로 센다', async () => {
+    const input = await open()
+    await userEvent.upload(input, file('a.png'))
+    expect(screen.getByAltText('첨부 사진 1').closest('li')).toHaveClass('size-[80px]')
+    expect(screen.getByRole('button', { name: '사진 추가 (1/5)' })).toHaveClass('size-[80px]')
+    expect(screen.getByText('0/1000')).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('리뷰 내용'), '좋아요')
+    expect(screen.getByText('3/1000')).toBeInTheDocument()
+    expect(screen.getByLabelText('리뷰 내용')).toHaveAttribute('maxlength', '1000')
   })
 
   it('6장을 고르면 앞의 5장만 추가하고 안내한다', async () => {
@@ -198,8 +209,27 @@ describe('사진 첨부 검증', () => {
     await userEvent.type(screen.getByLabelText('리뷰 내용'), '좋아요')
     await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
     expect(await screen.findByRole('button', { name: '등록 중…' })).toBeDisabled()
+    // Figma C2 ② 등록 중: 입력은 막히고 안내 한 줄이 보인다
+    expect(screen.getByText('사진이 많으면 몇 초 걸릴 수 있어요')).toBeInTheDocument()
+    expect(screen.getByLabelText('리뷰 내용')).toBeDisabled()
     release()
     expect(await screen.findByText('리뷰가 등록됐어요!')).toBeInTheDocument()
+  })
+
+  it('등록에 실패하면 안내와 함께 쓴 글이 남고 버튼이 \'다시 등록\'으로 바뀐다', async () => {
+    server.use(
+      http.get('*/api/events/1', () => ok(event({ reviews: [], review_count: 0, average_rating: null }))),
+      http.post('*/api/reviews', () => fail(500, 'COMMON_INTERNAL_ERROR')),
+    )
+    renderDetail()
+    await userEvent.click(await screen.findByRole('radio', { name: '4점' }))
+    await userEvent.type(screen.getByLabelText('리뷰 내용'), '좋아요')
+    await userEvent.click(screen.getByRole('button', { name: '리뷰 등록' }))
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('리뷰를 등록하지 못했어요')
+    expect(alert).toHaveTextContent('쓴 글과 고른 사진은 그대로 있어요. 다시 등록해 주세요.')
+    expect((screen.getByLabelText('리뷰 내용') as HTMLTextAreaElement).value).toBe('좋아요')
+    expect(screen.getByRole('button', { name: '다시 등록' })).toBeEnabled()
   })
 })
 

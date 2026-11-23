@@ -60,7 +60,7 @@ export function MyShell({ tab, children }: { tab: MyTab; children: React.ReactNo
     { key: 'reviews', label: '내가 쓴 리뷰', to: '/my/reviews', count: reviews.data?.length },
   ]
   return (
-    <div className="mx-auto max-w-content px-4 pb-10 md:px-6">
+    <div className="mx-auto max-w-content px-4 pb-10 md:px-6 md:pb-20">
       <LoginRequired>
         <h1 className="pb-[18px] pt-6 text-[24px] md:pt-9 md:text-[28px] font-black leading-[42px] tracking-[-0.56px] text-ink">
           마이페이지

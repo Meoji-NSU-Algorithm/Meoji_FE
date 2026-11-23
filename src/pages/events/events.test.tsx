@@ -53,6 +53,10 @@ describe('parseEventParams', () => {
     )
     expect(p).toEqual({ q: '흥타령', category_id: 2, is_free: false })
   })
+  it('시작일이 종료일보다 늦은 주소는 두 날짜를 바꿔서 BE 400 을 피한다', () => {
+    const p = parseEventParams(new URLSearchParams('start_date=2026-12-10&end_date=2026-12-01'))
+    expect(p).toEqual({ start_date: '2026-12-01', end_date: '2026-12-10' })
+  })
   it('sort/page만 있으면 로그인 필터가 아니다', () => {
     expect(hasLoginFilters(parseEventParams(new URLSearchParams('sort=popular&page=2')))).toBe(false)
     expect(hasLoginFilters(parseEventParams(new URLSearchParams('sido_code=44')))).toBe(true)
@@ -103,6 +107,36 @@ describe('EventList', () => {
     expect(await screen.findByText('찜 목록에 담았어요!')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '보러 가기' })).toBeInTheDocument()
     expect(added).toEqual({ eventId: 1 })
+  })
+
+  describe('기간 선택', () => {
+    const listOk = () => server.use(http.get('*/api/events', () => ok({ total_count: 1, page: 1, size: 12, events: [card(1)] })))
+
+    it('종료일을 시작일보다 앞으로 입력하면 둘 다 그 날로 맞춘다', async () => {
+      listOk()
+      renderPage(<EventList />, '/events?start_date=2026-12-10')
+      await screen.findByRole('link', { name: '행사1' })
+      await userEvent.click(screen.getByRole('button', { name: /2026-12-10/ }))
+      const [start, end] = Array.from(document.querySelectorAll<HTMLInputElement>('input[type=date]'))
+      await userEvent.clear(end)
+      await userEvent.type(end, '2026-12-01')
+      await waitFor(() => expect(start.value).toBe('2026-12-01'))
+      expect(end.value).toBe('2026-12-01')
+    })
+
+    it('Esc 와 바깥 클릭으로 닫힌다', async () => {
+      listOk()
+      renderPage(<EventList />, '/events')
+      await screen.findByRole('link', { name: '행사1' })
+      const open = () => userEvent.click(screen.getByRole('button', { name: '날짜 선택' }))
+      await open()
+      expect(document.querySelector('input[type=date]')).toBeInTheDocument()
+      await userEvent.keyboard('{Escape}')
+      expect(document.querySelector('input[type=date]')).not.toBeInTheDocument()
+      await open()
+      await userEvent.click(document.body)
+      expect(document.querySelector('input[type=date]')).not.toBeInTheDocument()
+    })
   })
 
   it('목록 카드는 사진 왼쪽 위에 분류 알약을 보여주고, 평점 필드가 없어도 그려진다', async () => {

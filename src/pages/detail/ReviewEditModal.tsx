@@ -4,7 +4,7 @@ import { useUpdateReview } from '../../api/hooks'
 import type { Review } from '../../api/types'
 import { Modal, RatingStars, useToast } from '../../components'
 import { ReviewImagePicker } from './ReviewImagePicker'
-import { WarnIcon, XIcon } from './icons'
+import { PencilIcon, XIcon } from './icons'
 import { useReviewImages } from './useReviewImages'
 
 /** BE 상한(공백 제외 1~1000자) */
@@ -84,7 +84,7 @@ export function ReviewEditModal({ review, eventTitle, onClose }: Props) {
             {content.length}/{MAX_CONTENT}
           </p>
         </div>
-        <ReviewImagePicker state={pics} disabled={update.isPending} />
+        <ReviewImagePicker state={pics} disabled={update.isPending} compact />
         {update.isError && (
           <p role="alert" className="text-[13px] text-primary-ink">
             {errorMessage(update.error)}
@@ -108,16 +108,16 @@ export function ReviewEditModal({ review, eventTitle, onClose }: Props) {
     <Modal open={confirmingDiscard} onClose={() => setConfirmingDiscard(false)} ariaLabel="수정 취소 확인" bare widthClass="max-w-[384px]">
       <div className="flex flex-col items-center px-6 pb-5 pt-7">
         <span className="mb-[6px] flex size-[52px] items-center justify-center rounded-[16px] bg-primary-tint text-primary">
-          <WarnIcon size={24} />
+          <PencilIcon size={24} />
         </span>
         <h2 className="pt-2 text-[18px] font-bold text-ink">수정한 내용이 사라져요</h2>
         <p className="pt-2 text-center text-[14px] leading-[22.4px] text-ink-muted">닫으면 바꾼 내용이 저장되지 않아요.</p>
         <div className="flex w-full gap-2 pt-6">
-          <button type="button" onClick={() => setConfirmingDiscard(false)} className="h-12 flex-1 rounded-[12px] bg-[#f2eeeb] text-[14px] font-bold text-ink">
-            계속 수정
-          </button>
-          <button type="button" onClick={onClose} className="h-12 flex-1 rounded-[12px] bg-primary text-[14px] font-bold text-white">
+          <button type="button" onClick={onClose} className="h-12 flex-1 rounded-[12px] bg-[#f2eeeb] text-[14px] font-bold text-ink">
             닫기
+          </button>
+          <button type="button" onClick={() => setConfirmingDiscard(false)} className="h-12 flex-1 rounded-[12px] bg-primary text-[14px] font-bold text-white">
+            계속 수정
           </button>
         </div>
       </div>

@@ -27,7 +27,7 @@ function Content() {
     return (
       <EmptyState
         variant="feature"
-        icon={<HeartIcon size={24} />}
+        icon={<HeartIcon size={40} />}
         title="아직 찜한 행사가 없어요"
         description="관심 있는 행사를 찜하고 한눈에 모아 보세요"
         action={

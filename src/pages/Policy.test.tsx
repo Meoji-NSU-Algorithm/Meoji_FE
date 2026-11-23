@@ -30,7 +30,10 @@ describe('약관 페이지', () => {
     expect(await screen.findByRole('heading', { name: '약관 및 정책' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: '제1조 (목적)' })).toBeInTheDocument()
     expect(within(screen.getByRole('navigation', { name: '조항 목차' })).getByText('부칙')).toBeInTheDocument()
-    expect(screen.getByText(`시행일 ${POLICY_EFFECTIVE_DATE}`)).toBeInTheDocument()
+    // 날짜만 Bold(Figma 621:38)라 '시행일'과 날짜가 서로 다른 요소에 있다
+    const date = screen.getByText(POLICY_EFFECTIVE_DATE)
+    expect(date.tagName).toBe('B')
+    expect(date.parentElement).toHaveTextContent(`시행일 ${POLICY_EFFECTIVE_DATE}`)
     expect(screen.getByRole('tab', { name: '이용약관' })).toHaveAttribute('aria-selected', 'true')
   })
 
