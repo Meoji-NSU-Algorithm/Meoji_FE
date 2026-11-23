@@ -173,9 +173,5 @@ export function MapCanvas({ kakao, points, selectedId, onSelect, onDeselect, onV
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fitKey])
 
-  return (
-    <div className="absolute inset-0">
-      <div ref={box} className="app-unzoom app-unzoom-fill" data-testid="kakao-map" />
-    </div>
-  )
+  return <div ref={box} className="absolute inset-0" data-testid="kakao-map" />
 }

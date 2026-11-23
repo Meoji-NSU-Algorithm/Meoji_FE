@@ -71,24 +71,20 @@ export function AvatarCropModal({ src, onCancel, onApply }: Props) {
         </div>
         <div className="min-h-0 flex-1 overflow-y-auto px-5 py-[18px]">
           <div className="relative mx-auto aspect-square w-full max-w-[320px] overflow-hidden rounded-[14px] bg-ink">
-            <div className="absolute inset-0" data-testid="crop-unzoom-wrap">
-              <div className="app-unzoom app-unzoom-fill relative" data-testid="crop-unzoom">
-                <Cropper
-                  image={src}
-                  crop={crop}
-                  zoom={zoom}
-                  aspect={1}
-                  cropShape="round"
-                  objectFit="cover"
-                  showGrid={false}
-                  minZoom={1}
-                  maxZoom={3}
-                  onCropChange={setCrop}
-                  onZoomChange={setZoom}
-                  onCropComplete={(_, pixels) => setArea(pixels)}
-                />
-              </div>
-            </div>
+            <Cropper
+              image={src}
+              crop={crop}
+              zoom={zoom}
+              aspect={1}
+              cropShape="round"
+              objectFit="cover"
+              showGrid={false}
+              minZoom={1}
+              maxZoom={3}
+              onCropChange={setCrop}
+              onZoomChange={setZoom}
+              onCropComplete={(_, pixels) => setArea(pixels)}
+            />
           </div>
           <input
             type="range"

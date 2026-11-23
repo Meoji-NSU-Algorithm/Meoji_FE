@@ -41,9 +41,7 @@ export function MiniMap({ latitude, longitude, address, className = '' }: Props)
       style={{ backgroundImage: 'linear-gradient(169deg, #eef0ea 8%, #e6ede0 54%, #eef0ea 92%)' }}
     >
       {showMap ? (
-        <div className="absolute inset-0">
-          <div ref={ref} data-testid="mini-map" className="app-unzoom app-unzoom-fill" />
-        </div>
+        <div ref={ref} data-testid="mini-map" className="absolute inset-0" />
       ) : (
         <div data-testid="mini-map-fallback" className="absolute left-1/2 top-[51px] -translate-x-1/2 text-brand">
           <MapPinIcon size={34} />
