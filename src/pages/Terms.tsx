@@ -7,6 +7,7 @@ import { CheckIcon } from '../components/icons'
 import { MARKETING_POLICY, POLICIES, type Policy as PolicyData } from '../content/policies'
 import { AuthScreen, centerBg } from './home/AuthScreen'
 import { PolicyModal } from './Policy'
+import { RefreshIcon, WarnIcon } from './detail/icons'
 
 function Box({ checked }: { checked: boolean }) {
   return (
@@ -131,10 +132,13 @@ export default function Terms() {
             '새 행사와 이벤트 소식을 받아요',
           )}
           {save.isError && (
-            <div role="alert" className="mt-[10px] rounded-[12px] bg-primary-tint px-[14px] py-3 text-[13px] leading-[20.8px] text-[#8a2a0e]">
-              동의 내용을 저장하지 못했어요.
-              <br />
-              잠시 후 다시 시도해 주세요.
+            <div role="alert" className="mt-[10px] flex items-start gap-[10px] rounded-[12px] bg-primary-tint px-[14px] py-3 text-[13px] leading-[20.8px] text-[#8a2a0e]">
+              <WarnIcon size={18} className="mt-px shrink-0 text-primary-ink" />
+              <span>
+                동의 내용을 저장하지 못했어요.
+                <br />
+                잠시 후 다시 시도해 주세요.
+              </span>
             </div>
           )}
           <div className="pt-[14px]">
@@ -142,8 +146,9 @@ export default function Terms() {
               type="button"
               disabled={!required || save.isPending}
               onClick={start}
-              className="h-12 w-full rounded-[12px] bg-primary text-[14px] font-bold text-white disabled:bg-[#efe3de] disabled:text-[#9a7d72]"
+              className="flex h-12 w-full items-center justify-center gap-[6px] rounded-[12px] bg-primary text-[14px] font-bold text-white disabled:bg-[#efe3de] disabled:text-[#9a7d72]"
             >
+              {save.isError && <RefreshIcon size={16} />}
               {save.isError ? '다시 시도' : '동의하고 시작하기'}
             </button>
           </div>

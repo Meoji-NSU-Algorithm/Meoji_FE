@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useCategories, useSidos } from '../../api/hooks'
 import type { EventListParams } from '../../api/types'
 import { useAuth, useRequireLogin } from '../../auth'
@@ -16,7 +16,7 @@ function Row({ label, children, last }: { label: string; children: React.ReactNo
   )
 }
 const chipRow = 'flex min-w-0 flex-1 gap-[6px] overflow-x-auto'
-const chipCls = 'h-8 px-[14px]'
+const chipCls = 'h-8! px-[14px]'
 
 /**
  * 분류 / 지역 / 요금 / 기간 필터 (B1·B4 공통).
@@ -28,6 +28,20 @@ export function FilterPanel({ params, onPatch }: { params: EventListParams; onPa
   const categories = useCategories()
   const sidos = useSidos()
   const [dateOpen, setDateOpen] = useState(false)
+  const dateRef = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    if (!dateOpen) return
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setDateOpen(false)
+    const onDown = (e: MouseEvent) => {
+      if (!dateRef.current?.contains(e.target as Node)) setDateOpen(false)
+    }
+    document.addEventListener('keydown', onKey)
+    document.addEventListener('mousedown', onDown)
+    return () => {
+      document.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onDown)
+    }
+  }, [dateOpen])
   const apply = (p: Patch) => requireLogin(() => onPatch(p))
   const hasRange = !!(params.start_date || params.end_date)
 
@@ -76,7 +90,7 @@ export function FilterPanel({ params, onPatch }: { params: EventListParams; onPa
           </Chip>
         </div>
         <span className="shrink-0 pl-[10px] text-[13px] font-bold leading-[19.5px] text-ink">기간</span>
-        <div className="relative shrink-0">
+        <div ref={dateRef} className="relative shrink-0">
           <button
             type="button"
             aria-expanded={dateOpen}
@@ -96,7 +110,11 @@ export function FilterPanel({ params, onPatch }: { params: EventListParams; onPa
                   type="date"
                   value={params.start_date ?? ''}
                   max={params.end_date}
-                  onChange={(e) => onPatch({ start_date: e.target.value || undefined })}
+                  onChange={(e) => {
+                    // 키보드로 직접 입력하면 min/max 를 넘길 수 있다. 시작일이 종료일보다 늦으면 종료일도 같은 날로 맞춘다.
+                    const v = e.target.value || undefined
+                    onPatch(v && params.end_date && v > params.end_date ? { start_date: v, end_date: v } : { start_date: v })
+                  }}
                   className="h-9 rounded-md border border-line px-2 text-[13px] text-ink"
                 />
               </label>
@@ -106,7 +124,10 @@ export function FilterPanel({ params, onPatch }: { params: EventListParams; onPa
                   type="date"
                   value={params.end_date ?? ''}
                   min={params.start_date}
-                  onChange={(e) => onPatch({ end_date: e.target.value || undefined })}
+                  onChange={(e) => {
+                    const v = e.target.value || undefined
+                    onPatch(v && params.start_date && v < params.start_date ? { start_date: v, end_date: v } : { end_date: v })
+                  }}
                   className="h-9 rounded-md border border-line px-2 text-[13px] text-ink"
                 />
               </label>

@@ -23,3 +23,7 @@ export const ChevronRightIcon = (p: P) => <Svg {...p}><path d="m9 18 6-6-6-6" />
 export const XIcon = (p: P) => <Svg {...p}><path d="M6 6l12 12M18 6 6 18" /></Svg>
 export const TrashIcon = (p: P) => <Svg {...p}><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" /></Svg>
 export const InfoIcon = (p: P) => <Svg {...p}><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16.5h.01" /></Svg>
+export const PencilIcon = (p: P) => <Svg {...p}><path d="M4 20h4L19 9a2.8 2.8 0 0 0-4-4L4 16v4ZM13.5 6.5l4 4" /></Svg>
+export const RefreshIcon = (p: P) => <Svg {...p}><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v4.5h-4.5" /></Svg>
+/** 등록 중 표시 (돌아가는 원호) */
+export const SpinnerIcon = ({ className = '', ...p }: P) => <Svg {...p} className={`motion-safe:animate-spin ${className}`}><path d="M12 3a9 9 0 1 0 9 9" /></Svg>

@@ -35,16 +35,23 @@ const Chevron = ({ up }: { up: boolean }) => <Svg size={18}>{up ? <path d="m18 1
 
 function Badge({ color, children }: { color: string; children: ReactNode }) {
   return (
-    <span className="flex h-6 items-center rounded-full px-2 text-[11px] font-black text-white" style={{ background: color }}>
+    <span className="flex h-6 shrink-0 items-center rounded-full px-2 text-[11px] font-black text-white" style={{ background: color }}>
       {children}
     </span>
   )
 }
 
-function Circle({ color, children }: { color: string; children: ReactNode }) {
+/** 노선 번호 원. 번호가 길면 글자를 줄이고, 노선이 더 있으면 우상단에 '+N' 을 단다(44px 열 안에 들어가는 크기). */
+function Circle({ color, children, extra = 0 }: { color: string; children: string; extra?: number }) {
+  const size = children.length > 4 ? 'text-[9px]' : children.length > 3 ? 'text-[10px]' : 'text-[12px]'
   return (
-    <span className="flex size-8 items-center justify-center rounded-2xl text-[12px] font-black text-white" style={{ background: color }}>
-      {children}
+    <span className="relative flex size-8 shrink-0 items-center justify-center rounded-2xl text-white" style={{ background: color }}>
+      <span className={`max-w-full truncate px-[2px] font-black leading-none ${size}`} data-testid="step-circle-label">{children}</span>
+      {extra > 0 && (
+        <span className="absolute -right-[5px] -top-[5px] flex h-4 min-w-4 items-center justify-center rounded-full border border-white bg-ink px-[3px] text-[9px] font-black leading-none text-white" data-testid="step-circle-extra" aria-label={`외 ${extra}개 노선`}>
+          +{extra}
+        </span>
+      )}
     </span>
   )
 }
@@ -77,8 +84,8 @@ function TransitStep({ step, clockAt, nextIsTransit }: { step: DirectionsStep; c
   if (p.kind === 'bus' || p.kind === 'subway') {
     const bus = p.kind === 'bus'
     const color = bus ? BUS : SUBWAY
-    const lead = bus ? p.lines : p.lineNo.replace('호선', '')
-    const badgeText = bus ? `버스 ${p.lines}` : p.lineNo
+    const chips = bus ? p.lines : [p.lineNo]
+    const lead = (bus ? p.lines[0] : p.lineNo.replace('호선', '')) ?? ''
     const title = bus ? (p.board ? `${p.board} 승차` : '버스 승차') : `${p.line} 승차`
     const sub = bus ? (p.alight ? `${p.alight}까지` : null) : p.direction ? `${p.direction} 방면` : null
     const stops = bus && p.passStops != null ? `${p.passStops}개 정류장 이동` : null
@@ -86,22 +93,26 @@ function TransitStep({ step, clockAt, nextIsTransit }: { step: DirectionsStep; c
     return (
       <>
         <li className={ROW} data-testid="route-step">
-          <span className="flex w-11 shrink-0 justify-center"><Circle color={color}><span className={lead.length > 3 ? 'text-[10px]' : ''}>{lead}</span></Circle></span>
+          <span className="flex w-11 shrink-0 justify-center"><Circle color={color} extra={bus ? p.lines.length - 1 : 0}>{lead}</Circle></span>
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-bold leading-[21.75px] text-ink">{title}</p>
-            <p className="flex items-center gap-2 pt-[2px]">
-              <span className="flex h-5 items-center rounded-[5px] px-[7px] text-[11px] font-bold text-white" style={{ background: color }}>{badgeText}</span>
-              {sub && <span className="text-[13px] text-ink">{sub}</span>}
-            </p>
-            <p className="pt-[2px] text-[12.5px] text-ink-subtle">{meta(step, stops, arriveText)}</p>
-            {open && detail && <p className="pt-1 text-[12.5px] text-ink-muted" data-testid="step-detail">{detail}</p>}
+            <p className="break-keep text-[15px] font-bold leading-[21.75px] text-ink">{title}</p>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 pt-[2px]">
+              {chips.map((c, i) => (
+                <span key={`${c}-${i}`} className="flex h-5 min-w-0 max-w-full items-center rounded-[5px] px-[7px] text-[11px] font-bold text-white" style={{ background: color }} title={c} aria-label={bus ? `버스 ${c}` : c} data-testid="route-line-chip">
+                  <span className="truncate">{c}</span>
+                </span>
+              ))}
+              {sub && <span className="min-w-0 break-keep text-[13px] text-ink">{sub}</span>}
+            </div>
+            <p className="break-keep pt-[2px] text-[12.5px] text-ink-subtle">{meta(step, stops, arriveText)}</p>
+            {open && detail && <p className="break-keep pt-1 text-[12.5px] text-ink-muted" data-testid="step-detail">{detail}</p>}
           </div>
           {detail ? <ExpandButton open={open} label={bus ? '지나는 정류장' : '출구 안내'} onClick={() => setOpen((v) => !v)} /> : <span className="size-8 shrink-0" />}
         </li>
         {alight && (
           <li className={ROW} data-testid="route-step-exit">
             <span className="flex w-11 shrink-0 items-center justify-center"><Badge color={color}>{nextIsTransit ? '환승' : '하차'}</Badge></span>
-            <p className="flex-1 text-[15px] font-bold leading-[21.75px] text-ink">{alight} {nextIsTransit ? '환승' : '하차'}</p>
+            <p className="min-w-0 flex-1 break-keep text-[15px] font-bold leading-[21.75px] text-ink">{alight} {nextIsTransit ? '환승' : '하차'}</p>
             <span className="size-8 shrink-0" />
           </li>
         )}
@@ -190,7 +201,7 @@ export function RouteSteps({ route, originLabel, destLabel }: { route: Direction
   return (
     <div className="mt-[14px] overflow-hidden rounded-[18px] border border-line" data-testid="route-card">
       <div className="flex flex-col gap-[5px] bg-surface-card p-4" data-testid="route-summary">
-        <p className="flex items-baseline gap-3">
+        <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
           <span className="text-[26px] font-black leading-[31px] tracking-[-0.52px] text-ink">{formatDuration(route.durationMinutes)}</span>
           <span className="text-[13px] text-ink-muted">{summaryMeta}</span>
         </p>

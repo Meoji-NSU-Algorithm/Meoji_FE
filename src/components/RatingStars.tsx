@@ -17,7 +17,7 @@ export function RatingStars({ value, max = 5, size = 16, onChange }: RatingStars
 
   return (
     <span
-      className="inline-flex items-center"
+      className="inline-flex items-center gap-[2px]"
       role={onChange ? 'radiogroup' : 'img'}
       aria-label={onChange ? '별점 선택' : `별점 ${v}점 / ${max}점`}
     >

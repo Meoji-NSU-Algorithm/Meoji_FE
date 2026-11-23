@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ReviewImage } from '../../api/types'
+import { checkImageFile } from '../../lib/imageFile'
 
 export const MAX_REVIEW_IMAGES = 5
-export const MAX_IMAGE_BYTES = 10 * 1024 * 1024
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp']
 
 /** 사진 줄 아래에 보여 줄 안내 한 건 (Figma C2): 무슨 일 한 줄 + 어떻게 되는지 한 줄 */
 export interface ImageNotice {
@@ -36,9 +35,10 @@ export function useReviewImages(initial: ReviewImage[] = []) {
     const added: PickedImage[] = []
     for (const file of files.slice(0, Math.max(room, 0))) {
       // 형식·용량이 안 맞는 사진만 빼고 나머지는 그대로 추가한다
-      if (!ALLOWED_TYPES.includes(file.type)) {
+      const problem = checkImageFile(file)
+      if (problem === 'type') {
         if (!next.includes(NOTICE_TYPE)) next.push(NOTICE_TYPE)
-      } else if (file.size > MAX_IMAGE_BYTES) {
+      } else if (problem === 'size') {
         if (!next.includes(NOTICE_SIZE)) next.push(NOTICE_SIZE)
       } else {
         const url = URL.createObjectURL(file)

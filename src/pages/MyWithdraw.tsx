@@ -120,7 +120,7 @@ function Withdraw() {
 
 export default function MyWithdraw() {
   return (
-    <div className="px-6 pb-5 pt-[60px]">
+    <div className="px-6 pb-[100px] pt-[60px]">
       <LoginRequired>
         <Withdraw />
       </LoginRequired>

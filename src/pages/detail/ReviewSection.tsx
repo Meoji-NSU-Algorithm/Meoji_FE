@@ -1,10 +1,12 @@
 import { useState } from 'react'
+import { ApiError } from '../../api/client'
 import { errorMessage } from '../../api/errors'
 import { useCreateReview } from '../../api/hooks'
 import type { Review } from '../../api/types'
 import { useAuth, useRequireLogin } from '../../auth'
 import { RatingStars, useToast } from '../../components'
 import { ReviewAvatar } from './ReviewAvatar'
+import { RefreshIcon, SpinnerIcon, WarnIcon } from './icons'
 import { ReviewDeleteModal } from './ReviewDeleteModal'
 import { MAX_CONTENT, ReviewEditModal } from './ReviewEditModal'
 import { ReviewImagePicker } from './ReviewImagePicker'
@@ -13,6 +15,13 @@ import { useReviewImages } from './useReviewImages'
 
 /** review.author 가 없을 때만 쓰는 대체 라벨 */
 export const ANONYMOUS_LABEL = '방문자'
+
+const FAILURE_HINT = '쓴 글과 고른 사진은 그대로 있어요. 다시 등록해 주세요.'
+/** 사유가 분명한 실패(중복 리뷰·사진 규칙·저장소 장애 등)는 그 안내를, 그 밖에는 기본 안내를 보여 준다 */
+function failureHint(e: unknown) {
+  const specific = e instanceof ApiError && (e.status < 500 || e.code.startsWith('IMAGE_'))
+  return specific ? errorMessage(e) : FAILURE_HINT
+}
 
 function formatDate(iso: string) {
   return iso.slice(0, 10).replaceAll('-', '.')
@@ -37,6 +46,8 @@ export function ReviewSection({ eventId, eventTitle, reviews, averageRating, rev
   const [rating, setRating] = useState(0)
   const [content, setContent] = useState('')
   const [error, setError] = useState<string | null>(null)
+  /** 등록 요청이 실패했을 때의 안내 (Figma C2 ③ 등록 실패). 글·사진은 그대로 남는다 */
+  const [failure, setFailure] = useState<string | null>(null)
   const [editTarget, setEditTarget] = useState<Review | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Review | null>(null)
 
@@ -44,6 +55,7 @@ export function ReviewSection({ eventId, eventTitle, reviews, averageRating, rev
     if (rating <= 0) return setError('별점을 선택해 주세요.')
     if (!content.trim()) return setError('후기를 입력해 주세요.')
     setError(null)
+    setFailure(null)
     create.mutate(
       { event_id: eventId, rating, content: content.trim(), files: pics.files },
       {
@@ -53,12 +65,13 @@ export function ReviewSection({ eventId, eventTitle, reviews, averageRating, rev
           pics.reset()
           toast.show({ message: '리뷰가 등록됐어요!' })
         },
-        onError: (e) => setError(errorMessage(e)),
+        onError: (e) => setFailure(failureHint(e)),
       },
     )
   }
 
   const average = averageRating ?? 0
+  const pending = create.isPending
 
   return (
     <section className="pt-14" aria-label="리뷰">
@@ -84,36 +97,59 @@ export function ReviewSection({ eventId, eventTitle, reviews, averageRating, rev
       )}
 
       {!mine && (
-        <div className="mt-[14px] flex flex-col gap-4 rounded-[18px] border border-line px-[22px] pb-5 pt-[22px]">
-          <h3 className="text-[15px] font-bold leading-[22.5px] text-ink">이 행사는 어떠셨나요?</h3>
-          <div className="flex flex-wrap items-center gap-3">
-            <RatingStars value={rating} size={26} onChange={(v) => requireLogin(() => setRating(v))} />
-            <span className="text-[17px] font-bold leading-[25px] text-ink">{rating > 0 ? `${rating}점` : '별점을 선택해 주세요'}</span>
-            <span className="text-[12px] leading-[18px] text-ink-subtle">별의 왼쪽을 누르면 반 개, 오른쪽을 누르면 한 개가 선택돼요</span>
-          </div>
-          <textarea
-            aria-label="리뷰 내용"
-            value={content}
-            maxLength={MAX_CONTENT}
-            onChange={(e) => setContent(e.target.value)}
-            onFocus={() => requireLogin()}
-            placeholder="방문 후기를 자유롭게 남겨 주세요"
-            className="h-[84px] min-h-[84px] w-full resize-y rounded-[12px] border border-line bg-surface px-[14px] py-3 text-[14px] leading-[21px] text-ink outline-none placeholder:text-[#757575] focus:border-primary"
-          />
-          <ReviewImagePicker state={pics} disabled={create.isPending} />
+        <div className="mt-[14px] flex flex-col gap-[14px] rounded-[18px] border border-line px-[22px] pb-5 pt-[22px]">
+          <fieldset
+            disabled={pending}
+            aria-busy={pending}
+            className={`m-0 flex min-w-0 flex-col gap-[14px] border-0 p-0 ${pending ? 'pointer-events-none opacity-50' : ''}`}
+          >
+            <h3 className="text-[15px] font-bold leading-[22.5px] text-ink">이 행사는 어떠셨나요?</h3>
+            <div className="flex flex-wrap items-center gap-3">
+              <RatingStars value={rating} size={30} onChange={(v) => requireLogin(() => setRating(v))} />
+              <span className="text-[17px] font-bold leading-[25px] text-ink">{rating > 0 ? `${rating}점` : '별점을 선택해 주세요'}</span>
+              <span className="text-[12px] leading-[18px] text-ink-subtle">별의 왼쪽을 누르면 반 개, 오른쪽을 누르면 한 개가 선택돼요</span>
+            </div>
+            <div className="flex flex-col items-end gap-[6px]">
+              <textarea
+                aria-label="리뷰 내용"
+                value={content}
+                maxLength={MAX_CONTENT}
+                onChange={(e) => setContent(e.target.value)}
+                onFocus={() => requireLogin()}
+                placeholder="방문 후기를 자유롭게 남겨 주세요"
+                className="h-[96px] min-h-[96px] w-full resize-y rounded-[12px] border border-line bg-surface px-[14px] py-3 text-[14px] leading-[21px] text-ink outline-none placeholder:text-[#757575] focus:border-primary"
+              />
+              <p className="text-[12px] text-ink-subtle">
+                {content.length}/{MAX_CONTENT}
+              </p>
+            </div>
+            <ReviewImagePicker state={pics} disabled={pending} />
+          </fieldset>
           {error && (
             <p role="alert" className="text-[13px] text-primary-ink">
               {error}
             </p>
           )}
-          <div className="flex justify-end border-t border-line pt-[14px]">
+          {failure && !pending && (
+            <div role="alert" className="flex items-start gap-[10px] rounded-[12px] bg-primary-tint px-[14px] py-3">
+              <WarnIcon size={18} className="mt-[2px] shrink-0 text-primary-ink" />
+              <div>
+                <p className="text-[13px] leading-[20.8px] text-[#8a2a0e]">리뷰를 등록하지 못했어요</p>
+                <p className="text-[12px] leading-[19.2px] text-ink-muted">{failure}</p>
+              </div>
+            </div>
+          )}
+          <div className="flex items-center justify-between border-t border-line pt-[14px]">
+            <p className="text-[12px] text-ink-muted">{pending ? '사진이 많으면 몇 초 걸릴 수 있어요' : ''}</p>
             <button
               type="button"
-              disabled={create.isPending}
+              disabled={pending}
               onClick={() => requireLogin(submitCreate)}
-              className="h-11 rounded-[12px] bg-primary px-5 text-[14px] font-bold text-white disabled:opacity-60"
+              className={`flex h-11 items-center gap-2 rounded-[12px] px-5 text-[14px] font-bold text-white ${pending ? 'bg-[#e07a55]' : 'bg-primary'}`}
             >
-              {create.isPending ? '등록 중…' : '리뷰 등록'}
+              {pending && <SpinnerIcon size={16} />}
+              {!pending && failure && <RefreshIcon size={16} />}
+              {pending ? '등록 중…' : failure ? '다시 등록' : '리뷰 등록'}
             </button>
           </div>
         </div>

@@ -30,6 +30,7 @@ export function parseEventParams(sp: URLSearchParams): EventListParams {
   if (s && DATE_RE.test(s)) p.start_date = s
   const e = sp.get('end_date')
   if (e && DATE_RE.test(e)) p.end_date = e
+  if (p.start_date && p.end_date && p.start_date > p.end_date) [p.start_date, p.end_date] = [p.end_date, p.start_date]
   const sort = sp.get('sort') as EventSort | null
   if (sort && SORTS.includes(sort)) p.sort = sort
   const page = int(sp.get('page'), 1)

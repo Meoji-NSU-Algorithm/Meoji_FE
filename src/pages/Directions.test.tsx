@@ -112,7 +112,7 @@ describe('Directions', () => {
     )
     renderPage()
     expect(await screen.findByText('남서울대 승차')).toBeInTheDocument()
-    expect(screen.getByText('버스 24')).toBeInTheDocument()
+    expect(screen.getByLabelText('버스 24')).toBeInTheDocument()
     expect(screen.getByText('천안역 환승')).toBeInTheDocument()
     expect(screen.getByText('봉명역 하차')).toBeInTheDocument()
     expect(screen.getByText('신창 방면')).toBeInTheDocument()
@@ -120,6 +120,56 @@ describe('Directions', () => {
     await userEvent.click(screen.getByRole('button', { name: '도보 상세 펼치기' }))
     expect(screen.getByText('우회전')).toBeInTheDocument()
     expect(screen.getByTestId('route-summary')).toHaveTextContent('환승 1회')
+  })
+
+  describe('대중교통 노선 표시', () => {
+    const bus = (lines: string) => ({ stepNumber: 1, type: 'BUS', instruction: `${lines}번 버스 이용: 남서울대 승차 → 천안역 하차`, durationMinutes: 12, distanceMeters: 5000, detail: '경유 정류장 정보 6개' })
+    async function show(step: Record<string, unknown>) {
+      geo(true)
+      server.use(
+        http.get('*/api/events/1', () => ok(event)),
+        http.get('*/api/directions/1', () => ok(result('transit', { steps: [step] }))),
+      )
+      renderPage()
+      await screen.findByTestId('route-step')
+    }
+
+    it('버스 1개: 칩 1개, +N 없음', async () => {
+      await show(bus('24'))
+      expect(screen.getAllByTestId('route-line-chip')).toHaveLength(1)
+      expect(screen.getByTestId('step-circle-label')).toHaveTextContent('24')
+      expect(screen.queryByTestId('step-circle-extra')).not.toBeInTheDocument()
+    })
+
+    it('버스 3개: 칩 3개, 원에는 첫 노선과 +2', async () => {
+      await show(bus('24, 100, 200'))
+      expect(screen.getAllByTestId('route-line-chip').map((c) => c.textContent)).toEqual(['24', '100', '200'])
+      expect(screen.getByTestId('step-circle-label')).toHaveTextContent('24')
+      expect(screen.getByTestId('step-circle-extra')).toHaveTextContent('+2')
+      expect(screen.getByText('남서울대 승차')).toBeInTheDocument()
+    })
+
+    it('버스 6개와 긴 이름: 칩 6개, 원에는 첫 노선과 +5', async () => {
+      await show(bus('광역급행9401, 24, 100, 200, 400, 서울방면직행좌석1234567'))
+      expect(screen.getAllByTestId('route-line-chip')).toHaveLength(6)
+      expect(screen.getByLabelText('버스 서울방면직행좌석1234567')).toBeInTheDocument()
+      expect(screen.getByTestId('step-circle-label')).toHaveTextContent('광역급행9401')
+      expect(screen.getByTestId('step-circle-extra')).toHaveTextContent('+5')
+    })
+
+    it('지하철: 노선 칩과 방면, +N 없음', async () => {
+      await show({ stepNumber: 1, type: 'SUBWAY', instruction: '수도권 1호선 탑승, 봉명역 하차 (신창 방면)', durationMinutes: 10, distanceMeters: 4000, detail: '출발역 1번 출구, 도착역 2번 출구' })
+      expect(screen.getAllByTestId('route-line-chip').map((c) => c.textContent)).toEqual(['1호선'])
+      expect(screen.getByText('신창 방면')).toBeInTheDocument()
+      expect(screen.getByTestId('step-circle-label')).toHaveTextContent('1')
+      expect(screen.queryByTestId('step-circle-extra')).not.toBeInTheDocument()
+    })
+
+    it('기타(이동) 단계는 원문 그대로 보여준다', async () => {
+      await show({ stepNumber: 1, type: 'OTHER', instruction: '이동', durationMinutes: 30, distanceMeters: 20000, detail: null })
+      expect(screen.getByTestId('route-step')).toHaveTextContent('이동')
+      expect(screen.queryByTestId('route-line-chip')).not.toBeInTheDocument()
+    })
   })
 
   it('탭을 바꾸면 해당 mode 로 요청한다', async () => {

@@ -24,7 +24,7 @@ function ToneIcon({ tone }: { tone: ToastTone }) {
       </span>
     )
   return (
-    <span className="flex size-[22px] items-center justify-center rounded-full bg-brand text-white" data-testid={`toast-icon-${tone}`}>
+    <span className="flex size-[22px] items-center justify-center rounded-full bg-primary text-white" data-testid={`toast-icon-${tone}`}>
       {tone === 'error' ? (
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
           <path d="M12 6v7M12 18h.01" />
@@ -40,7 +40,7 @@ export function ToastView({ message, tone = 'success', actionLabel, onAction }: 
   return (
     <div
       role="status"
-      className="inline-flex h-[52px] items-center gap-3 rounded-[14px] bg-ink pl-4 pr-[10px] text-white"
+      className="inline-flex h-[52px] items-center gap-3 rounded-[14px] bg-ink pl-[18px] pr-[10px] text-white shadow-[0_10px_15px_rgba(0,0,0,0.25)]"
     >
       <ToneIcon tone={tone} />
       <span className="text-[14px] font-medium leading-[21px] whitespace-nowrap">{message}</span>
