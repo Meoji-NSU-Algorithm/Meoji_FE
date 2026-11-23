@@ -92,7 +92,7 @@ export function ReviewEditModal({ review, eventTitle, onClose }: Props) {
         )}
       </div>
       <div className="flex gap-2 border-t border-line px-[22px] pb-5 pt-[14px]">
-        <button type="button" onClick={requestClose} className="h-12 w-[120px] rounded-[12px] bg-[#f2eeeb] text-[14px] font-bold text-ink">
+        <button type="button" onClick={requestClose} className="h-12 w-[96px] rounded-[12px] sm:w-[120px] bg-[#f2eeeb] text-[14px] font-bold text-ink">
           취소
         </button>
         <button

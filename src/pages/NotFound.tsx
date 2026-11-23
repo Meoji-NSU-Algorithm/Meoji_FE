@@ -5,7 +5,7 @@ export default function NotFound() {
   const navigate = useNavigate()
   const secondary = 'h-11 rounded-card border border-line bg-surface px-[18px] text-[14px] font-bold text-ink'
   return (
-    <div className="mx-auto max-w-content px-6 py-10">
+    <div className="mx-auto max-w-content px-4 py-10 md:px-6">
       <ErrorState
         code="404"
         title="페이지를 찾을 수 없어요"

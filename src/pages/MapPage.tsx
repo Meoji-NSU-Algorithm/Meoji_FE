@@ -152,7 +152,7 @@ export default function MapPage() {
   const showDenied = geo === 'denied' && !dismissed
 
   return (
-    <div className="mx-auto max-w-content px-6 pb-12">
+    <div className="mx-auto max-w-content px-4 pb-12 md:px-6">
       <PageTitleBar active="map" />
       <div className="pt-[18px]">
         <FilterPanel params={params} onPatch={patch} />
@@ -226,7 +226,8 @@ export default function MapPage() {
           )}
         </aside>
 
-        <div className="relative h-[420px] overflow-hidden rounded-lg bg-[#eef0ea] lg:h-auto">
+        {/* lg 미만: 지도를 목록 위에 */}
+        <div className="relative -order-1 h-[380px] overflow-hidden rounded-lg bg-[#eef0ea] lg:order-none lg:h-auto">
           {sdkError ? (
             <div className="absolute inset-0 flex items-center justify-center">
               <StatePanel

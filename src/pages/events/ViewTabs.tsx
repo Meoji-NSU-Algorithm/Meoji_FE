@@ -20,7 +20,7 @@ export function ViewTabs({ active }: { active: ViewKey }) {
             key={key}
             to={to}
             aria-current={on ? 'page' : undefined}
-            className={`flex h-[34px] items-center gap-[6px] rounded-pill px-4 text-[13px] leading-[19.5px] ${
+            className={`flex h-[34px] items-center gap-[6px] whitespace-nowrap rounded-pill px-3 text-[13px] md:px-4 leading-[19.5px] ${
               on ? 'bg-surface font-bold text-ink shadow-[0_1px_1.5px_rgba(0,0,0,0.08)]' : 'font-medium text-ink-muted'
             }`}
           >
@@ -35,8 +35,8 @@ export function ViewTabs({ active }: { active: ViewKey }) {
 
 export function PageTitleBar({ active }: { active: ViewKey }) {
   return (
-    <div className="flex items-center justify-between pb-[18px] pt-9">
-      <h1 className="text-[28px] font-black leading-[42px] tracking-[-0.56px] text-ink">행사 목록</h1>
+    <div className="flex flex-col items-start gap-3 pb-[18px] pt-6 md:flex-row md:items-center md:justify-between md:pt-9">
+      <h1 className="whitespace-nowrap text-[24px] font-black md:text-[28px] leading-[42px] tracking-[-0.56px] text-ink">행사 목록</h1>
       <ViewTabs active={active} />
     </div>
   )

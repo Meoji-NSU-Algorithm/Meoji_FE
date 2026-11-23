@@ -20,8 +20,8 @@ export default function MyWithdrawDone() {
   // 직접 주소로 들어온 경우에는 아무것도 하지 않고 홈으로 보낸다.
   if (!withdrawn) return <Navigate to="/" replace />
   return (
-    <div className="px-6 pb-5 pt-[60px]">
-      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center rounded-[22px] border border-line bg-surface px-8 pb-10 pt-12">
+    <div className="px-4 pb-5 pt-8 md:px-6 md:pt-[60px]">
+      <div className="mx-auto flex w-full max-w-[460px] flex-col items-center rounded-[22px] border border-line bg-surface px-5 pb-8 pt-10 md:px-8 md:pb-10 md:pt-12">
         <span className="flex size-[72px] items-center justify-center rounded-[24px] bg-primary-tint text-brand">
           <CheckIcon size={36} />
         </span>

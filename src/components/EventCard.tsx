@@ -131,9 +131,9 @@ export function EventCard({
             .filter(Boolean)
             .join(' · ')}
         </p>
-        <div className="flex items-center gap-[6px] pt-[5px]">
+        <div className="flex flex-wrap items-center gap-x-[6px] gap-y-1 pt-[5px]">
           <span
-            className={`leading-[21.75px] ${
+            className={`whitespace-nowrap leading-[21.75px] ${
               tone === 'free'
                 ? 'text-[14.5px] font-black text-free'
                 : tone === 'unknown'
@@ -144,13 +144,13 @@ export function EventCard({
             {priceText}
           </span>
           {!bookmark && meta && (
-            <span className="rounded-sm bg-surface-muted px-[6px] py-px text-[11px] font-medium leading-[16.5px] text-ink-muted">
+            <span className="whitespace-nowrap rounded-sm bg-surface-muted px-[6px] py-px text-[11px] font-medium leading-[16.5px] text-ink-muted">
               {meta}
             </span>
           )}
         </div>
         {!bookmark && (hasReviews || viewText) && (
-          <p className="flex items-center gap-[4px] pt-[4px] text-[12px] leading-[18px] text-ink-muted">
+          <p className="flex flex-wrap items-center gap-[4px] whitespace-nowrap pt-[4px] text-[12px] leading-[18px] text-ink-muted">
             {hasReviews ? (
               <>
                 <StarIcon className="text-star" />

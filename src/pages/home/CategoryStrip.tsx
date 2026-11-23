@@ -29,7 +29,7 @@ function Item({ label, icon, to, badge, onClick }: { label: string; icon: React.
       <span className="text-[13px] font-medium leading-[19.5px] text-ink">{label}</span>
     </>
   )
-  const cls = 'flex w-[86px] flex-col items-center gap-2'
+  const cls = 'flex w-[86px] shrink-0 flex-col items-center gap-2'
   return to ? (
     <Link to={to} className={cls}>
       {inner}
@@ -62,7 +62,7 @@ export function CategoryStrip() {
   const idOf = (name: string) => categories?.find((c) => c.name === name)?.id
 
   return (
-    <nav aria-label="카테고리" className="flex gap-1 pb-[6px] pt-[22px]">
+    <nav aria-label="카테고리" className="flex gap-1 overflow-x-auto pb-[6px] pt-[22px]">
       <Item label="전체" icon={img(all)} to="/events" />
       {CATEGORY_NAMES.map((name) => {
         const id = idOf(name)

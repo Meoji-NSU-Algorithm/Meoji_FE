@@ -100,8 +100,8 @@ export default function Policy({ policyKey }: { policyKey: PolicyKey }) {
   }
 
   return (
-    <div className="mx-auto w-full max-w-content px-6 pb-14 pt-10">
-      <h1 className="text-[30px] font-black tracking-[-0.6px] text-ink">약관 및 정책</h1>
+    <div className="mx-auto w-full max-w-content px-4 pb-14 pt-8 md:px-6 md:pt-10">
+      <h1 className="text-[24px] font-black tracking-[-0.6px] md:text-[30px] text-ink">약관 및 정책</h1>
       <div className="flex items-center gap-[6px] pt-6" role="tablist" aria-label="약관 종류">
         {(Object.values(POLICIES)).map((p) => {
           const on = p.key === policyKey
@@ -121,8 +121,8 @@ export default function Policy({ policyKey }: { policyKey: PolicyKey }) {
         })}
         <p className="ml-auto text-[13px] text-ink-muted">시행일 {POLICY_EFFECTIVE_DATE}</p>
       </div>
-      <div className="mt-6 grid grid-cols-1 gap-10 border-t border-line pt-7 md:grid-cols-[220px_minmax(0,1fr)]">
-        <nav aria-label="조항 목차" className="flex flex-col md:sticky md:top-6 md:self-start">
+      <div className="mt-6 grid grid-cols-1 gap-6 border-t md:gap-10 border-line pt-7 md:grid-cols-[220px_minmax(0,1fr)]">
+        <nav aria-label="조항 목차" className="hidden flex-col md:sticky md:flex md:top-6 md:self-start">
           {policy.articles.map((a) => (
             <button
               key={a.id}
