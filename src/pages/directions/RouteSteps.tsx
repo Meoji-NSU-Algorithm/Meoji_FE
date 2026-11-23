@@ -209,7 +209,7 @@ export function RouteSteps({ route, originLabel, destLabel }: { route: Direction
         )}
       </div>
       {/* 단계가 많으면 페이지 대신 목록만 스크롤 */}
-      <ol data-testid="route-step-list" className="max-h-[60vh] overflow-y-auto lg:max-h-[350px] overscroll-contain">
+      <ol data-testid="route-step-list" className="max-h-[calc(60vh/var(--app-zoom,1))] overflow-y-auto lg:max-h-[350px] overscroll-contain">
 
 
         <Terminal label="출발" color="#2a2320">{originLabel}</Terminal>

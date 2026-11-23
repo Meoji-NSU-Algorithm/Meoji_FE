@@ -108,7 +108,9 @@ export function RouteMap({ from, to, segments = NO_SEGMENTS }: Props) {
           <p className="absolute inset-x-0 bottom-4 text-center text-[12px] text-ink-muted">지도를 불러오지 못했어요</p>
         </div>
       ) : (
-        <div ref={ref} data-testid="route-map" className="absolute inset-0" />
+        <div className="absolute inset-0">
+          <div ref={ref} data-testid="route-map" className="app-unzoom app-unzoom-fill" />
+        </div>
       )}
       {!failed && (
         <div className="absolute bottom-[26px] right-[14px] z-10 flex flex-col gap-[6px]">

@@ -40,7 +40,7 @@ export function ToastView({ message, tone = 'success', actionLabel, onAction }: 
   return (
     <div
       role="status"
-      className="inline-flex min-h-[52px] max-w-[calc(100vw-32px)] items-center gap-3 rounded-[14px] bg-ink py-2 pl-4 pr-[10px] text-white shadow-[0_10px_15px_rgba(0,0,0,0.25)] md:h-[52px] md:py-0 md:pl-[18px]"
+      className="inline-flex min-h-[52px] max-w-[calc(100vw/var(--app-zoom,1)-32px)] items-center gap-3 rounded-[14px] bg-ink py-2 pl-4 pr-[10px] text-white shadow-[0_10px_15px_rgba(0,0,0,0.25)] md:h-[52px] md:py-0 md:pl-[18px]"
     >
       <ToneIcon tone={tone} />
       <span className="text-[14px] font-medium leading-[21px] md:whitespace-nowrap">{message}</span>

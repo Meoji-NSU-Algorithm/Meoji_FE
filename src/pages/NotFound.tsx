@@ -5,7 +5,7 @@ export default function NotFound() {
   const navigate = useNavigate()
   const secondary = 'h-11 rounded-card border border-line bg-surface px-[18px] text-[14px] font-bold text-ink'
   return (
-    <div className="mx-auto mb-20 flex min-h-[60vh] max-w-content items-center justify-center px-4 md:min-h-[620px] md:px-6">
+    <div className="mx-auto mb-20 flex min-h-[calc(60vh/var(--app-zoom,1))] max-w-content items-center justify-center px-4 md:min-h-[620px] md:px-6">
       <ErrorState
         flush
         code="404"

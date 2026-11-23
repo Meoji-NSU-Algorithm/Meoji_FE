@@ -31,7 +31,7 @@ export default function Layout() {
 
   return (
     // 내용이 짧아도 푸터가 화면 바닥에 붙게 한다
-    <div className="flex min-h-dvh flex-col">
+    <div className="flex min-h-[calc(100dvh/var(--app-zoom,1))] flex-col">
       <Header
         active={activeTab(pathname)}
         user={isLoggedIn && user ? { name: user.nickname, avatarUrl: user.profile_image ?? undefined } : null}
