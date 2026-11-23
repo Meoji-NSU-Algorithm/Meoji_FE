@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { ChangeEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useResetProfileImage, useUploadProfileImage } from '../api/hooks'
@@ -6,9 +6,11 @@ import { errorMessage } from '../api/errors'
 import { useAuth } from '../auth'
 import { useToast } from '../components'
 import { PhotoIcon } from '../components/icons'
+import { cropToFile, type CropArea } from '../lib/cropImage'
 import { checkImageFile } from '../lib/imageFile'
 import { CameraIcon, TrashIcon } from './detail/icons'
 import { Avatar } from './my/Avatar'
+import { AvatarCropModal } from './my/AvatarCropModal'
 import { LoginRequired } from './my/LoginRequired'
 
 const ACCEPT = 'image/jpeg,image/png,image/webp'
@@ -25,6 +27,8 @@ function Profile() {
   const [error, setError] = useState<string | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // 고른 원본 사진. 있으면 자르기 모달이 열린다
+  const [cropSrc, setCropSrc] = useState<string | null>(null)
   const albumRef = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
   const badgeRef = useRef<HTMLButtonElement>(null)
@@ -50,6 +54,9 @@ function Profile() {
 
   // 미리보기 blob URL 은 바뀌거나 사라질 때 해제한다
   useEffect(() => () => { if (preview) URL.revokeObjectURL(preview) }, [preview])
+  useEffect(() => () => { if (cropSrc) URL.revokeObjectURL(cropSrc) }, [cropSrc])
+
+  const closeCrop = useCallback(() => setCropSrc(null), [])
 
   if (!user) return null
 
@@ -68,18 +75,37 @@ function Profile() {
     }
   }
 
+  // 형식만 먼저 보고, 용량은 잘라낸 결과로 본다 (원본이 커도 잘라서 줄이면 올릴 수 있다)
   const onPick = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     e.target.value = ''
     setMenuOpen(false)
     if (!file) return
-    const problem = checkImageFile(file)
-    if (problem) {
-      setError(errorMessage(problem === 'type' ? 'IMAGE_INVALID' : 'IMAGE_TOO_LARGE'))
+    if (checkImageFile(file) === 'type') {
+      setError(errorMessage('IMAGE_INVALID'))
       return
     }
-    setPreview(URL.createObjectURL(file))
-    void finish(() => upload.mutateAsync(file))
+    setError(null)
+    setCropSrc(URL.createObjectURL(file))
+  }
+
+  const onCropApply = async (area: CropArea) => {
+    if (!cropSrc) return
+    let cropped: File
+    try {
+      cropped = await cropToFile(cropSrc, area)
+    } catch {
+      setCropSrc(null)
+      setError(errorMessage('IMAGE_INVALID'))
+      return
+    }
+    setCropSrc(null)
+    if (checkImageFile(cropped)) {
+      setError(errorMessage('IMAGE_TOO_LARGE'))
+      return
+    }
+    setPreview(URL.createObjectURL(cropped))
+    void finish(() => upload.mutateAsync(cropped))
   }
 
   const onDefault = () => {
@@ -130,6 +156,7 @@ function Profile() {
           <input ref={cameraRef} type="file" accept={ACCEPT} capture="user" hidden data-testid="profile-camera-input" onChange={onPick} />
         </div>
       </div>
+      {cropSrc && <AvatarCropModal src={cropSrc} onCancel={closeCrop} onApply={onCropApply} />}
       {/* 아바타와 이름 칸 사이 26px 여백 안에 겹쳐 보여서, 오류가 나도 아래 칸이 밀리지 않는다 */}
       <div className="relative h-0">
         {busy && <p role="status" className="absolute inset-x-0 top-[6px] text-center text-[12px] leading-[18px] text-ink-subtle">사진을 올리고 있어요</p>}
