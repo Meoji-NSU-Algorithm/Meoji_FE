@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { CheckIcon } from './icons'
+import { useIsMobile } from '../lib/useIsMobile'
+import { useMobileChrome } from '../lib/mobileChrome'
 
 export type ToastTone = 'success' | 'info' | 'error'
 
@@ -11,6 +13,8 @@ export interface ToastViewProps {
   /** 되돌리기/보러 가기 같은 액션 */
   actionLabel?: string
   onAction?: () => void
+  /** mobile: Figma M13 모양(좌우 16px 꽉 찬 폭, 글자 버튼). 기본 desktop */
+  variant?: 'desktop' | 'mobile'
 }
 
 /** 표현 전용 토스트 (F2). 위치는 호출 측에서 잡는다 */
@@ -36,7 +40,39 @@ function ToneIcon({ tone }: { tone: ToastTone }) {
   )
 }
 
-export function ToastView({ message, tone = 'success', actionLabel, onAction }: ToastViewProps) {
+/** Figma M13 746:31·746:40 아이콘: 성공 #F0562C 체크, 실패 #5F5B59 느낌표, 찜 해제는 데스크톱과 같은 흰 하트 */
+function MobileToneIcon({ tone }: { tone: ToastTone }) {
+  if (tone === 'info') return <ToneIcon tone="info" />
+  return (
+    <span
+      className={`flex size-[22px] shrink-0 items-center justify-center rounded-full text-white ${tone === 'error' ? 'bg-ink-muted' : 'bg-brand'}`}
+      data-testid={`toast-icon-${tone}`}
+    >
+      {tone === 'error' ? <span className="text-[13px] font-black leading-[19px]">!</span> : <CheckIcon />}
+    </span>
+  )
+}
+
+export function ToastView({ message, tone = 'success', actionLabel, onAction, variant = 'desktop' }: ToastViewProps) {
+  if (variant === 'mobile')
+    return (
+      <div
+        role="status"
+        className="flex min-h-[50px] w-full items-center gap-[10px] rounded-[14px] bg-ink px-[14px] py-3 text-white shadow-toast"
+      >
+        <MobileToneIcon tone={tone} />
+        <span className="min-w-0 flex-1 text-[13.5px] leading-[19px] tracking-[-0.2px]">{message}</span>
+        {actionLabel && (
+          <button
+            type="button"
+            onClick={onAction}
+            className="-my-3 h-11 shrink-0 px-1 text-[13.5px] font-bold leading-[19px] tracking-[-0.2px] text-toast-action"
+          >
+            {actionLabel}
+          </button>
+        )}
+      </div>
+    )
   return (
     <div
       role="status"
@@ -92,19 +128,57 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     <ToastContext.Provider value={{ show, dismiss }}>
       {children}
       {toast && (
-        <div className="fixed inset-x-0 bottom-8 z-[60] flex justify-center px-4">
-          <ToastView
-            message={toast.message}
-            tone={toast.tone}
-            actionLabel={toast.actionLabel}
-            onAction={() => {
-              toast.onAction?.()
-              dismiss()
-            }}
-          />
-        </div>
+        <ToastSlot>
+          {(variant) => (
+            <ToastView
+              variant={variant}
+              message={toast.message}
+              tone={toast.tone}
+              actionLabel={toast.actionLabel}
+              onAction={() => {
+                toast.onAction?.()
+                dismiss()
+              }}
+            />
+          )}
+        </ToastSlot>
       )}
     </ToastContext.Provider>
+  )
+}
+
+/**
+ * 토스트 위치 (Figma 00-2 결정 2번, M13).
+ *  - 768px 이상: 기존 그대로 화면 아래 32px 가운데
+ *  - 모바일 + 탭바     : 탭바 위 12px (바닥에서 88px)
+ *  - 모바일 + 하단 고정 버튼: 버튼 바 위 12px
+ *  - 모바일 + 둘 다 없음 : 바닥에서 28px (홈 표시줄 18 + 10)
+ * 좌우 16px. data-position 으로 어느 규칙인지 표시한다(테스트용).
+ */
+function ToastSlot({ children }: { children: (variant: 'desktop' | 'mobile') => ReactNode }) {
+  const isMobile = useIsMobile()
+  const { tabBar, bottomBar } = useMobileChrome()
+  if (!isMobile)
+    return (
+      <div data-position="desktop" className="fixed inset-x-0 bottom-8 z-[60] flex justify-center px-4">
+        {children('desktop')}
+      </div>
+    )
+  const position = bottomBar > 0 ? 'bottom-bar' : tabBar ? 'tab-bar' : 'none'
+  const cls =
+    position === 'tab-bar'
+      ? 'bottom-[calc(var(--tabbar-h)+12px)]'
+      : position === 'none'
+        ? 'bottom-[calc(var(--mobile-safe-bottom)+10px)]'
+        : ''
+  return (
+    <div
+      data-position={position}
+      className={`fixed inset-x-4 z-[60] flex justify-center ${cls}`}
+      style={position === 'bottom-bar' ? { bottom: bottomBar + 12 } : undefined}
+    >
+      {children('mobile')}
+    </div>
   )
 }
 

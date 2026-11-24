@@ -12,8 +12,11 @@ import {
   WeekendSection,
 } from './home/Sections'
 import { isLongRunning, isUpcomingOrOngoing, ymd } from './home/utils'
+import { MobileHome } from './home/MobileHome'
+import { useIsMobile } from '../lib/useIsMobile'
 
 export default function Home() {
+  const isMobile = useIsMobile()
   const [today] = useState(() => ymd(new Date()))
   // 비로그인 시 필터 파라미터는 BE가 401 → 필터 없는 목록을 전부(여러 페이지) 받아 클라이언트에서 가공한다.
   const list = useAllEvents('dateAsc')
@@ -31,6 +34,9 @@ export default function Home() {
   )
   const heroList = heroes.length ? heroes : events.filter((e) => isUpcomingOrOngoing(e, today))
   const state = { isLoading: list.isLoading, isError: list.isError, refetch: () => void list.refetch() }
+
+  // 768px 미만은 Figma 모바일 홈(M1·M1-0). 데스크톱 마크업은 아래 그대로 둔다.
+  if (isMobile) return <MobileHome events={events} heroes={heroList} today={today} state={state} />
 
   return (
     <>

@@ -5,6 +5,69 @@ import { getConsents } from '../api/users'
 import { useToast } from '../components'
 import { AuthScreen, Wordmark, centerBg } from './home/AuthScreen'
 import { WarningIcon } from './home/icons'
+import { useIsMobile } from '../lib/useIsMobile'
+import { AlertCircleIcon, KakaoBubbleIcon, LoginSpinnerIcon } from './my/mobileIcons'
+
+const mLogo = 'font-display text-[32px] font-black leading-8 tracking-[-0.8px] text-brand'
+
+/** M8-3 로그인 실패·취소 (모바일) */
+function MobileFailed() {
+  return (
+    <AuthScreen className="flex flex-col">
+      <div className="flex flex-1 flex-col items-center px-7 pt-[210px] text-center">
+        <p className={mLogo}>meoji</p>
+        <span className="mt-[30px] flex size-16 items-center justify-center rounded-full bg-primary-tint text-brand">
+          <AlertCircleIcon />
+        </span>
+        <h1 className="pt-5 text-[20px] font-black leading-7 tracking-[-0.2px] text-ink">로그인을 완료하지 못했어요</h1>
+        <p className="pt-2 text-[13.5px] leading-[21px] tracking-[-0.2px] text-ink-muted">
+          카카오 로그인을 취소했거나 시간이 오래 지났어요.
+          <br />
+          다시 시도하면 처음부터 진행돼요.
+        </p>
+      </div>
+      <div className="flex gap-2 px-7 pb-[calc(var(--mobile-safe-bottom)+12px)] pt-6">
+        <Link
+          to="/"
+          className="flex h-[50px] flex-[108] items-center justify-center rounded-[12px] border border-line-strong bg-surface px-4 text-[15px] font-bold tracking-[-0.2px] text-ink"
+        >
+          둘러보기
+        </Link>
+        <Link
+          to="/auth/login"
+          className="flex h-[50px] flex-[152] items-center justify-center gap-[6px] rounded-[12px] bg-kakao px-4 text-[15px] font-bold tracking-[-0.2px] text-kakao-ink"
+        >
+          <KakaoBubbleIcon size={17} />
+          다시 로그인
+        </Link>
+      </div>
+    </AuthScreen>
+  )
+}
+
+/** M8-2 로그인 처리 중 (모바일) */
+function MobilePending() {
+  return (
+    <AuthScreen>
+      <div role="status" className="flex flex-col items-center px-7 pb-10 pt-[230px] text-center">
+        <p className={mLogo}>meoji</p>
+        <LoginSpinnerIcon className="mt-8 animate-spin text-brand" />
+        <h1 className="pt-6 text-[20px] font-black leading-7 tracking-[-0.2px] text-ink">카카오 계정을 확인하고 있어요</h1>
+        <p className="pt-[6px] text-[13.5px] tracking-[-0.2px] text-ink-muted">잠시만 기다려 주세요. 곧 이어서 진행돼요.</p>
+        <dl className="mt-8 w-[334px] max-w-full rounded-[14px] bg-surface-sunken px-4 py-1 text-left text-[13px] tracking-[-0.2px]">
+          <div className="flex h-[46px] items-center gap-3 border-b border-line">
+            <dt className="w-[88px] shrink-0 text-ink-subtle">처음 오셨다면</dt>
+            <dd className="font-bold text-ink">약관 동의 화면으로</dd>
+          </div>
+          <div className="flex h-[46px] items-center gap-3">
+            <dt className="w-[88px] shrink-0 text-ink-subtle">다시 오셨다면</dt>
+            <dd className="font-bold text-ink">보던 화면으로 바로</dd>
+          </div>
+        </dl>
+      </div>
+    </AuthScreen>
+  )
+}
 
 /**
  * 인가 코드는 1회용이다. StrictMode(개발)에서 effect가 두 번 돌아도 같은 코드로
@@ -31,6 +94,7 @@ export default function KakaoCallback() {
   const navigate = useNavigate()
   const toast = useToast()
   const [failed, setFailed] = useState(!code || !!kakaoError)
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (!code || kakaoError) return
@@ -59,6 +123,7 @@ export default function KakaoCallback() {
     }
   }, [code, kakaoError, loginWithKakaoCode, navigate, toast])
 
+  if (failed && isMobile) return <MobileFailed />
   if (failed) {
     return (
       <AuthScreen className={centerBg}>
@@ -94,6 +159,7 @@ export default function KakaoCallback() {
     )
   }
 
+  if (isMobile) return <MobilePending />
   return (
     <AuthScreen className={centerBg}>
       <div className="flex min-h-full items-center justify-center px-6 py-10">

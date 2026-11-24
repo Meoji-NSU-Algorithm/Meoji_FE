@@ -1,7 +1,9 @@
 import { errorMessage } from '../../api/errors'
 import { useDeleteReview } from '../../api/hooks'
 import { Modal, useToast } from '../../components'
+import { useIsMobile } from '../../lib/useIsMobile'
 import { TrashIcon } from './icons'
+import { MobileConfirm } from './MobileConfirm'
 
 interface Props {
   /** 지울 리뷰. null 이면 닫혀 있다 */
@@ -13,6 +15,7 @@ interface Props {
 export function ReviewDeleteModal({ target, onClose }: Props) {
   const toast = useToast()
   const remove = useDeleteReview()
+  const isMobile = useIsMobile()
   const close = () => {
     remove.reset()
     onClose()
@@ -27,6 +30,25 @@ export function ReviewDeleteModal({ target, onClose }: Props) {
           close()
         },
       },
+    )
+  }
+  if (isMobile) {
+    // Figma S11 757:25: 아이콘 없는 334px 확인 창, 오른쪽 '삭제하기'는 검정
+    return (
+      <MobileConfirm
+        open={!!target}
+        onClose={close}
+        ariaLabel="리뷰 삭제 확인"
+        title="리뷰를 삭제할까요?"
+        message="삭제한 리뷰와 사진은 다시 복구할 수 없어요."
+        error={remove.isError ? errorMessage(remove.error) : null}
+        cancelLabel="취소"
+        onCancel={close}
+        confirmLabel={remove.isPending ? '삭제 중…' : '삭제하기'}
+        confirmTone="ink"
+        confirmDisabled={remove.isPending}
+        onConfirm={confirm}
+      />
     )
   }
   return (

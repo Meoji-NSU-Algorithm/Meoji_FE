@@ -198,3 +198,46 @@ describe('EventCard 상태', () => {
     expect(screen.getByRole('button', { name: '찜 해제' })).toBeInTheDocument()
   })
 })
+
+describe('모바일 공유 컴포넌트 치수 (Figma M1 721:182 · M2 724:60 · M5 729:125 · S11 757:2)', () => {
+  it('EventCard 기본(데스크톱) 치수는 그대로다: 비율 썸네일, 34px 하트, 84px 순위', () => {
+    render(<EventCard event={event} variant="ranked" rank={1} />)
+    const thumb = screen.getByTestId('event-card-thumb')
+    expect(thumb).toHaveClass('aspect-[219/292]')
+    expect(thumb.style.height).toBe('')
+    expect(screen.getByRole('button', { name: '찜하기' })).toHaveClass('size-[34px]', 'bottom-[10px]', 'right-[10px]')
+    expect(screen.getByLabelText('1위')).toHaveClass('text-[84px]', 'font-display')
+  })
+
+  it('EventCard size=mobile + thumbHeight: 홈 가로 줄 카드는 썸네일 204, 하트 32(9px 안쪽), 순위 68', () => {
+    render(<EventCard event={event} variant="ranked" rank={1} size="mobile" thumbHeight={204} />)
+    const thumb = screen.getByTestId('event-card-thumb')
+    expect(thumb.style.height).toBe('204px')
+    expect(thumb).not.toHaveClass('aspect-[219/292]')
+    const heart = screen.getByRole('button', { name: '찜하기' })
+    expect(heart).toHaveClass('size-8', 'bottom-[9px]', 'right-[9px]')
+    expect(heart.querySelector('svg')).toHaveAttribute('width', '16')
+    expect(screen.getByLabelText('1위')).toHaveClass('text-[68px]', 'leading-[68px]', 'left-[6px]', 'bottom-[-12px]')
+  })
+
+  it('EventCard 모바일 목록 카드: 썸네일 216, 분류 알약 20px/11px', () => {
+    render(<EventCard event={event} variant="small" categoryPill size="mobile" thumbHeight={216} />)
+    expect(screen.getByTestId('event-card-thumb').style.height).toBe('216px')
+    const pill = within(screen.getByTestId('event-card-thumb')).getByText('축제')
+    expect(pill).toHaveClass('h-5', 'px-[7px]', 'text-[11px]', 'rounded-[5px]')
+    expect(screen.getByText('충남 · 축제', { selector: 'span.rounded-sm' })).toHaveClass('h-[19px]')
+  })
+
+  it('Modal 딤은 모바일 bg-dim, 768px 이상은 기존 bg-black/50', () => {
+    render(<Modal open onClose={() => {}} ariaLabel="확인">x</Modal>)
+    const backdrop = screen.getByRole('dialog').parentElement!
+    expect(backdrop).toHaveClass('bg-dim', 'md:bg-black/50')
+  })
+
+  it('RatingStars gap: 기본 2px, 지정하면 그 간격', () => {
+    const { rerender } = render(<RatingStars value={3} />)
+    expect(screen.getByRole('img').style.gap).toBe('2px')
+    rerender(<RatingStars value={3} gap={4} />)
+    expect(screen.getByRole('img').style.gap).toBe('4px')
+  })
+})

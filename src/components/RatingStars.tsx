@@ -7,17 +7,20 @@ export interface RatingStarsProps {
   max?: number
   /** 별 크기(px) */
   size?: number
+  /** 별 사이 간격(px). 기본 2 (모바일 리뷰 입력 M5·S10 은 4, 평균 요약은 1) */
+  gap?: number
   /** 지정하면 입력 모드(왼쪽 절반 = x.5, 오른쪽 절반 = x.0) */
   onChange?: (value: number) => void
 }
 
-export function RatingStars({ value, max = 5, size = 16, onChange }: RatingStarsProps) {
+export function RatingStars({ value, max = 5, size = 16, gap = 2, onChange }: RatingStarsProps) {
   const name = useId()
   const v = Math.max(0, Math.min(max, Math.round(value * 2) / 2))
 
   return (
     <span
-      className="inline-flex items-center gap-[2px]"
+      className="inline-flex items-center"
+      style={{ gap }}
       role={onChange ? 'radiogroup' : 'img'}
       aria-label={onChange ? '별점 선택' : `별점 ${v}점 / ${max}점`}
     >

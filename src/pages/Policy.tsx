@@ -1,7 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link } from 'react-router-dom'
 import { CloseIcon } from '../components/icons'
+import { MobileBackHeader } from '../components/MobileBackHeader'
+import { useDialogBehavior } from '../components/useDialogBehavior'
+import { useIsMobile } from '../lib/useIsMobile'
+import { ChevronDownIcon } from './my/mobileIcons'
 import { POLICIES, POLICY_EFFECTIVE_DATE, type Policy as PolicyData, type PolicyKey } from '../content/policies'
 
 /** 약관 조항 목록. /terms, /privacy 페이지와 A7 모달이 같이 쓴다. */
@@ -89,15 +93,114 @@ export function PolicyModal({ policy, onClose }: { policy: PolicyData; onClose: 
   )
 }
 
+/** M12 본문: 시행일 → 접히는 목차 → 조항(15px 제목 / 13.5px 본문) */
+function MobilePolicyBody({ policy }: { policy: PolicyData }) {
+  const go = (id: string) => document.getElementById(id)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
+  return (
+    <div className="px-5 pb-10 pt-4">
+      <p className="text-[12px] tracking-[-0.2px] text-ink-subtle">시행일 {POLICY_EFFECTIVE_DATE}</p>
+      <details className="group mt-3 rounded-[12px] border border-line px-[14px]">
+        <summary className="flex h-[46px] cursor-pointer list-none items-center justify-between text-[14px] font-bold tracking-[-0.2px] text-ink [&::-webkit-details-marker]:hidden">
+          목차
+          <ChevronDownIcon className="text-ink transition-transform group-open:rotate-180" />
+        </summary>
+        <nav aria-label="조항 목차" className="flex flex-col pb-2">
+          {policy.articles.map((a) => (
+            <button
+              key={a.id}
+              type="button"
+              onClick={() => go(a.id)}
+              className="flex h-11 items-center text-left text-[13.5px] tracking-[-0.2px] text-ink-muted"
+            >
+              {a.label}
+            </button>
+          ))}
+        </nav>
+      </details>
+      <article className="pt-[22px]">
+        {policy.articles.map((a, i) => (
+          <section key={a.id} id={a.id} className={i > 0 ? 'scroll-mt-4 pt-[22px]' : 'scroll-mt-4'}>
+            <h3 className="text-[15px] font-black leading-[22px] tracking-[-0.2px] text-ink">{a.title}</h3>
+            {a.paragraphs.map((p, j) => (
+              <p key={j} className="pt-[6px] text-[13.5px] leading-[22px] tracking-[-0.2px] text-ink-muted">
+                {p}
+              </p>
+            ))}
+          </section>
+        ))}
+      </article>
+    </div>
+  )
+}
+
+/**
+ * M8-4 약관 동의의 '보기'(모바일): 모달 대신 같은 본문을 전체 화면으로 연다 (Figma M12 메모).
+ * 동의 화면의 체크 상태를 잃지 않도록 이동하지 않고 화면 위에 덮는다.
+ */
+export function MobilePolicyScreen({ policy, onClose }: { policy: PolicyData; onClose: () => void }) {
+  const ref = useRef<HTMLDivElement>(null)
+  // ESC(맨 위일 때만)·body 스크롤 잠금·포커스 이동/복귀·Tab 가두기
+  useDialogBehavior(true, onClose, ref)
+  return createPortal(
+    <div
+      ref={ref}
+      role="dialog"
+      aria-modal="true"
+      aria-label={policy.title}
+      tabIndex={-1}
+      className="fixed inset-0 z-[60] overflow-auto bg-surface outline-none"
+    >
+      <div className="sticky top-0 z-10">
+        <MobileBackHeader title={policy.title} onBack={onClose} />
+      </div>
+      <MobilePolicyBody policy={policy} />
+    </div>,
+    document.body,
+  )
+}
+
+/** M12 (모바일 /terms·/privacy): Layout 의 '약관 및 정책' 뒤로 헤더 아래 반반 탭 + 본문 */
+function MobilePolicy({ policy }: { policy: PolicyData }) {
+  return (
+    <div>
+      <div className="px-4">
+        <div className="flex border-b border-line" role="tablist" aria-label="약관 종류">
+          {Object.values(POLICIES).map((p) => {
+            const on = p.key === policy.key
+            return (
+              <Link
+                key={p.key}
+                to={p.path}
+                replace
+                role="tab"
+                aria-selected={on}
+                className={`-mb-px flex h-[46px] flex-1 items-center justify-center border-b-2 text-[14.5px] tracking-[-0.2px] ${
+                  on ? 'border-brand font-black text-ink' : 'border-transparent font-normal text-ink-subtle'
+                }`}
+              >
+                {p.title}
+              </Link>
+            )
+          })}
+        </div>
+      </div>
+      <MobilePolicyBody policy={policy} />
+    </div>
+  )
+}
+
 /** B3: /terms, /privacy 공용 페이지. 로그인 없이 볼 수 있다. */
 export default function Policy({ policyKey }: { policyKey: PolicyKey }) {
   const policy = POLICIES[policyKey]
+  const isMobile = useIsMobile()
   const [activeId, setActiveId] = useState<string | null>(null)
   const current = activeId && policy.articles.some((a) => a.id === activeId) ? activeId : policy.articles[0].id
   const go = (id: string) => {
     setActiveId(id)
     document.getElementById(id)?.scrollIntoView?.({ behavior: 'smooth', block: 'start' })
   }
+
+  if (isMobile) return <MobilePolicy policy={policy} />
 
   return (
     <div className="mx-auto w-full max-w-content px-4 pb-14 pt-8 md:px-6 md:pt-10">

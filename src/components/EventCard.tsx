@@ -21,6 +21,8 @@ export interface EventCardData {
 }
 
 export type EventCardVariant = 'standard' | 'ranked' | 'small' | 'bookmark'
+/** default: 데스크톱(기존) 치수, mobile: 모바일 Figma 카드 치수(M1 721:182 · M2 724:60) */
+export type EventCardSize = 'default' | 'mobile'
 
 export interface EventCardProps {
   event: EventCardData
@@ -37,6 +39,12 @@ export interface EventCardProps {
   href?: string
   /** 사진 왼쪽 위에 분류 알약을 띄운다 (B1 목록). 분류가 없으면 그리지 않는다 */
   categoryPill?: boolean
+  /** mobile 이면 모바일 Figma 치수(하트 32px·순위 68px·분류 알약 20px·본문 간격)를 쓴다.
+   *  모바일 전용 화면에서만 지정한다(768px 이상 화면은 기본값 그대로). */
+  size?: EventCardSize
+  /** 썸네일 고정 높이(px). 지정하지 않으면 variant 비율(3:4 / 4:3)을 따른다.
+   *  모바일: 홈 가로 줄 204, 목록 2열 216, 마이 찜 200, 캘린더 가로 줄 190 */
+  thumbHeight?: number
 }
 
 export function EventCard({
@@ -48,7 +56,10 @@ export function EventCard({
   onClick,
   href,
   categoryPill = false,
+  size = 'default',
+  thumbHeight,
 }: EventCardProps) {
+  const m = size === 'mobile'
   const bookmark = variant === 'bookmark'
   const short = variant === 'small' || bookmark
   // 찜 카드는 금액이 없어 무료/유료/가격 정보 없음만 쓴다
@@ -85,8 +96,10 @@ export function EventCard({
     <article className="relative w-full" data-variant={variant}>
       <div
         className={`relative w-full overflow-hidden rounded-card bg-surface-muted ${
-          short ? 'aspect-[274/205.5]' : 'aspect-[219/292]'
+          thumbHeight != null ? '' : short ? 'aspect-[274/205.5]' : 'aspect-[219/292]'
         }`}
+        style={thumbHeight != null ? { height: thumbHeight } : undefined}
+        data-testid="event-card-thumb"
       >
         {event.image_url ? (
           <img
@@ -99,14 +112,22 @@ export function EventCard({
           <PhotoPlaceholder title={event.title} category={event.category} sido={event.sido} />
         )}
         {categoryPill && event.category && (
-          <span className="absolute left-3 top-3 flex h-6 items-center rounded-[7px] bg-surface px-[9px] text-[12px] font-bold text-ink">
+          <span
+            className={`absolute left-3 top-3 flex items-center bg-surface font-bold text-ink ${
+              m ? 'h-5 rounded-[5px] px-[7px] text-[11px] tracking-[-0.2px]' : 'h-6 rounded-[7px] px-[9px] text-[12px]'
+            }`}
+          >
             {event.category}
           </span>
         )}
         {variant === 'ranked' && rank != null && (
           <span
             aria-label={`${rank}위`}
-            className="pointer-events-none absolute bottom-[-6px] left-2 font-display text-[84px] font-black leading-[84px] tracking-[-3.36px] text-white"
+            className={`pointer-events-none absolute font-black text-white ${
+              m
+                ? 'bottom-[-12px] left-[6px] font-sans text-[68px] leading-[68px] tracking-[-3px]'
+                : 'bottom-[-6px] left-2 font-display text-[84px] leading-[84px] tracking-[-3.36px]'
+            }`}
           >
             {rank}
           </span>
@@ -116,24 +137,24 @@ export function EventCard({
           aria-label={liked ? '찜 해제' : '찜하기'}
           aria-pressed={liked}
           onClick={() => onToggleLike?.(event, !liked)}
-          className={`absolute bottom-[10px] right-[10px] z-10 flex size-[34px] items-center justify-center rounded-full bg-white/95 ${
-            liked ? 'text-primary' : 'text-ink'
-          }`}
+          className={`absolute z-10 flex items-center justify-center rounded-full ${
+            m ? 'bottom-[9px] right-[9px] size-8 bg-white/[0.94]' : 'bottom-[10px] right-[10px] size-[34px] bg-white/95'
+          } ${liked ? 'text-primary' : 'text-ink'}`}
         >
-          <CardHeartIcon filled={liked} />
+          <CardHeartIcon filled={liked} size={m ? 16 : undefined} />
         </button>
       </div>
 
-      <div className="mt-[9px]">
-        <h4 className="text-[14.5px] font-bold leading-[19.5px] text-ink">{titleEl}</h4>
-        <p className="mt-[3px] truncate text-[12px] leading-[18px] text-ink-muted">
+      <div className={m ? 'pt-2 tracking-[-0.2px]' : 'mt-[9px]'}>
+        <h4 className={`text-[14.5px] font-bold text-ink ${m ? 'leading-[20px]' : 'leading-[19.5px]'}`}>{titleEl}</h4>
+        <p className={`truncate text-[12px] leading-[18px] text-ink-muted ${m ? 'pt-[2px]' : 'mt-[3px]'}`}>
           {[formatDateRange(event.start_date, event.end_date), bookmark ? '' : event.venue_name]
             .filter(Boolean)
             .join(' · ')}
         </p>
-        <div className="flex flex-wrap items-center gap-x-[6px] gap-y-1 pt-[5px]">
+        <div className={`flex flex-wrap items-center gap-x-[6px] gap-y-1 ${m ? 'min-h-[26px] pt-1' : 'pt-[5px]'}`}>
           <span
-            className={`whitespace-nowrap leading-[21.75px] ${
+            className={`whitespace-nowrap ${m ? 'leading-[22px]' : 'leading-[21.75px]'} ${
               tone === 'free'
                 ? 'text-[14.5px] font-black text-free'
                 : tone === 'unknown'
@@ -144,13 +165,21 @@ export function EventCard({
             {priceText}
           </span>
           {!bookmark && meta && (
-            <span className="whitespace-nowrap rounded-sm bg-surface-muted px-[6px] py-px text-[11px] font-medium leading-[16.5px] text-ink-muted">
+            <span
+              className={`whitespace-nowrap rounded-sm bg-surface-muted px-[6px] text-[11px] font-medium text-ink-muted ${
+                m ? 'flex h-[19px] items-center' : 'py-px leading-[16.5px]'
+              }`}
+            >
               {meta}
             </span>
           )}
         </div>
         {!bookmark && (hasReviews || viewText) && (
-          <p className="flex flex-wrap items-center gap-[4px] whitespace-nowrap pt-[4px] text-[12px] leading-[18px] text-ink-muted">
+          <p
+            className={`flex flex-wrap items-center whitespace-nowrap text-[12px] leading-[18px] text-ink-muted ${
+              m ? 'gap-[3px] pt-[2px]' : 'gap-[4px] pt-[4px]'
+            }`}
+          >
             {hasReviews ? (
               <>
                 <StarIcon className="text-star" />

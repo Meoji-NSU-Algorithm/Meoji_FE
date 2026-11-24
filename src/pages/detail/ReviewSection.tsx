@@ -6,7 +6,9 @@ import type { Review } from '../../api/types'
 import { useAuth, useRequireLogin } from '../../auth'
 import { RatingStars, useToast } from '../../components'
 import { ReviewAvatar } from './ReviewAvatar'
-import { RefreshIcon, SpinnerIcon, WarnIcon } from './icons'
+import { useIsMobile } from '../../lib/useIsMobile'
+import { ChatIcon, RefreshIcon, SpinnerIcon, WarnIcon } from './icons'
+import { MobileReviewForm } from './MobileReviewForm'
 import { ReviewDeleteModal } from './ReviewDeleteModal'
 import { MAX_CONTENT, ReviewEditModal } from './ReviewEditModal'
 import { ReviewImagePicker } from './ReviewImagePicker'
@@ -72,6 +74,103 @@ export function ReviewSection({ eventId, eventTitle, reviews, averageRating, rev
 
   const average = averageRating ?? 0
   const pending = create.isPending
+  const isMobile = useIsMobile()
+
+  const dialogs = (
+    <>
+      {editTarget && <ReviewEditModal review={editTarget} eventTitle={eventTitle} onClose={() => setEditTarget(null)} />}
+      <ReviewDeleteModal target={deleteTarget && { id: deleteTarget.id, eventId }} onClose={() => setDeleteTarget(null)} />
+    </>
+  )
+
+  if (isMobile) {
+    // Figma M5 729:125(리뷰), M5-2 730:13(작성 중), S8 754:54(리뷰 없음)
+    return (
+      <section id="reviews" className="scroll-mt-16 px-4 pt-[34px]" aria-label="리뷰">
+        <h2 className="text-[18px] font-black tracking-[-0.3px] text-ink">
+          리뷰 <span className="text-brand">{reviewCount}</span>
+        </h2>
+
+        {reviewCount > 0 && (
+          <div className="mt-3 flex items-center gap-[14px] rounded-[14px] bg-surface-card p-4">
+            <span className="text-[34px] font-black leading-[34px] tracking-[-1px] text-ink">{average.toFixed(1)}</span>
+            <div>
+              <RatingStars value={average} size={14} gap={1} />
+              <p className="pt-[2px] text-[11.5px] tracking-[-0.2px] text-ink-muted">{reviewCount}개의 리뷰</p>
+            </div>
+          </div>
+        )}
+
+        {reviews.length === 0 && (
+          <div className="flex flex-col items-center px-3 pb-5 pt-[26px] text-center" data-testid="reviews-empty">
+            <span className="mb-4 flex size-14 items-center justify-center rounded-full bg-primary-tint text-brand">
+              <ChatIcon size={24} />
+            </span>
+            <p className="text-[17px] font-black leading-6 tracking-[-0.2px] text-ink">첫 리뷰의 주인공이 되어 보세요!</p>
+            <p className="pt-[6px] text-[13px] leading-5 tracking-[-0.2px] text-ink-muted">이 행사에 다녀오셨다면 첫 리뷰를 남겨 주세요</p>
+          </div>
+        )}
+
+        {!mine && (
+          <div className={reviews.length === 0 ? '' : 'pt-3'}>
+            <MobileReviewForm
+              rating={rating}
+              setRating={setRating}
+              content={content}
+              setContent={setContent}
+              pics={pics}
+              pending={pending}
+              error={error}
+              failure={failure}
+              requireLogin={requireLogin}
+              onSubmit={submitCreate}
+            />
+          </div>
+        )}
+
+        {reviews.length > 0 && (
+          <ul className="pt-1">
+            {reviews.map((r) => {
+              const own = !!user && r.user_id === user.id
+              const name = r.author?.nickname || (own ? user?.nickname : undefined) || ANONYMOUS_LABEL
+              const avatar = r.author?.profile_image ?? null
+              // 글자 작은 수정·삭제는 보이는 크기는 그대로 두고 누르는 범위만 44px 로 넓힌다
+              const hit = 'relative after:absolute after:-inset-x-1 after:-inset-y-3 after:content-[""]'
+              return (
+                <li key={r.id} className="border-b border-line py-4 last:border-b-0" data-testid="review-item">
+                  <div className="flex items-center gap-[10px]">
+                    <ReviewAvatar name={name} src={avatar} size={34} />
+                    <div className="min-w-0 flex-1 tracking-[-0.2px]">
+                      <p className="truncate text-[13.5px] font-bold text-ink">{name}</p>
+                      <p className="flex items-center gap-1 text-[11.5px] text-ink-subtle">
+                        <RatingStars value={r.rating} size={11} />
+                        {r.rating} · {formatDate(r.created_at)}
+                      </p>
+                    </div>
+                    {own && (
+                      <div className="flex shrink-0 items-center gap-1 text-[11.5px] tracking-[-0.2px] text-ink-subtle">
+                        <button type="button" className={hit} onClick={() => setEditTarget(r)}>수정</button>
+                        <span aria-hidden="true">·</span>
+                        <button type="button" className={hit} onClick={() => setDeleteTarget(r)}>삭제</button>
+                      </div>
+                    )}
+                  </div>
+                  <p className="whitespace-pre-wrap pt-2 text-[13.5px] leading-[21px] tracking-[-0.2px] text-ink">{r.content}</p>
+                  <ReviewPhotos
+                    images={r.images ?? []}
+                    authorName={name}
+                    authorImage={avatar}
+                    caption={[eventTitle, formatDate(r.created_at)].filter(Boolean).join(' · ')}
+                  />
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        {dialogs}
+      </section>
+    )
+  }
 
   return (
     <section className="pt-14" aria-label="리뷰">
@@ -192,8 +291,7 @@ export function ReviewSection({ eventId, eventTitle, reviews, averageRating, rev
         </ul>
       )}
 
-      {editTarget && <ReviewEditModal review={editTarget} eventTitle={eventTitle} onClose={() => setEditTarget(null)} />}
-      <ReviewDeleteModal target={deleteTarget && { id: deleteTarget.id, eventId }} onClose={() => setDeleteTarget(null)} />
+      {dialogs}
     </section>
   )
 }

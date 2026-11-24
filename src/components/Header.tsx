@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { MouseEvent, ReactNode } from 'react'
 import { CalendarIcon, HeartIcon, KakaoIcon, MapPinIcon, SearchIcon } from './icons'
 import { Logo } from './Logo'
+import { useIsMobile } from '../lib/useIsMobile'
 
 export type HeaderNavKey = 'home' | 'events' | 'mypage'
 
@@ -23,6 +24,8 @@ export interface HeaderProps {
   searchValue?: string
   onSearchChange?: (value: string) => void
   onSearchSubmit?: (value: string) => void
+  /** 모바일(768px 미만) 헤더 아래 선. Figma: 홈(M1)은 없음, 나머지(M2·M7·M11 등)는 있음. 기본 true */
+  mobileBorder?: boolean
 }
 
 const DEFAULT_HREFS = {
@@ -43,8 +46,10 @@ export function Header({
   searchValue,
   onSearchChange,
   onSearchSubmit,
+  mobileBorder = true,
 }: HeaderProps) {
   const h = { ...DEFAULT_HREFS, ...hrefs }
+  const isMobile = useIsMobile()
   const [inner, setInner] = useState('')
   const q = searchValue ?? inner
 
@@ -66,6 +71,41 @@ export function Header({
     { label: '지도', href: h.map, icon: <MapPinIcon /> },
     { label: '찜', href: h.bookmarks, icon: <HeartIcon /> },
   ]
+
+  if (isMobile) {
+    // Figma M1 721:5 / M1-0 733:4: 로고 + 오른쪽 로그인(로그인 전) 또는 프로필 동그라미(로그인 후)만
+    return (
+      <header
+        className={`flex h-14 items-center bg-surface pl-4 pr-2 md:hidden ${mobileBorder ? 'border-b border-line-soft' : ''}`}
+      >
+        <a href={h.home} onClick={go(h.home)} aria-label="meoji 홈" className="shrink-0">
+          <Logo size={26} />
+        </a>
+        <div className="flex-1" />
+        {user ? (
+          <a
+            href={h.mypage}
+            onClick={go(h.mypage)}
+            aria-label={`${user.name} 마이페이지`}
+            className="flex size-11 items-center justify-center rounded-full"
+          >
+            <span className="flex size-8 items-center justify-center overflow-hidden rounded-full bg-primary-tint-strong text-[13px] font-black tracking-[-0.2px] text-primary">
+              {user.avatarUrl ? <img src={user.avatarUrl} alt="" className="size-full object-cover" /> : user.name.slice(0, 1)}
+            </span>
+          </a>
+        ) : (
+          <button
+            type="button"
+            onClick={onLoginClick}
+            className="flex h-[34px] items-center gap-[6px] rounded-pill bg-kakao px-3 text-[13px] font-bold tracking-[-0.2px] text-ink"
+          >
+            <KakaoIcon size={15} />
+            로그인
+          </button>
+        )}
+      </header>
+    )
+  }
 
   return (
     <header className="border-b border-line bg-surface">

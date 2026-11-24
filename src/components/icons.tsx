@@ -122,3 +122,34 @@ export function EyeIcon(p: IconProps) {
     </svg>
   )
 }
+
+/** 모바일 '뒤로' 헤더의 왼쪽 꺾쇠 (Figma M5·M12, 22px) */
+export function BackIcon(p: IconProps) {
+  return (
+    <svg {...base(p, 22, 22)}>
+      <path d="M13.75 5.5L8.25 11L13.75 16.5" strokeWidth="1.83333" {...stroke} />
+    </svg>
+  )
+}
+
+/** 공유 (Figma M5 상세 헤더 오른쪽, 20px) */
+export function ShareIcon(p: IconProps) {
+  return (
+    <svg {...base(p, 20, 20)}>
+      <path
+        d="M10 2.5V12.5M14.1667 6.66667L10 2.5L5.83333 6.66667M4.16667 11.6667V15.8333C4.16667 16.2754 4.34226 16.6993 4.65482 17.0118C4.96738 17.3244 5.39131 17.5 5.83333 17.5H14.1667C14.6087 17.5 15.0326 17.3244 15.3452 17.0118C15.6577 16.6993 15.8333 16.2754 15.8333 15.8333V11.6667"
+        strokeWidth="1.66667"
+        {...stroke}
+      />
+    </svg>
+  )
+}
+
+/** 모바일 하단 시트 닫기 X (Figma M1-2·M2-2, 22px) */
+export function SheetCloseIcon(p: IconProps) {
+  return (
+    <svg {...base(p, 22, 22)}>
+      <path d="M5.5 5.5L16.5 16.5M16.5 5.5L5.5 16.5" strokeWidth="1.83333" {...stroke} />
+    </svg>
+  )
+}

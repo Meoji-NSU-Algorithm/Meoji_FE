@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import type { DirectionsResult, DirectionsStep } from '../../api/types'
-import { BusIcon, WalkIcon } from '../detail/icons'
+import { useIsMobile } from '../../lib/useIsMobile'
+import { BusIcon, ChevronDownIcon, WalkIcon } from '../detail/icons'
 import { turnOf } from './direction'
 import type { Turn } from './direction'
 import { compactSteps, detailText, formatDistance, formatDuration, formatKstClock } from './format'
@@ -173,7 +174,12 @@ function Terminal({ label, color, children, sub }: { label: string; color: strin
   )
 }
 
-export function RouteSteps({ route, originLabel, destLabel }: { route: DirectionsResult; originLabel: string; destLabel: string }) {
+export function RouteSteps(props: { route: DirectionsResult; originLabel: string; destLabel: string }) {
+  const isMobile = useIsMobile()
+  return isMobile ? <MobileRouteSteps {...props} /> : <DesktopRouteSteps {...props} />
+}
+
+function DesktopRouteSteps({ route, originLabel, destLabel }: { route: DirectionsResult; originLabel: string; destLabel: string }) {
   const steps = useMemo(() => compactSteps(route.steps ?? []), [route.steps])
   const transit = route.mode === 'transit'
 
@@ -226,6 +232,203 @@ export function RouteSteps({ route, originLabel, destLabel }: { route: Direction
               </li>
             ))}
         <Terminal label="도착" color="#f0562c" sub={arrival ? `${arrival} 도착 예정` : null}>{destLabel}</Terminal>
+      </ol>
+    </div>
+  )
+}
+
+/* ───────────── 모바일 (Figma M6 731:90 대중교통, S15 761:34 자동차·도보) ───────────── */
+
+const M_ROW = 'flex gap-3 border-t border-line p-[14px]'
+/** 자동차·도보 단계는 처음 몇 개만 보여 주고 '전체 N단계 보기'로 편다 (S15) */
+const MOBILE_STEP_PREVIEW = 5
+
+function MobileBadge({ color, children }: { color: string; children: ReactNode }) {
+  return (
+    <span className="flex h-6 min-w-6 shrink-0 items-center justify-center rounded-full px-[7px] text-[11px] font-bold tracking-[-0.2px] text-white" style={{ background: color }}>
+      {children}
+    </span>
+  )
+}
+
+function MobileExpand({ open, label, onClick }: { open: boolean; label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      aria-expanded={open}
+      aria-label={`${label} ${open ? '접기' : '펼치기'}`}
+      onClick={onClick}
+      className="relative flex size-[18px] shrink-0 items-center justify-center text-ink-muted after:absolute after:-inset-3 after:content-['']"
+    >
+      <Chevron up={open} />
+    </button>
+  )
+}
+
+function MobileTransitStep({ step, clockAt, nextIsTransit }: { step: DirectionsStep; clockAt: (offsetMin: number) => string | null; nextIsTransit: boolean }) {
+  const [open, setOpen] = useState(false)
+  const p = useMemo(() => parseTransitStep(step), [step])
+  const detail = detailText(step.detail)
+  const arrive = clockAt(step.durationMinutes ?? 0)
+  const arriveText = arrive ? `${arrive} 도착 예정` : null
+  const title = 'text-[14px] font-bold leading-5 tracking-[-0.2px] text-ink break-keep'
+  const small = 'text-[11.5px] leading-[17px] tracking-[-0.2px] text-ink-subtle break-keep'
+
+  if (p.kind === 'bus' || p.kind === 'subway') {
+    const bus = p.kind === 'bus'
+    const color = bus ? BUS : SUBWAY
+    const chips = bus ? p.lines.map((l) => `버스 ${l}`) : [p.lineNo]
+    const lead = (bus ? p.lines[0] : p.lineNo.replace('호선', '')) ?? ''
+    const heading = bus ? (p.board ? `${p.board} 승차` : '버스 승차') : `${p.line} 승차`
+    const sub = bus ? (p.alight ? `${p.alight}까지` : null) : p.direction ? `${p.direction} 방면` : null
+    const stops = bus && p.passStops != null ? `${p.passStops}개 정류장 이동` : null
+    const alight = p.alight ? (bus ? p.alight : `${p.alight}역`) : null
+    return (
+      <>
+        <li className={M_ROW} data-testid="route-step">
+          <span className="relative flex size-7 shrink-0 items-center justify-center rounded-full text-white" style={{ background: color }}>
+            <span className={`max-w-full truncate px-[2px] font-black leading-none ${lead.length > 3 ? 'text-[9px]' : 'text-[12px]'}`} data-testid="step-circle-label">{lead}</span>
+            {bus && p.lines.length > 1 && (
+              <span className="absolute -right-[5px] -top-[5px] flex h-4 min-w-4 items-center justify-center rounded-full border border-white bg-ink px-[3px] text-[9px] font-black leading-none text-white" data-testid="step-circle-extra" aria-label={`외 ${p.lines.length - 1}개 노선`}>
+                +{p.lines.length - 1}
+              </span>
+            )}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className={title}>{heading}</p>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-[6px] gap-y-1 pt-[2px]">
+              {chips.map((c, i) => (
+                <span key={`${c}-${i}`} className="flex h-[18px] min-w-0 max-w-full items-center rounded-sm px-[6px] text-[10.5px] font-bold text-white" style={{ background: color }} data-testid="route-line-chip">
+                  <span className="truncate">{c}</span>
+                </span>
+              ))}
+              {sub && <span className="min-w-0 text-[11.5px] tracking-[-0.2px] text-ink">{sub}</span>}
+            </div>
+            <p className={`pt-[2px] ${small}`}>{meta(step, stops, arriveText)}</p>
+            {open && detail && <p className={`pt-1 ${small} text-ink-muted`} data-testid="step-detail">{detail}</p>}
+          </div>
+          {detail && <MobileExpand open={open} label={bus ? '지나는 정류장' : '출구 안내'} onClick={() => setOpen((v) => !v)} />}
+        </li>
+        {alight && (
+          <li className={`${M_ROW} items-center`} data-testid="route-step-exit">
+            <MobileBadge color={color}>{nextIsTransit ? '환승' : '하차'}</MobileBadge>
+            <p className={`min-w-0 flex-1 ${title}`}>{alight} {nextIsTransit ? '환승' : '하차'}</p>
+          </li>
+        )}
+      </>
+    )
+  }
+
+  if (p.kind === 'walk') {
+    const expandable = p.guides.length > 1
+    const heading = p.guides.length === 1 ? p.guides[0] : '도보 이동'
+    return (
+      <>
+        <li className={M_ROW} data-testid="route-step">
+          <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#8a817c] text-white"><WalkIcon size={14} /></span>
+          <div className="min-w-0 flex-1">
+            <p className={title}>{heading}</p>
+            <p className={small}>{meta(step)}</p>
+            {detail && <p className={`${small} text-ink-muted`}>{detail}</p>}
+          </div>
+          {expandable && <MobileExpand open={open} label="도보 상세" onClick={() => setOpen((v) => !v)} />}
+        </li>
+        {expandable && open && (
+          <ol className="bg-surface-card" data-testid="walk-guides">
+            {p.guides.map((g, i) => (
+              <li key={i} className="flex items-center gap-[10px] border-t border-line px-[14px] py-[10px]">
+                <span className="flex w-7 shrink-0 justify-center text-ink"><TurnIcon turn={turnOf(g)} size={18} /></span>
+                <span className="text-[13px] tracking-[-0.2px] text-ink">{g}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </>
+    )
+  }
+
+  return (
+    <li className={M_ROW} data-testid="route-step">
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[#8a817c] text-white"><BusIcon size={14} /></span>
+      <div className="min-w-0 flex-1">
+        <p className={title}>{step.instruction}</p>
+        <p className={small}>{meta(step)}</p>
+        {detail && <p className={`${small} text-ink-muted`}>{detail}</p>}
+      </div>
+    </li>
+  )
+}
+
+function MobileRouteSteps({ route, originLabel, destLabel }: { route: DirectionsResult; originLabel: string; destLabel: string }) {
+  const steps = useMemo(() => compactSteps(route.steps ?? []), [route.steps])
+  const [showAll, setShowAll] = useState(false)
+  const transit = route.mode === 'transit'
+
+  const departure = formatKstClock(route.departureTime)
+  const arrival = formatKstClock(route.arrivalTime) ?? formatKstClock(route.departureTime, route.durationMinutes)
+  const clockAt = (offset: number) => formatKstClock(route.departureTime, offset)
+
+  const walkMin = steps.filter((s) => s.type === 'WALK').reduce((a, s) => a + (s.durationMinutes ?? 0), 0)
+  const rides = steps.filter((s) => s.type === 'BUS' || s.type === 'SUBWAY').length
+  const summaryMeta = (transit
+    ? [walkMin > 0 ? `도보 ${formatDuration(walkMin)}` : null, rides > 1 ? `환승 ${rides - 1}회` : null, formatDistance(route.distanceMeters) || null]
+    : [formatDistance(route.distanceMeters) || null, steps.length ? `${steps.length}단계` : null]
+  ).filter(Boolean).join(' · ')
+
+  const offsets = steps.reduce<number[]>((acc, s) => [...acc, (acc[acc.length - 1] ?? 0) + (s.durationMinutes ?? 0)], [])
+  const isRide = (s?: DirectionsStep) => !!s && (s.type === 'BUS' || s.type === 'SUBWAY')
+  const collapsible = !transit && steps.length > MOBILE_STEP_PREVIEW + 1
+  const visible = collapsible && !showAll ? steps.slice(0, MOBILE_STEP_PREVIEW) : steps
+
+  return (
+    <div className="mt-3 overflow-hidden rounded-[14px] border border-line" data-testid="route-card">
+      <div className="bg-surface-card p-[14px]" data-testid="route-summary">
+        <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+          <span className="text-[26px] font-black leading-[31px] tracking-[-0.8px] text-ink">{formatDuration(route.durationMinutes)}</span>
+          <span className="text-[12px] tracking-[-0.2px] text-ink-muted">{summaryMeta}</span>
+        </p>
+        {(departure || arrival) && (
+          <p className="pt-[2px] text-[12.5px] tracking-[-0.2px] text-ink">
+            {departure && <>{departure} 출발{arrival && ' → '}</>}
+            {arrival && <b>{arrival} 도착 예정</b>}
+          </p>
+        )}
+      </div>
+      <ol data-testid="route-step-list">
+        <li className={`${M_ROW} items-center`} data-testid="route-start">
+          <MobileBadge color="#2a2320">출발</MobileBadge>
+          <p className="min-w-0 flex-1 truncate text-[14px] font-bold leading-5 tracking-[-0.2px] text-ink">{originLabel}</p>
+        </li>
+        {transit
+          ? steps.map((s, i) => <MobileTransitStep key={s.stepNumber ?? i} step={s} clockAt={(o) => clockAt((offsets[i] ?? 0) - (s.durationMinutes ?? 0) + o)} nextIsTransit={isRide(steps[i + 1])} />)
+          : visible.map((s, i) => (
+              <li key={s.stepNumber ?? i} className="flex items-center gap-3 border-t border-line px-[14px] py-3" data-testid="route-step">
+                <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-surface-muted text-ink"><TurnIcon turn={turnOf(s.instruction)} size={14} /></span>
+                <div className="min-w-0 flex-1">
+                  <p className="break-keep text-[14px] font-bold leading-5 tracking-[-0.2px] text-ink">{s.instruction}</p>
+                  {detailText(s.detail) && <p className="text-[11.5px] tracking-[-0.2px] text-ink-muted">{detailText(s.detail)}</p>}
+                </div>
+                {s.distanceMeters != null && <span className="shrink-0 text-[12px] tracking-[-0.2px] text-ink-subtle">{formatDistance(s.distanceMeters)}</span>}
+              </li>
+            ))}
+        {collapsible && (
+          <li className="border-t border-line">
+            <button
+              type="button"
+              aria-expanded={showAll}
+              onClick={() => setShowAll((v) => !v)}
+              className="flex h-12 w-full items-center justify-center gap-1 text-[13.5px] font-bold text-ink"
+            >
+              {showAll ? '접기' : `전체 ${steps.length}단계 보기`}
+              <ChevronDownIcon size={16} className={showAll ? 'rotate-180' : undefined} />
+            </button>
+          </li>
+        )}
+        <li className={`${M_ROW} items-center`} data-testid="route-end">
+          <MobileBadge color="#f0562c">도착</MobileBadge>
+          <p className="min-w-0 flex-1 truncate text-[14px] font-bold leading-5 tracking-[-0.2px] text-ink">{destLabel}</p>
+          {arrival && <span className="shrink-0 text-[12px] tracking-[-0.2px] text-ink-subtle">{arrival} 도착 예정</span>}
+        </li>
       </ol>
     </div>
   )

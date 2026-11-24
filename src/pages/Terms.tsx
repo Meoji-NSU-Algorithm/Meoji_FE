@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useLayoutEffect, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import { consumeReturnTo, useAuth } from '../auth'
 import { useSaveConsents } from '../api/hooks'
@@ -6,7 +7,10 @@ import { useToast } from '../components'
 import { CheckIcon } from '../components/icons'
 import { MARKETING_POLICY, POLICIES, type Policy as PolicyData } from '../content/policies'
 import { AuthScreen, centerBg } from './home/AuthScreen'
-import { PolicyModal } from './Policy'
+import { MobilePolicyScreen, PolicyModal } from './Policy'
+import { useIsMobile } from '../lib/useIsMobile'
+import { useBottomBar } from '../lib/mobileChrome'
+import { BoxCheckIcon } from './my/mobileIcons'
 import { RefreshIcon, WarnIcon } from './detail/icons'
 
 function Box({ checked }: { checked: boolean }) {
@@ -22,11 +26,47 @@ function Box({ checked }: { checked: boolean }) {
   )
 }
 
+/** M8-4 네모 체크박스 22px (Figma 737:18) */
+function MBox({ checked }: { checked: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className={`flex size-[22px] shrink-0 items-center justify-center rounded-[6px] border ${
+        checked ? 'border-brand bg-brand text-white' : 'border-ink-disabled bg-surface text-transparent'
+      }`}
+    >
+      <BoxCheckIcon />
+    </span>
+  )
+}
+
 /**
  * A7: 약관 동의. 로그인 직후 terms_agreed_at 이 null 이면 진입한다.
  * 모두 해제된 채로 시작하고, 필수 2개에 동의하면 시작 버튼이 켜진다. 마케팅 수신은 선택이다.
  * '보기'는 /terms·/privacy 와 같은 본문을 모달로 연다.
  */
+/** M8-4 하단 고정 버튼 줄. 화면 흐름 안의 sticky 바라 MobileBottomBar 대신 높이만 재서 토스트(바 위 12px)에 알린다 */
+function TermsBottomBar({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [height, setHeight] = useState(0)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const measure = () => setHeight(Math.round(el.getBoundingClientRect().height))
+    measure()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(measure)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+  useBottomBar(height)
+  return (
+    <div ref={ref} className="sticky bottom-0 mt-auto border-t border-line bg-surface px-4 pb-[calc(var(--mobile-safe-bottom)+10px)] pt-3">
+      {children}
+    </div>
+  )
+}
+
 export default function Terms() {
   const { isLoggedIn, isLoading, logout } = useAuth()
   const navigate = useNavigate()
@@ -37,6 +77,7 @@ export default function Terms() {
   const [marketing, setMarketing] = useState(false)
   const [viewing, setViewing] = useState<PolicyData | null>(null)
   const required = service && privacy
+  const isMobile = useIsMobile()
   const all = required && marketing
 
   if (!isLoading && !isLoggedIn) return <Navigate to="/auth/login" replace />
@@ -99,6 +140,112 @@ export default function Terms() {
       </button>
     </div>
   )
+
+  if (isMobile) {
+    const mRow = (
+      label: string,
+      tag: string,
+      tagClass: string,
+      checked: boolean,
+      onToggle: () => void,
+      policy: PolicyData,
+      desc?: string,
+    ) => (
+      <div className={`flex gap-3 ${desc ? 'min-h-[52px] items-start pt-[14px]' : 'h-[52px] items-center'}`}>
+        <button
+          type="button"
+          role="checkbox"
+          aria-checked={checked}
+          aria-label={`${tag} ${label}`}
+          onClick={onToggle}
+          className={`flex flex-1 gap-3 text-left ${desc ? 'items-start' : 'items-center'}`}
+        >
+          <MBox checked={checked} />
+          <span className="flex flex-col tracking-[-0.2px]">
+            <span className="text-[14px] leading-5 text-ink">
+              <b className={`font-bold ${tagClass}`}>{tag}</b> {label}
+            </span>
+            {desc && <span className="text-[12px] leading-5 text-ink-subtle">{desc}</span>}
+          </span>
+        </button>
+        <button
+          type="button"
+          aria-label={`${label} 보기`}
+          onClick={() => setViewing(policy)}
+          className={`flex h-11 shrink-0 items-center text-[12.5px] tracking-[-0.2px] text-ink-muted underline ${desc ? '-mt-3' : ''}`}
+        >
+          보기
+        </button>
+      </div>
+    )
+    return (
+      <AuthScreen className="flex flex-col">
+        <p className="px-4 pt-[18px] font-display text-[22px] font-black leading-[22px] tracking-[-0.8px] text-brand">meoji</p>
+        <div className="px-6 pt-[30px]">
+          <h1 className="text-[24px] font-black leading-[33px] tracking-[-0.6px] text-ink">
+            머지 이용을 위해
+            <br />
+            약관에 동의해 주세요
+          </h1>
+          <p className="pt-[6px] text-[13.5px] tracking-[-0.2px] text-ink-muted">처음 한 번만 받아요</p>
+        </div>
+        <div className="px-4 pt-7">
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={all}
+            onClick={toggleAll}
+            className="flex min-h-[58px] w-full items-center gap-3 rounded-[14px] bg-surface-sunken px-[14px] py-1 text-left"
+          >
+            <MBox checked={all} />
+            <span className="text-[16px] font-black tracking-[-0.2px] text-ink">모두 동의하기</span>
+          </button>
+          <div className="px-[14px] pt-[6px]">
+            {mRow('이용약관', '[필수]', 'text-primary', service, () => setService(!service), POLICIES.terms)}
+            {mRow('개인정보 수집·이용', '[필수]', 'text-primary', privacy, () => setPrivacy(!privacy), POLICIES.privacy)}
+            {mRow(
+              '마케팅 정보 수신',
+              '[선택]',
+              'text-ink-subtle',
+              marketing,
+              () => setMarketing(!marketing),
+              MARKETING_POLICY,
+              '새 행사와 이벤트 소식을 받아요',
+            )}
+          </div>
+        </div>
+        <p className="px-[30px] pt-4 text-[11.5px] tracking-[-0.2px] text-ink-subtle">선택 항목은 동의하지 않아도 이용할 수 있어요</p>
+        {save.isError && (
+          <div role="alert" className="mx-4 mt-3 flex items-start gap-[10px] rounded-[12px] bg-primary-tint px-[14px] py-3 text-[13px] leading-[20.8px] text-[#8a2a0e]">
+            <WarnIcon size={18} className="mt-px shrink-0 text-primary-ink" />
+            <span>
+              동의 내용을 저장하지 못했어요.
+              <br />
+              잠시 후 다시 시도해 주세요.
+            </span>
+          </div>
+        )}
+        <div className="px-[30px] pt-2">
+          <button type="button" onClick={() => void cancel()} className="flex h-11 items-center text-[12px] text-ink-subtle underline">
+            취소
+          </button>
+        </div>
+        <TermsBottomBar>
+          <p className="text-center text-[12px] tracking-[-0.2px] text-ink-subtle">필수 항목 2개에 동의하면 버튼이 켜져요</p>
+          <button
+            type="button"
+            disabled={!required || save.isPending}
+            onClick={start}
+            className="mt-2 flex h-[50px] w-full items-center justify-center gap-[6px] rounded-[12px] bg-primary text-[15px] font-bold text-white disabled:bg-[#efecea] disabled:text-[#a9a19c]"
+          >
+            {save.isError && <RefreshIcon size={16} />}
+            {save.isError ? '다시 시도' : '동의하고 시작하기'}
+          </button>
+        </TermsBottomBar>
+        {viewing && <MobilePolicyScreen policy={viewing} onClose={() => setViewing(null)} />}
+      </AuthScreen>
+    )
+  }
 
   return (
     <AuthScreen className={centerBg}>

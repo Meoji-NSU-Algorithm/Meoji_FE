@@ -20,6 +20,7 @@ const MyProfile = lazy(() => import('./pages/MyProfile'))
 const MyWithdraw = lazy(() => import('./pages/MyWithdraw'))
 const MyWithdrawDone = lazy(() => import('./pages/MyWithdrawDone'))
 const NotFound = lazy(() => import('./pages/NotFound'))
+const Search = lazy(() => import('./pages/Search'))
 
 export default function App() {
   return (
@@ -27,6 +28,8 @@ export default function App() {
       <Routes>
         <Route element={<Layout />}>
           <Route index element={<Home />} />
+          {/* 모바일 검색 화면(M1-3). 홈 검색창에서 들어오므로 로그인 없이 연다 */}
+          <Route path="search" element={<Search />} />
           {/* 홈과 로그인 화면 밖은 로그인해야 들어갈 수 있다. */}
           <Route element={<RequireLogin />}>
             <Route path="events" element={<EventList />} />

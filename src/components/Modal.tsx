@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useRef } from 'react'
 import type { ReactNode } from 'react'
 import { createPortal } from 'react-dom'
 import { CloseIcon } from './icons'
+import { useDialogBehavior } from './useDialogBehavior'
 
 export interface ModalProps {
   open: boolean
@@ -33,34 +34,13 @@ export function Modal({
   widthClass = 'max-w-[440px]',
 }: ModalProps) {
   const ref = useRef<HTMLDivElement>(null)
-  // onClose 가 매 렌더 바뀌어도 포커스를 다시 가져오지 않도록 최신 값만 ref 로 들고 있는다
-  const onCloseRef = useRef(onClose)
-  useEffect(() => {
-    onCloseRef.current = onClose
-  })
-
-  useEffect(() => {
-    if (!open) return
-    const prev = document.activeElement as HTMLElement | null
-    ref.current?.focus()
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCloseRef.current()
-    }
-    document.addEventListener('keydown', onKey)
-    const overflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-    return () => {
-      document.removeEventListener('keydown', onKey)
-      document.body.style.overflow = overflow
-      prev?.focus?.()
-    }
-  }, [open])
+  useDialogBehavior(open, onClose, ref)
 
   if (!open) return null
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-dim p-4 md:bg-black/50"
       onMouseDown={(e) => {
         if (closeOnBackdrop && e.target === e.currentTarget) onClose()
       }}

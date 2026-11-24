@@ -3,11 +3,15 @@ import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { tokenStorage } from '../auth'
 import { CheckIcon } from '../components/icons'
+import { MobileBottomBar } from '../components'
+import { useIsMobile } from '../lib/useIsMobile'
+import { DoneCheckIcon } from './my/mobileIcons'
 
 /** E9: 탈퇴 완료. 이미 로그아웃된 상태에서 보이므로 RequireLogin 밖에 둔다. */
 export default function MyWithdrawDone() {
   const withdrawn = (useLocation().state as { withdrawn?: boolean } | null)?.withdrawn === true
   const qc = useQueryClient()
+  const isMobile = useIsMobile()
 
   // 탈퇴 직후에만 로컬 토큰과 캐시를 정리한다(서버에서는 이미 탈퇴 처리됨).
   // 페인트 전에 지워서 헤더가 처음부터 로그아웃 상태로 보이게 한다.
@@ -19,6 +23,34 @@ export default function MyWithdrawDone() {
 
   // 직접 주소로 들어온 경우에는 아무것도 하지 않고 홈으로 보낸다.
   if (!withdrawn) return <Navigate to="/" replace />
+  if (isMobile)
+    return (
+      // M10-2: 로고·로그인 헤더(Layout) 아래 가운데 안내 + 바닥 고정 '홈으로 가기'
+      <div className="flex flex-col items-center px-7 pb-6 pt-[150px] text-center">
+        <span className="flex size-[68px] items-center justify-center rounded-full bg-surface-muted text-ink">
+          <DoneCheckIcon />
+        </span>
+        <h1 className="pt-[22px] text-[21px] font-black leading-[29px] tracking-[-0.2px] text-ink">탈퇴가 완료됐어요</h1>
+        <p className="pt-2 text-[14px] leading-[22px] tracking-[-0.2px] text-[#3e3633]">
+          그동안 머지를 이용해 주셔서 감사해요.
+          <br />
+          보고 싶은 행사가 생기면 언제든 다시 찾아와 주세요.
+        </p>
+        <p className="mt-[18px] rounded-[12px] bg-surface-sunken px-[14px] py-3 text-[12px] leading-[18px] tracking-[-0.2px] text-ink-muted">
+          찜한 행사와 작성한 리뷰가 모두 삭제됐고,
+          <br />
+          카카오 계정 연결도 해제됐어요.
+        </p>
+        <MobileBottomBar className="border-t-0!">
+          <Link
+            to="/"
+            className="flex h-[50px] flex-1 items-center justify-center rounded-[12px] bg-primary text-[15px] font-bold tracking-[-0.2px] text-white"
+          >
+            홈으로 가기
+          </Link>
+        </MobileBottomBar>
+      </div>
+    )
   return (
     <div className="px-4 pb-5 pt-8 md:px-6 md:pt-[60px]">
       <div className="mx-auto flex w-full max-w-[460px] flex-col items-center rounded-[22px] border border-line bg-surface px-5 pb-8 pt-10 md:px-8 md:pb-10 md:pt-12">

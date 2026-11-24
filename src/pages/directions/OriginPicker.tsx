@@ -16,10 +16,26 @@ interface Props {
   notice?: string | null
   onSelect: (origin: Origin) => void
   onCancel?: () => void
+  /** 모바일 출발지 변경 시트 안의 모양 (Figma S13 759:11). 취소는 시트 머리에 있다 */
+  mobile?: boolean
+}
+
+/** 검색어와 겹치는 앞부분을 주황으로 (Figma S13: '천안'역) */
+function Highlight({ text, query }: { text: string; query: string }) {
+  const q = query.trim()
+  const i = q ? text.indexOf(q) : -1
+  if (i < 0) return <span className="text-ink">{text}</span>
+  return (
+    <>
+      <span className="text-ink-subtle">{text.slice(0, i)}</span>
+      <span className="text-primary">{text.slice(i, i + q.length)}</span>
+      <span className="text-ink-subtle">{text.slice(i + q.length)}</span>
+    </>
+  )
 }
 
 /** D2 출발지 변경: 현재 위치로 설정 또는 장소/주소 검색 */
-export function OriginPicker({ notice, onSelect, onCancel }: Props) {
+export function OriginPicker({ notice, onSelect, onCancel, mobile = false }: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Place[] | null>(null)
   const [message, setMessage] = useState<string | null>(notice ?? null)
@@ -52,6 +68,56 @@ export function OriginPicker({ notice, onSelect, onCancel }: Props) {
     } finally {
       setBusy(false)
     }
+  }
+
+  if (mobile) {
+    const row = 'flex h-[60px] w-full items-center gap-3 text-left'
+    return (
+      <div data-testid="origin-picker">
+        <div className="px-4 pt-[6px]">
+          <form onSubmit={(e) => void search(e)} className="flex h-12 items-center gap-2 rounded-[12px] border border-ink px-[14px] text-ink">
+            <SearchIcon size={18} />
+            <input
+              autoFocus
+              type="search"
+              enterKeyHint="search"
+              aria-label="출발지 검색"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="출발지 장소나 주소를 입력하세요"
+              className="min-w-0 flex-1 bg-transparent text-[15px] text-ink outline-none placeholder:text-ink-subtle"
+            />
+          </form>
+          {message && (
+            <p role="status" className="px-1 pt-2 text-[12px] leading-[18px] text-ink-muted">
+              {message}
+            </p>
+          )}
+        </div>
+        <ul className="px-4 pt-[6px]">
+          <li className="border-b border-line-soft last:border-b-0">
+            <button type="button" disabled={busy} onClick={() => void applyCurrentLocation()} className={row}>
+              <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-[#eef3fd] text-[#2563eb]"><TargetIcon size={18} /></span>
+              <span className="min-w-0 tracking-[-0.2px]">
+                <span className="block text-[14.5px] font-bold leading-5 text-ink">현재 위치로 설정</span>
+                <span className="block text-[12px] text-ink-subtle">내 위치를 출발지로 사용해요</span>
+              </span>
+            </button>
+          </li>
+          {results?.map((p) => (
+            <li key={`${p.name}-${p.lat}-${p.lng}`} className="border-b border-line-soft last:border-b-0">
+              <button type="button" onClick={() => onSelect({ lat: p.lat, lng: p.lng, label: p.name })} className={row}>
+                <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-surface-muted text-ink-muted"><MapPinIcon size={18} /></span>
+                <span className="min-w-0 tracking-[-0.2px]">
+                  <span className="block truncate text-[14.5px] font-bold leading-5"><Highlight text={p.name} query={query} /></span>
+                  <span className="block truncate text-[12px] text-ink-subtle">{p.address}</span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      </div>
+    )
   }
 
   return (

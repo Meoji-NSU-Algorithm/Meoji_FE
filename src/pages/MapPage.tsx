@@ -6,8 +6,21 @@ import { useAuth, useRequireLogin } from '../auth'
 import { PhotoPlaceholder, Spinner, formatDateRange, priceLabel, useToast } from '../components'
 import { loadKakaoMaps } from '../lib/kakaoMaps'
 import { FilterPanel } from './events/FilterPanel'
-import { LocateIcon, MinusIcon, PinBigIcon, PlusIcon, SearchBigIcon, WifiOffIcon } from './events/icons'
-import { outlineBtn, primaryBtn, StatePanel } from './events/StatePanel'
+import {
+  InfoSmallIcon,
+  LocateIcon,
+  LocateMobileIcon,
+  LocationOffIcon,
+  MinusIcon,
+  PinBigIcon,
+  PlusIcon,
+  RefreshIcon,
+  SearchBigIcon,
+  WifiOffIcon,
+} from './events/icons'
+import { MobileStatePanel, mobilePrimaryBtn, outlineBtn, primaryBtn, StatePanel } from './events/StatePanel'
+import { MobileMapSheet } from './map/MobileMapSheet'
+import { useIsMobile } from '../lib/useIsMobile'
 import { hasLoginFilters, useEventFilters } from './events/useEventFilters'
 import { PageTitleBar } from './events/ViewTabs'
 import { MapCanvas, type MapCanvasHandle } from './map/MapCanvas'
@@ -47,6 +60,7 @@ function priceText(e: EventCard) {
 
 export default function MapPage() {
   const toast = useToast()
+  const isMobile = useIsMobile()
   const { isLoggedIn, isLoading: authLoading } = useAuth()
   const requireLogin = useRequireLogin()
   const { params, patch } = useEventFilters()
@@ -150,6 +164,176 @@ export default function MapPage() {
   const countText = kakao ? (visibleIds ? visibleList.length : located.length) : events.length
 
   const showDenied = geo === 'denied' && !dismissed
+  const [sheetOpen, setSheetOpen] = useState(true)
+
+  if (isMobile) {
+    const loading = query.isPending || (kakao && !sdkError && !settled && located.length === 0 && events.length > 0)
+    const compact = 'pb-6 pt-4'
+    const status = needsLogin ? (
+      <MobileStatePanel
+        role="status"
+        className={compact}
+        icon={<SearchBigIcon />}
+        title="로그인이 필요해요"
+        message="필터는 로그인 후 이용할 수 있어요"
+        action={
+          <button type="button" className={mobilePrimaryBtn} onClick={() => requireLogin()}>
+            로그인하기
+          </button>
+        }
+      />
+    ) : query.isError ? (
+      <MobileStatePanel
+        role="alert"
+        tone="muted"
+        className={compact}
+        icon={<RefreshIcon />}
+        title="행사를 불러오지 못했어요"
+        message="인터넷 연결을 확인하고 다시 시도해 주세요"
+        action={
+          <button type="button" className={mobilePrimaryBtn} onClick={() => void query.refetch()}>
+            다시 시도
+          </button>
+        }
+      />
+    ) : loading ? (
+      <div className="flex justify-center py-10">
+        <Spinner />
+      </div>
+    ) : events.length === 0 ? (
+      <MobileStatePanel className={compact} icon={<SearchBigIcon />} title="조건에 맞는 행사가 없어요" message="필터를 바꿔 보세요" />
+    ) : listEvents.length === 0 ? (
+      <MobileStatePanel className={compact} icon={<PinBigIcon />} title="이 지도 영역엔 행사가 없어요" message="지도를 움직이거나 확대/축소해 보세요" />
+    ) : null
+    const expanded = sheetOpen && !showDenied
+    const showUnlocated = !!kakao && settled && unlocatedCount > 0
+    const notices = (showUnlocated ? 1 : 0) + (kakao && overLimit ? 1 : 0)
+    const noticeCls =
+      'flex min-h-9 items-center gap-[6px] rounded-pill bg-surface px-[14px] py-[6px] text-[12px] tracking-[-0.2px] text-ink-muted drop-shadow-[0_2px_5px_rgba(0,0,0,0.1)]'
+
+    return (
+      <div className="relative h-[calc(100dvh-56px-var(--tabbar-h))] min-h-[520px] overflow-hidden bg-[#eef0ea]">
+        {sdkError ? (
+          <div className="absolute inset-x-0 top-0 flex h-[calc(100%-120px)] items-center justify-center">
+            <MobileStatePanel
+              role="alert"
+              tone="muted"
+              className="py-6"
+              icon={<WifiOffIcon />}
+              title="지도를 불러오지 못했어요"
+              message={sdkError}
+              action={
+                <button type="button" className={mobilePrimaryBtn} onClick={() => setSdkTry((n) => n + 1)}>
+                  다시 시도
+                </button>
+              }
+            />
+          </div>
+        ) : !kakao ? (
+          <div className="absolute inset-x-0 top-0 flex h-[calc(100%-120px)] items-center justify-center">
+            <Spinner label="지도를 불러오는 중" />
+          </div>
+        ) : (
+          <MapCanvas
+            ref={mapRef}
+            kakao={kakao}
+            points={points}
+            selectedId={selectedId}
+            onSelect={(id) => {
+              select(id, false)
+              setSheetOpen(true)
+            }}
+            onDeselect={() => setSelectedId(null)}
+            onVisibleChange={setVisibleIds}
+            fitKey={fitKey}
+          />
+        )}
+
+        {kakao && (
+          <>
+            {notices > 0 && (
+              <div className="absolute inset-x-3 top-3 z-10 flex flex-col gap-2">
+                {showUnlocated && (
+                  <div data-testid="map-unlocated-notice" className={noticeCls}>
+                    <InfoSmallIcon className="shrink-0" />
+                    <span className="min-w-0">
+                      위치를 찾지 못한 행사 <b className="font-bold text-ink">{unlocatedCount}개</b>는 지도에 없어요
+                    </span>
+                    <Link to={`/events${search}`} className="ml-auto shrink-0 font-bold text-primary underline">
+                      목록에서 보기
+                    </Link>
+                  </div>
+                )}
+                {overLimit && (
+                  <div data-testid="map-limit-notice" className={noticeCls}>
+                    <InfoSmallIcon className="shrink-0" />
+                    <span className="min-w-0">
+                      행사가 많아 <b className="font-bold text-ink">{MAP_SIZE}개</b>까지만 보여요
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+            <button
+              type="button"
+              aria-label="내 위치"
+              onClick={requestLocation}
+              style={{ top: 16 + notices * 44 }}
+              className={`absolute right-3 z-10 flex size-10 items-center justify-center rounded-full bg-surface drop-shadow-[0_4px_7px_rgba(0,0,0,0.14)] ${
+                geo === 'denied' ? 'text-[#a9a19c]' : 'text-[#2563eb]'
+              }`}
+            >
+              <LocateMobileIcon off={geo === 'denied'} />
+            </button>
+          </>
+        )}
+
+        {kakao && showDenied && (
+          <div
+            role="alertdialog"
+            aria-label="위치 권한이 꺼져 있어요"
+            className="absolute inset-x-4 top-[140px] z-30 flex flex-col items-center rounded-[18px] bg-surface px-[18px] pb-4 pt-5 text-center drop-shadow-[0_10px_15px_rgba(0,0,0,0.18)]"
+          >
+            <span className="flex size-[52px] items-center justify-center rounded-full bg-[#eef3fd] text-[#2563eb]">
+              <LocationOffIcon />
+            </span>
+            <h2 className="pt-3 text-[17px] font-black tracking-[-0.2px] text-ink">위치 권한이 꺼져 있어요</h2>
+            <p className="pt-[6px] text-[13px] leading-5 tracking-[-0.2px] text-ink-muted">
+              브라우저 설정에서 위치를 허용하면
+              <br />내 주변 행사를 보여 드려요
+            </p>
+            <div className="flex w-full gap-2 pt-4">
+              <button
+                type="button"
+                className="h-[46px] min-w-0 flex-1 rounded-card border border-line-strong bg-surface text-[14px] font-bold tracking-[-0.2px] text-ink"
+                onClick={() => {
+                  setDismissed(true)
+                  setSheetOpen(true)
+                  mapRef.current?.fit()
+                }}
+              >
+                지역으로 보기
+              </button>
+              <button type="button" className="h-[46px] min-w-0 flex-1 rounded-card bg-primary text-[14px] font-bold text-white" onClick={requestLocation}>
+                다시 확인
+              </button>
+            </div>
+          </div>
+        )}
+
+        <MobileMapSheet
+          expanded={expanded}
+          onExpandedChange={setSheetOpen}
+          count={countText}
+          selected={selected}
+          onClearSelected={() => setSelectedId(null)}
+          others={selected ? listEvents.filter((e) => e.id !== selected.id) : listEvents}
+          onPick={(id) => select(id, true)}
+          status={status}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="mx-auto max-w-content px-4 pb-12 md:px-6 md:pb-20">

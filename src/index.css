@@ -30,6 +30,8 @@
   --color-surface-card: #faf9f8;
   --color-surface-warm: #fbf8f6; /* 카테고리 아이콘 배경 */
   --color-line: #eeebe9;
+  --color-line-soft: #f1eeec; /* 모바일 헤더 아래 선 */
+  --color-line-strong: #e5e0dc; /* 모바일 시트 손잡이, 흰 버튼 테두리 */
 
   /* 의미색 */
   --color-free: #16834a;
@@ -37,6 +39,8 @@
   --color-star-empty: #e5e0dc; /* Figma에 빈 별 색 없음: 임의 지정 */
   --color-kakao: #fee500;
   --color-kakao-ink: #191600;
+  --color-toast-action: #ffb199; /* 모바일 토스트의 '보기'·'다시 시도' 글자 */
+  --color-dim: rgba(20, 16, 14, 0.5); /* 모바일 하단 시트 뒤 배경 */
 
   /* 모서리: Figma radius-sm/md/lg/full 및 카드·다이얼로그 */
   --radius-sm: 4px;
@@ -49,6 +53,8 @@
   /* 그림자 */
   --shadow-dialog: 0 20px 60px 0 rgba(0, 0, 0, 0.3);
   --shadow-float: 0 6px 20px 0 rgba(0, 0, 0, 0.18);
+  --shadow-sheet: 0 -8px 15px 0 rgba(0, 0, 0, 0.12); /* 모바일 하단 시트 */
+  --shadow-toast: 0 8px 12px 0 rgba(0, 0, 0, 0.22); /* 모바일 토스트 */
 
   /* 레이아웃 */
   --container-content: 1200px; /* 콘텐츠 폭, 좌우 패딩 24px 포함 */
@@ -58,6 +64,14 @@
   /* Figma 간격 변수 space-4/8/12/16/24/48 은 Tailwind 기본 스케일(1, 2, 3, 4, 6, 12)과 동일 */
   --gradient-festival: linear-gradient(154deg, #e8461c 8.5%, #f7a04b 91.5%);
   --gradient-night: linear-gradient(172deg, #1c2147 8.5%, #5b3c8c 91.5%);
+
+  /*
+   * 모바일(768px 미만) 바닥 여백. Figma: 아이폰 홈 표시줄 자리 18px.
+   * 실제 기기의 safe-area 가 더 크면 그 값을 쓴다.
+   *   --tabbar-h   : 하단 탭바 전체 높이 (선 1 + 칸 57 + 바닥 18 = 76)
+   */
+  --mobile-safe-bottom: max(18px, env(safe-area-inset-bottom));
+  --tabbar-h: calc(58px + var(--mobile-safe-bottom));
 }
 
 body {
