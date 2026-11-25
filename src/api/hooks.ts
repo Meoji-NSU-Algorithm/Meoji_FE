@@ -36,9 +36,10 @@ const HOUR = 60 * 60 * 1000
 
 export const useCategories = () => useQuery({ queryKey: qk.categories, queryFn: getCategories, staleTime: HOUR })
 /** JWT 필요: 로그인 상태에서만 호출된다. */
-export function useSidos() {
+/** enabled=false 면 요청하지 않는다(예: 데스크톱에서 곧 리다이렉트될 모바일 검색 화면) */
+export function useSidos(enabled = true) {
   const { isLoggedIn } = useAuth()
-  return useQuery({ queryKey: qk.sidos, queryFn: getSidos, enabled: isLoggedIn, staleTime: HOUR })
+  return useQuery({ queryKey: qk.sidos, queryFn: getSidos, enabled: isLoggedIn && enabled, staleTime: HOUR })
 }
 export const useEvents = (params: EventListParams = {}, options: { enabled?: boolean } = {}) =>
   useQuery({ queryKey: qk.events(params), queryFn: () => getEvents(params), placeholderData: keepPreviousData, ...options })

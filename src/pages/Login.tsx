@@ -4,7 +4,9 @@ import { useQuery } from '@tanstack/react-query'
 import { getSidos } from '../api/events'
 import { useCategories, useEvents, useMonthlyTop } from '../api/hooks'
 import { useAuth } from '../auth'
-import { CheckIcon, KakaoIcon } from '../components/icons'
+import { CheckIcon, KakaoIcon, SheetCloseIcon } from '../components/icons'
+import { useIsMobile } from '../lib/useIsMobile'
+import { KakaoBubbleIcon, SmallCheckIcon } from './my/mobileIcons'
 import { AuthScreen } from './home/AuthScreen'
 import { startKakaoLogin } from './home/kakaoLogin'
 
@@ -104,13 +106,134 @@ function useStats(): string[][] {
   return stats.flatMap(([n, label]) => (n != null ? [[n.toLocaleString(), label]] : []))
 }
 
+/** M8 위쪽 콜라주 타일 색 (Figma 734:6~27, 4열 × 2줄) */
+const MOBILE_TILE_G = [
+  G.fest,
+  G.plum,
+  'linear-gradient(154deg,#2f6fd8 8.5%,#8cc4f2 91.5%)',
+  'linear-gradient(154deg,#2f5d34 8.5%,#a9cc6b 91.5%)',
+  G.night,
+  G.gold,
+  'linear-gradient(154deg,#25205a 8.5%,#5b3c8c 91.5%)',
+  'linear-gradient(154deg,#b5741b 8.5%,#f0c25a 91.5%)',
+]
+
+/** M8: 높이 250px 띠 안에 -8도 기울인 4×2 타일. 인기 행사 사진이 8장 이상이면 사진으로 채운다 */
+function MobileCollage() {
+  const { data } = useMonthlyTop({ size: 12 })
+  const photos = (data?.events ?? []).map((e) => e.image_url).filter((u): u is string => !!u)
+  const usePhotos = photos.length >= MOBILE_TILE_G.length
+  return (
+    <div aria-hidden className="absolute left-1/2 top-[-70px] flex h-[349px] w-[482px] -translate-x-1/2 items-center justify-center">
+      <div className="grid -rotate-[8deg] grid-cols-[repeat(4,104px)] gap-[10px]">
+        {MOBILE_TILE_G.map((g, i) => (
+          <div key={i} className="relative h-[140px] overflow-hidden rounded-[12px]" style={{ background: g }}>
+            {usePhotos && <img src={photos[i]} alt="" loading="lazy" className="absolute inset-0 size-full object-cover" />}
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** 앱 안에서 온 기록이 있으면 뒤로, 없으면 홈 (MobileBackHeader 와 같은 규칙) */
+function useClose() {
+  const navigate = useNavigate()
+  return () => {
+    const idx = (window.history.state as { idx?: number } | null)?.idx
+    if (typeof idx === 'number' && idx > 0) navigate(-1)
+    else navigate('/')
+  }
+}
+
+function MobileLogin({ stats }: { stats: string[][] }) {
+  const close = useClose()
+  return (
+    <AuthScreen>
+      <div className="relative h-[250px] overflow-hidden bg-[#fbf5f1]">
+        <MobileCollage />
+        <div className="absolute inset-x-0 top-[130px] h-[120px] bg-gradient-to-b from-white/0 to-white" />
+        <button
+          type="button"
+          aria-label="닫기"
+          onClick={close}
+          className="absolute left-[6px] top-[8px] flex size-11 items-center justify-center rounded-full bg-white/90 text-ink"
+        >
+          <SheetCloseIcon />
+        </button>
+      </div>
+      {/* 소개 묶음 (734:34): Figma 높이 184px — 마지막 줄 아래 1px 까지 포함 */}
+      <div className="relative -mt-6 px-6 pb-px">
+        <p className="relative -top-1 font-display text-[30px] font-black leading-[30px] tracking-[-0.8px] text-brand">meoji</p>
+        <h1 className="pt-3 text-[24px] font-black leading-[33px] tracking-[-0.6px] text-ink">
+          오늘 행사 뭐지?
+          <br />
+          고민될 땐 머지에서
+        </h1>
+        <p className="pt-[6px] text-[13.5px] leading-4 tracking-[-0.2px] text-ink-muted">전국 축제 · 전시 · 공연 · 체험을 한곳에서</p>
+        {stats.length > 0 && (
+          <div className="flex gap-[22px] pt-4">
+            {stats.map(([n, l]) => (
+              <div key={l}>
+                <p className="font-display text-[20px] font-black leading-6 tracking-[-0.2px] text-ink">{n}</p>
+                <p className="text-[11px] leading-[13px] tracking-[-0.2px] text-ink-subtle">{l}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="px-4 pt-[22px]">
+        <div className="rounded-[18px] border border-line px-4 pb-4 pt-[18px]">
+          <h2 className="text-[16px] font-black leading-[19px] tracking-[-0.2px] text-ink">3초 만에 시작하기</h2>
+          <p className="pt-[3px] text-[12.5px] leading-[15px] tracking-[-0.2px] text-ink-muted">카카오 계정 하나면 가입과 로그인이 한 번에 끝나요</p>
+          <button
+            type="button"
+            onClick={startKakaoLogin}
+            className="mt-[14px] flex h-[52px] w-full items-center justify-center gap-[6px] rounded-[12px] bg-kakao px-4 text-[15px] font-bold tracking-[-0.2px] text-kakao-ink"
+          >
+            <KakaoBubbleIcon />
+            카카오로 시작하기
+          </button>
+          <div className="flex h-6 items-center gap-[10px] pt-[10px]">
+            <span className="h-px flex-1 bg-line" />
+            <span className="text-[11.5px] tracking-[-0.2px] text-ink-subtle">또는</span>
+            <span className="h-px flex-1 bg-line" />
+          </div>
+          <Link
+            to="/"
+            className="mt-[2px] flex h-10 w-full items-center justify-center text-[13.5px] font-bold tracking-[-0.2px] text-ink"
+          >
+            로그인 없이 둘러보기 ›
+          </Link>
+          <ul className="flex flex-col gap-[7px] border-t border-line-soft pt-3">
+            {['관심 행사 찜 · 캘린더 정리', '다녀온 행사 리뷰 작성', '별도 비밀번호 없이 카카오로 로그인'].map((t) => (
+              <li key={t} className="flex items-center gap-2 text-[12.5px] leading-[18px] tracking-[-0.2px] text-[#3e3633]">
+                <span className="flex size-[18px] shrink-0 items-center justify-center rounded-full bg-primary-tint-strong text-primary">
+                  <SmallCheckIcon />
+                </span>
+                {t}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <p className="px-6 pb-[calc(var(--mobile-safe-bottom)+12px)] pt-[14px] text-center text-[11px] leading-4 tracking-[-0.2px] text-ink-subtle">
+        처음 로그인하면 이용약관·개인정보처리방침 동의 화면이 이어져요.
+      </p>
+    </AuthScreen>
+  )
+}
+
 export default function Login() {
   const { isLoggedIn } = useAuth()
   const navigate = useNavigate()
   const stats = useStats()
+  const isMobile = useIsMobile()
   useEffect(() => {
     if (isLoggedIn) navigate('/', { replace: true })
   }, [isLoggedIn, navigate])
+
+  if (isMobile) return <MobileLogin stats={stats} />
 
   return (
     <AuthScreen>

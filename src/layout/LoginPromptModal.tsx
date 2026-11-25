@@ -1,5 +1,7 @@
 import { useCallback, type ReactNode } from 'react'
-import { Modal } from '../components'
+import { ResponsiveDialog } from '../components'
+import { PhotoPlaceholder } from '../components/PhotoPlaceholder'
+import { useIsMobile } from '../lib/useIsMobile'
 import { formatDateRange } from '../components'
 import { CalendarIcon, HeartIcon, KakaoIcon } from '../components/icons'
 import { buildKakaoAuthorizeUrl, clearPendingBookmark, consumeReturnTo } from '../auth'
@@ -38,8 +40,24 @@ function Benefit({ icon, title, desc }: { icon: ReactNode; title: string; desc: 
   )
 }
 
+/** 모바일 시트(Figma M1-2 722:43)의 혜택 줄: 34px 동그라미 아이콘 */
+function SheetBenefit({ icon, title, desc }: { icon: ReactNode; title: string; desc: string }) {
+  return (
+    <li className="flex items-start gap-3">
+      <span className="flex size-[34px] shrink-0 items-center justify-center rounded-full bg-primary-tint-strong text-primary">
+        {icon}
+      </span>
+      <span className="flex flex-col">
+        <b className="text-[14px] font-bold leading-5 tracking-[-0.2px] text-ink">{title}</b>
+        <span className="text-[12px] leading-[18px] tracking-[-0.2px] text-ink-subtle">{desc}</span>
+      </span>
+    </li>
+  )
+}
+
 export function LoginPromptModal({ open, onClose }: Props) {
   const event = useLoginPromptEvent()
+  const isMobile = useIsMobile()
 
   const close = useCallback(() => {
     setLoginPromptEvent(null)
@@ -84,8 +102,62 @@ export function LoginPromptModal({ open, onClose }: Props) {
     </div>
   )
 
+  const login = () => window.location.assign(buildKakaoAuthorizeUrl())
+
+  if (isMobile) {
+    return (
+      <ResponsiveDialog open={open} onClose={close} ariaLabel="로그인 안내">
+        {event && (
+          <div className="flex items-center gap-3 rounded-[14px] border border-line bg-surface p-[10px] shadow-[0_4px_7px_rgba(0,0,0,0.06)]">
+            <span className="relative size-[52px] shrink-0 overflow-hidden rounded-[10px]">
+              {event.image_url ? (
+                <img src={event.image_url} alt="" className="size-full object-cover" />
+              ) : (
+                <PhotoPlaceholder title="" category={event.category} variant="thumb" />
+              )}
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[11px] font-bold tracking-[-0.2px] text-primary">방금 고른 행사</span>
+              <b className="block truncate text-[15px] font-black leading-[21px] tracking-[-0.2px] text-ink">{event.title}</b>
+              <span className="block truncate text-[12px] leading-[18px] tracking-[-0.2px] text-ink-muted">{meta}</span>
+            </span>
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary-tint-strong text-brand">
+              <HeartIcon filled size={18} />
+            </span>
+          </div>
+        )}
+        <h2 className="pt-5 text-center text-[20px] font-black leading-7 tracking-[-0.5px] text-ink">
+          {event ? '로그인하면 이 행사를' : '로그인하면 관심 행사를'}
+          <br />
+          바로 찜해 둘게요
+        </h2>
+        <ul className="flex flex-col gap-3 px-1 pb-5 pt-[18px]">
+          <SheetBenefit icon={<CalendarIcon size={17} />} title="찜한 행사는 캘린더에 자동 정리" desc="날짜별로 한눈에 보고 일정이 겹치지 않게" />
+          <SheetBenefit icon={<HeartIcon size={17} />} title="마이페이지에 모아 보기" desc="다가오는 순으로 정렬돼요" />
+          <SheetBenefit icon={<ChatIcon />} title="다녀온 행사에 리뷰 남기기" desc="별점과 후기로 다른 사람에게 도움을" />
+        </ul>
+        <button
+          type="button"
+          onClick={login}
+          className="flex h-[52px] w-full items-center justify-center gap-[6px] rounded-card bg-kakao px-4 text-[15px] font-bold text-kakao-ink"
+        >
+          <KakaoIcon />
+          카카오로 3초 만에 시작하기
+        </button>
+        <div className="flex justify-center">
+          <button type="button" onClick={close} className="h-11 px-2 text-[13px] tracking-[-0.2px] text-ink-muted underline">
+            다음에 할게요
+          </button>
+        </div>
+        <p className="text-center text-[11px] leading-4 tracking-[-0.2px] text-ink-subtle">
+          처음 로그인하면 이용약관·개인정보처리방침 동의 화면이 이어져요.
+        </p>
+      </ResponsiveDialog>
+    )
+  }
+
   return (
-    <Modal
+    <ResponsiveDialog
       open={open}
       onClose={close}
       ariaLabel="로그인 안내"
@@ -113,7 +185,7 @@ export function LoginPromptModal({ open, onClose }: Props) {
       </ul>
       <button
         type="button"
-        onClick={() => window.location.assign(buildKakaoAuthorizeUrl())}
+        onClick={login}
         className="flex h-[54px] w-full items-center justify-center gap-[7px] rounded-card bg-kakao px-4 text-[16px] font-bold leading-6 text-kakao-ink"
       >
         <KakaoIcon />
@@ -127,6 +199,6 @@ export function LoginPromptModal({ open, onClose }: Props) {
       <p className="pt-[10px] text-center text-[11px] leading-[16.5px] text-ink-subtle">
         처음 로그인하면 이용약관·개인정보처리방침 동의 화면이 이어져요.
       </p>
-    </Modal>
+    </ResponsiveDialog>
   )
 }

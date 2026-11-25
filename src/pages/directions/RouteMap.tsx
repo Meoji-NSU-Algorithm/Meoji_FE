@@ -8,12 +8,14 @@ interface Props {
   to: { lat: number; lng: number; label: string }
   /** 경로선 구간. 비어 있으면 선 없이 출발·도착 마커만 그린다. */
   segments?: RouteSegment[]
+  /** 모바일(Figma M6 731:12): 화면 폭 꽉 찬 250px, 모서리 없음, 36px 확대·축소 버튼 */
+  mobile?: boolean
 }
 
 /** D1 지도. SDK/키 실패 시 Figma의 정적 회색 지도 + 라벨 카드로 대체한다. */
 const NO_SEGMENTS: RouteSegment[] = []
 
-export function RouteMap({ from, to, segments = NO_SEGMENTS }: Props) {
+export function RouteMap({ from, to, segments = NO_SEGMENTS, mobile = false }: Props) {
   const ref = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
   const [failed, setFailed] = useState(false)
@@ -98,7 +100,7 @@ export function RouteMap({ from, to, segments = NO_SEGMENTS }: Props) {
 
   return (
     <div
-      className="relative h-[320px] overflow-hidden lg:h-[640px] rounded-[18px] bg-[#eef0ea]"
+      className={mobile ? 'relative h-[250px] overflow-hidden bg-[#eef0ea]' : 'relative h-[320px] overflow-hidden lg:h-[640px] rounded-[18px] bg-[#eef0ea]'}
       style={{ backgroundImage: 'linear-gradient(162deg, #eef0ea 8%, #e6ede0 54%, #eef0ea 92%)' }}
     >
       {failed ? (
@@ -111,7 +113,7 @@ export function RouteMap({ from, to, segments = NO_SEGMENTS }: Props) {
         <div ref={ref} data-testid="route-map" className="absolute inset-0" />
       )}
       {!failed && (
-        <div className="absolute bottom-[26px] right-[14px] z-10 flex flex-col gap-[6px]">
+        <div className={`absolute z-10 flex flex-col gap-[6px] ${mobile ? 'bottom-[10px] right-[10px]' : 'bottom-[26px] right-[14px]'}`}>
           {[
             { label: '확대', d: -1, Icon: PlusIcon },
             { label: '축소', d: 1, Icon: MinusIcon },
@@ -121,9 +123,9 @@ export function RouteMap({ from, to, segments = NO_SEGMENTS }: Props) {
               type="button"
               aria-label={label}
               onClick={() => mapRef.current?.setLevel(mapRef.current.getLevel() + d)}
-              className="flex size-10 items-center justify-center rounded-[10px] bg-surface text-ink shadow-[0_1px_3px_rgba(0,0,0,0.14)]"
+              className={`flex items-center justify-center rounded-[10px] bg-surface text-ink ${mobile ? 'size-9 shadow-[0_4px_7px_rgba(0,0,0,0.14)]' : 'size-10 shadow-[0_1px_3px_rgba(0,0,0,0.14)]'}`}
             >
-              <Icon size={18} />
+              <Icon size={mobile ? 16 : 18} />
             </button>
           ))}
         </div>

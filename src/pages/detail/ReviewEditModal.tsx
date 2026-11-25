@@ -2,10 +2,12 @@ import { useState } from 'react'
 import { errorMessage } from '../../api/errors'
 import { useUpdateReview } from '../../api/hooks'
 import type { Review } from '../../api/types'
-import { Modal, RatingStars, useToast } from '../../components'
+import { BottomSheet, Modal, RatingStars, useToast } from '../../components'
+import { useIsMobile } from '../../lib/useIsMobile'
+import { MobileConfirm } from './MobileConfirm'
 import { ReviewImagePicker } from './ReviewImagePicker'
 import { PencilIcon, XIcon } from './icons'
-import { useReviewImages } from './useReviewImages'
+import { MAX_REVIEW_IMAGES, useReviewImages } from './useReviewImages'
 
 /** BE 상한(공백 제외 1~1000자) */
 export const MAX_CONTENT = 1000
@@ -20,6 +22,7 @@ interface Props {
 export function ReviewEditModal({ review, eventTitle, onClose }: Props) {
   const toast = useToast()
   const update = useUpdateReview()
+  const isMobile = useIsMobile()
   const [rating, setRating] = useState(review.rating)
   const [content, setContent] = useState(review.content)
   const pics = useReviewImages(review.images ?? [])
@@ -50,6 +53,78 @@ export function ReviewEditModal({ review, eventTitle, onClose }: Props) {
         },
       },
     )
+
+  if (isMobile) {
+    // Figma S10 756:9 리뷰 수정 시트 + S12 758:16 나가기 확인. 닫기는 X·Esc·바깥, 저장은 바닥 '수정 완료'
+    return (
+      <>
+        <BottomSheet
+          open
+          onClose={requestClose}
+          ariaLabel="리뷰 수정"
+          title="리뷰 수정"
+          footer={
+            <button
+              type="button"
+              disabled={!valid || update.isPending}
+              onClick={submit}
+              className="h-[50px] flex-1 rounded-[12px] bg-primary text-[15px] font-bold text-white disabled:opacity-40"
+            >
+              {update.isPending ? '저장 중…' : '수정 완료'}
+            </button>
+          }
+        >
+          <div className="pb-5 pt-1">
+            {eventTitle && <p className="truncate text-[13px] tracking-[-0.2px] text-ink-muted">{eventTitle}</p>}
+            <div className="flex items-center gap-[10px] pt-[14px]">
+              <RatingStars value={rating} size={30} gap={4} onChange={setRating} />
+              <span className="text-[15px] font-bold tracking-[-0.2px] text-ink">{rating > 0 ? `${rating}점` : '별점을 선택해 주세요'}</span>
+            </div>
+            <div className="flex items-start justify-between pt-5 text-[13px] tracking-[-0.2px]">
+              <label htmlFor="review-edit-content" className="font-bold text-ink">
+                후기
+              </label>
+              <span className="font-medium text-ink-subtle">
+                {content.length}/{MAX_CONTENT}
+              </span>
+            </div>
+            <textarea
+              id="review-edit-content"
+              aria-label="리뷰 내용"
+              value={content}
+              maxLength={MAX_CONTENT}
+              onChange={(e) => setContent(e.target.value)}
+              className="mt-2 block h-[150px] w-full resize-none rounded-[12px] border border-ink bg-surface px-[14px] py-3 text-[14px] leading-[22px] text-ink outline-none"
+            />
+            <div className="flex items-start justify-between pb-2 pt-[18px] text-[13px] tracking-[-0.2px]">
+              <span className="font-bold text-ink">사진</span>
+              <span className="font-medium text-ink-subtle">
+                {pics.images.length}/{MAX_REVIEW_IMAGES}
+              </span>
+            </div>
+            <ReviewImagePicker state={pics} disabled={update.isPending} variant="sheet" />
+            {update.isError && (
+              <p role="alert" className="pt-3 text-[13px] text-primary-ink">
+                {errorMessage(update.error)}
+              </p>
+            )}
+          </div>
+        </BottomSheet>
+        <MobileConfirm
+          open={confirmingDiscard}
+          onClose={() => setConfirmingDiscard(false)}
+          ariaLabel="수정 취소 확인"
+          title="수정한 내용이 사라져요"
+          message="닫으면 바꾼 내용이 저장되지 않아요."
+          cancelLabel="닫기"
+          onCancel={onClose}
+          confirmLabel="계속 수정"
+          confirmTone="primary"
+          onConfirm={() => setConfirmingDiscard(false)}
+        />
+      </>
+    )
+  }
 
   return (
     <>

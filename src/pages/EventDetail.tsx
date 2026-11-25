@@ -4,6 +4,8 @@ import { useEvent, useIsBookmarked } from '../api/hooks'
 import { ApiError } from '../api/client'
 import { useAuth, useRequireLogin } from '../auth'
 import { useBookmarkToggle } from '../lib/useBookmarkToggle'
+import { useIsMobile } from '../lib/useIsMobile'
+import { MobileDetail } from './detail/MobileDetail'
 import { EmptyState, ErrorState, PhotoPlaceholder, Spinner, Tag, errorKind, formatDateRange, formatPrice, useToast } from '../components'
 import { CalendarIcon, HeartIcon, MapPinIcon, StarIcon } from '../components/icons'
 import { MiniMap } from './detail/MiniMap'
@@ -36,6 +38,7 @@ export default function EventDetail() {
   const { data: event, isLoading, error, refetch } = useEvent(id)
   const bookmarked = useIsBookmarked(id)
   const bookmark = useBookmarkToggle()
+  const isMobile = useIsMobile()
 
   useEffect(() => {
     if (!authLoading && !isLoggedIn) openLoginPrompt()
@@ -99,6 +102,35 @@ export default function EventDetail() {
     } catch {
       toast.show({ message: '링크를 복사하지 못했어요' })
     }
+  }
+
+  if (isMobile) {
+    // 휴대폰은 공유 시트를 먼저 쓰고, 없거나 실패하면 링크 복사로 넘어간다(사용자가 취소하면 아무것도 안 한다)
+    const onMobileShare = async () => {
+      if (typeof navigator.share === 'function') {
+        try {
+          await navigator.share({ title: event.title, url: window.location.href })
+          return
+        } catch (e) {
+          if (e instanceof DOMException && e.name === 'AbortError') return
+        }
+      }
+      await onShare()
+    }
+    return (
+      <MobileDetail
+        event={event}
+        status={status(event.start_date, event.end_date, event.is_permanent)}
+        dates={dates}
+        price={price}
+        address={address}
+        canRoute={canRoute}
+        bookmarked={bookmarked}
+        bookmarkPending={bookmark.isPending}
+        onBookmark={onBookmark}
+        onShare={() => void onMobileShare()}
+      />
+    )
   }
 
   return (

@@ -27,3 +27,6 @@ export const PencilIcon = (p: P) => <Svg {...p}><path d="M4 20h4L19 9a2.8 2.8 0 
 export const RefreshIcon = (p: P) => <Svg {...p}><path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v4.5h-4.5" /></Svg>
 /** 등록 중 표시 (돌아가는 원호) */
 export const SpinnerIcon = ({ className = '', ...p }: P) => <Svg {...p} className={`motion-safe:animate-spin ${className}`}><path d="M12 3a9 9 0 1 0 9 9" /></Svg>
+/** 리뷰 없음 말풍선 (Figma S8 754:60, 24px) */
+export const ChatIcon = (p: P) => <Svg {...p}><path d="M5 5h14a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1h-8l-4 3v-3H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Z" /></Svg>
+export const ChevronDownIcon = (p: P) => <Svg {...p}><path d="m6 9 6 6 6-6" /></Svg>

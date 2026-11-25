@@ -4,7 +4,7 @@ export { Footer } from './Footer'
 export type { FooterProps, FooterLink } from './Footer'
 export { Logo } from './Logo'
 export { EventCard } from './EventCard'
-export type { EventCardData, EventCardProps, EventCardVariant } from './EventCard'
+export type { EventCardData, EventCardProps, EventCardSize, EventCardVariant } from './EventCard'
 export { SectionHeader } from './SectionHeader'
 export type { SectionHeaderProps } from './SectionHeader'
 export { Chip, FilterChip, Tag } from './Chip'
@@ -23,3 +23,20 @@ export { formatDateRange, formatPrice, formatViewCount, priceLabel } from './eve
 export { PhotoPlaceholder } from './PhotoPlaceholder'
 export { categoryGradient } from './categoryGradient'
 export type { PhotoPlaceholderProps } from './PhotoPlaceholder'
+export { BottomTabBar } from './BottomTabBar'
+export type { BottomTabBarProps } from './BottomTabBar'
+export { MOBILE_TABS, activeMobileTab } from './mobileTabs'
+export type { MobileTabKey } from './mobileTabs'
+export { BottomSheet, ResponsiveDialog } from './BottomSheet'
+export type { BottomSheetProps, ResponsiveDialogProps } from './BottomSheet'
+export {
+  MobileBackHeader,
+  MobileHeaderActions,
+  MobileHeaderSlotProvider,
+  MobileHeaderTitle,
+  MobileTitle,
+  useMobileHeaderSlots,
+} from './MobileBackHeader'
+export type { MobileBackHeaderProps } from './MobileBackHeader'
+export { MobileBottomBar, MOBILE_BOTTOM_BAR_FALLBACK_HEIGHT } from './MobileBottomBar'
+export type { MobileBottomBarProps } from './MobileBottomBar'
