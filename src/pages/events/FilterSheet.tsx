@@ -72,6 +72,7 @@ export function FilterSheet({
         open
         onClose={onClose}
         title="필터"
+        heightClassName="h-[calc(100dvh-96px)]"
         footer={
           <>
             <button

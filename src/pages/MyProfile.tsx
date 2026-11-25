@@ -129,7 +129,7 @@ function Profile() {
     const sheetIcon = 'flex size-9 shrink-0 items-center justify-center rounded-full bg-surface-muted text-ink'
     return (
       <div className="pb-6">
-        <p className="px-5 pt-[18px] text-[13px] tracking-[-0.2px] text-ink-muted">다른 사람에게 보이는 이름과 사진이에요</p>
+        <p className="px-5 pt-[18px] text-[13px] leading-4 tracking-[-0.2px] text-ink-muted">다른 사람에게 보이는 이름과 사진이에요</p>
         <div className="flex justify-center pb-2 pt-[26px]">
           <div className="relative size-[104px]" aria-busy={busy}>
             <Avatar name={user.nickname} src={preview ?? user.profile_image} size={104} tone="mobile" />
@@ -155,11 +155,11 @@ function Profile() {
           {error && <p role="alert" className="absolute inset-x-0 top-[2px] text-center text-[12px] leading-[18px] text-primary-ink">{error}</p>}
         </div>
         <dl className="px-5 pt-5">
-          <dt className="text-[13px] font-bold tracking-[-0.2px] text-ink">이름</dt>
+          <dt className="text-[13px] font-bold leading-4 tracking-[-0.2px] text-ink">이름</dt>
           <dd className="mt-2 flex h-[50px] items-center rounded-[12px] border border-line-strong bg-surface px-[14px] text-[15px] tracking-[-0.2px] text-ink">
             {user.nickname}
           </dd>
-          <dt className="pt-[22px] text-[13px] font-bold tracking-[-0.2px] text-ink">이메일</dt>
+          <dt className="pt-[22px] text-[13px] font-bold leading-4 tracking-[-0.2px] text-ink">이메일</dt>
           <dd className="mt-2 flex h-[50px] items-center rounded-[12px] border border-line-strong bg-surface-sunken px-[14px] text-[15px] tracking-[-0.2px] text-ink-subtle">
             <span className="truncate">{user.email ?? '제공되지 않았어요'}</span>
           </dd>
@@ -169,7 +169,7 @@ function Profile() {
         </p>
 
         <BottomSheet open={menuOpen} onClose={() => setMenuOpen(false)} ariaLabel="프로필 사진" bare bodyClassName="pb-[calc(var(--mobile-safe-bottom)+10px)]">
-          <p className="px-5 pt-[14px] text-[16px] font-black tracking-[-0.2px] text-ink">프로필 사진</p>
+          <p className="px-5 pt-[14px] text-[16px] font-black leading-[19px] tracking-[-0.2px] text-ink">프로필 사진</p>
           <div className="pt-[6px]">
             <button type="button" className={sheetItem} onClick={() => albumRef.current?.click()}>
               <span className={sheetIcon}>

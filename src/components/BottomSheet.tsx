@@ -28,6 +28,8 @@ export interface BottomSheetProps {
   bare?: boolean
   /** 본문 영역 클래스. 기본은 좌우 20px + 바닥 여백(Figma M1-2) */
   bodyClassName?: string
+  /** 시트 높이 클래스. 기본은 내용만큼(최대 92dvh). 필터 시트는 위에서 96px 아래까지 채운다(Figma M2-2) */
+  heightClassName?: string
 }
 
 /** 본문 기본 여백: 좌우 20px, 바닥은 footer 가 없을 때만 홈 표시줄(18) + 12 = 30px */
@@ -50,6 +52,7 @@ export function BottomSheet({
   hideClose = false,
   bare = false,
   bodyClassName,
+  heightClassName = 'max-h-[92dvh]',
 }: BottomSheetProps) {
   const ref = useRef<HTMLDivElement>(null)
   const titleId = useId()
@@ -85,7 +88,7 @@ export function BottomSheet({
         aria-label={ariaLabel}
         aria-labelledby={!ariaLabel && title ? titleId : undefined}
         tabIndex={-1}
-        className="flex max-h-[92dvh] w-full flex-col rounded-t-[20px] bg-surface shadow-sheet outline-none"
+        className={`flex ${heightClassName} w-full flex-col rounded-t-[20px] bg-surface shadow-sheet outline-none`}
       >
         {/* 손잡이 40×4 */}
         <div className="flex shrink-0 justify-center pt-2" aria-hidden="true">
@@ -95,7 +98,7 @@ export function BottomSheet({
         {!bare &&
           (title ? (
             <div className="flex shrink-0 items-center justify-between gap-2 pb-[2px] pl-5 pr-2 pt-[6px]">
-              <h2 id={titleId} className="min-w-0 text-[18px] font-black tracking-[-0.2px] text-ink">
+              <h2 id={titleId} className="min-w-0 text-[18px] font-black leading-[22px] tracking-[-0.2px] text-ink">
                 {title}
               </h2>
               {closeButton}

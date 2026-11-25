@@ -78,8 +78,8 @@ export function Header({
       <header
         className={`flex h-14 items-center bg-surface pl-4 pr-2 md:hidden ${mobileBorder ? 'border-b border-line-soft' : ''}`}
       >
-        <a href={h.home} onClick={go(h.home)} aria-label="meoji 홈" className="shrink-0">
-          <Logo size={26} />
+        <a href={h.home} onClick={go(h.home)} aria-label="meoji 홈" className="flex shrink-0">
+          <Logo size={26} tracking={-0.46} />
         </a>
         <div className="flex-1" />
         {user ? (

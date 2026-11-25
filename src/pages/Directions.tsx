@@ -107,7 +107,7 @@ export default function Directions() {
         <RouteMap mobile from={origin} to={{ lat: lat ?? 36.8151, lng: lng ?? 127.1139, label: destLabel }} segments={segments} />
         <div className="px-4 pt-[18px]">
           <h1 className="text-[21px] font-black leading-7 tracking-[-0.5px] text-ink">{event.title} 가는 길</h1>
-          {place && <p className="pt-[2px] text-[12.5px] tracking-[-0.2px] text-ink-muted">{place}</p>}
+          {place && <p className="pt-[2px] text-[12.5px] leading-[15px] tracking-[-0.2px] text-ink-muted">{place}</p>}
 
           <div className="mt-[14px] rounded-[14px] border border-line px-[14px]">
             <div className="flex h-[46px] items-center gap-[10px] border-b border-line">

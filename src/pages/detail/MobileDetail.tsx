@@ -137,7 +137,7 @@ export function MobileDetail({ event, status, dates, price, address, canRoute, b
       <div className="px-4 pt-[18px]">
         <div className="rounded-lg border border-line p-[14px]">
           <p className="flex items-baseline gap-[6px] tracking-[-0.2px]">
-            <span className="text-[19px] font-black text-ink">{price}</span>
+            <span className="text-[19px] font-black leading-[23px] text-ink">{price}</span>
             {event.fee_text && event.is_free && <span className="text-[11.5px] text-ink-muted">{event.fee_text}</span>}
           </p>
           <div className="pt-3">
@@ -147,7 +147,7 @@ export function MobileDetail({ event, status, dates, price, address, canRoute, b
       </div>
 
       <section className="px-4 pt-[30px]">
-        <h2 className="text-[18px] font-black tracking-[-0.3px] text-ink">행사 소개</h2>
+        <h2 className="text-[18px] font-black leading-[22px] tracking-[-0.3px] text-ink">행사 소개</h2>
         <p className="whitespace-pre-line pt-3 text-[14px] leading-6 tracking-[-0.2px] text-[#3e3633]">
           {event.description?.trim() || '등록된 행사 소개가 없어요.'}
         </p>

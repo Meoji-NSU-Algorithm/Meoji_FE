@@ -73,7 +73,7 @@ function Withdraw() {
           </div>
         </div>
         <div className="mt-4 rounded-[14px] border border-primary-border bg-[#fff8f5] p-4">
-          <p className="text-[14px] font-black tracking-[-0.2px] text-primary-ink">탈퇴하면 이렇게 돼요</p>
+          <p className="text-[14px] font-black leading-[17px] tracking-[-0.2px] text-primary-ink">탈퇴하면 이렇게 돼요</p>
           <div className="flex flex-col gap-2 pt-[10px]">
             {lost.length > 0 && <MBullet>{lost.join('와 ')}가 삭제돼요</MBullet>}
             <MBullet>삭제된 정보는 다시 복구할 수 없어요</MBullet>

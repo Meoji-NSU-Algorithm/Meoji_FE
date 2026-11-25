@@ -311,7 +311,7 @@ function MobileCalendar({
   dayEvents: EventCardT[]
   renderCard: (e: EventCardT) => React.ReactNode
 }) {
-  const title = <h1 className="px-4 pb-[14px] pt-5 text-[23px] font-black tracking-[-0.6px] text-ink">캘린더</h1>
+  const title = <h1 className="px-4 pb-[14px] pt-5 text-[23px] font-black leading-7 tracking-[-0.6px] text-ink">캘린더</h1>
   if (!loggedIn || error) {
     return (
       <div className="pb-4">
@@ -361,7 +361,7 @@ function MobileCalendar({
   const more = [...hidden].map(([d, n]) => `${Number(d.slice(8, 10))}일 +${n}개`).join(', ')
   const isThisMonth = today.startsWith(ymd(cursor.year, cursor.month, 1).slice(0, 7))
   const list = selectedDate ? dayEvents : monthEvents
-  const navBtn = 'flex size-8 items-center justify-center rounded-full border border-line-strong bg-surface text-ink'
+  const navBtn = "relative flex size-8 items-center justify-center rounded-full border border-line-strong bg-surface text-ink after:absolute after:-inset-[7px] after:content-['']"
 
   return (
     <div className="pb-8">
@@ -370,7 +370,7 @@ function MobileCalendar({
         <button type="button" aria-label="이전 달" onClick={() => move(-1)} className={navBtn}>
           <ChevronLeft16Icon />
         </button>
-        <h2 className="text-[19px] font-black tracking-[-0.2px] text-ink" aria-live="polite">
+        <h2 className="text-[19px] font-black leading-[23px] tracking-[-0.2px] text-ink" aria-live="polite">
           {cursor.year}년 {cursor.month}월
         </h2>
         <button type="button" aria-label="다음 달" onClick={() => move(1)} className={navBtn}>

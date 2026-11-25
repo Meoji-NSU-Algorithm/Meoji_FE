@@ -138,7 +138,7 @@ export function EventCard({
           aria-pressed={liked}
           onClick={() => onToggleLike?.(event, !liked)}
           className={`absolute z-10 flex items-center justify-center rounded-full ${
-            m ? 'bottom-[9px] right-[9px] size-8 bg-white/[0.94]' : 'bottom-[10px] right-[10px] size-[34px] bg-white/95'
+            m ? "bottom-[9px] right-[9px] size-8 bg-white/[0.94] after:absolute after:-inset-[6px] after:content-['']" : 'bottom-[10px] right-[10px] size-[34px] bg-white/95'
           } ${liked ? 'text-primary' : 'text-ink'}`}
         >
           <CardHeartIcon filled={liked} size={m ? 16 : undefined} />

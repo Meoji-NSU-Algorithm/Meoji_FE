@@ -127,12 +127,12 @@ export default function EventList() {
     }
     return (
       <div className="pb-4">
-        <h1 className="px-4 pb-[14px] pt-5 text-[23px] font-black tracking-[-0.6px] text-ink">행사 목록</h1>
+        <h1 className="px-4 pb-[14px] pt-5 text-[23px] font-black leading-7 tracking-[-0.6px] text-ink">행사 목록</h1>
         <MobileSearchLink q={params.q} />
         {!query.isError && <MobileFilterBar params={params} onPatch={patch} />}
         {data && !query.isError && !needsLogin && (
-          <div className="flex items-center justify-between px-4 pb-[10px] pt-4">
-            <p className="text-[13px] tracking-[-0.2px] text-ink">
+          <div className={`flex items-center justify-between px-4 pt-4 ${data.events.length > 0 ? 'pb-[10px]' : ''}`}>
+            <p className="text-[13px] leading-4 tracking-[-0.2px] text-ink">
               총 <b className="font-bold text-primary">{data.total_count.toLocaleString('ko-KR')}</b>건의 행사
             </p>
             {data.events.length > 0 && (

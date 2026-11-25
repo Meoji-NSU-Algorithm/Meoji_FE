@@ -297,7 +297,7 @@ export default function MapPage() {
             <span className="flex size-[52px] items-center justify-center rounded-full bg-[#eef3fd] text-[#2563eb]">
               <LocationOffIcon />
             </span>
-            <h2 className="pt-3 text-[17px] font-black tracking-[-0.2px] text-ink">위치 권한이 꺼져 있어요</h2>
+            <h2 className="pt-3 text-[17px] font-black leading-5 tracking-[-0.2px] text-ink">위치 권한이 꺼져 있어요</h2>
             <p className="pt-[6px] text-[13px] leading-5 tracking-[-0.2px] text-ink-muted">
               브라우저 설정에서 위치를 허용하면
               <br />내 주변 행사를 보여 드려요

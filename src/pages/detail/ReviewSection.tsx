@@ -87,7 +87,7 @@ export function ReviewSection({ eventId, eventTitle, reviews, averageRating, rev
     // Figma M5 729:125(리뷰), M5-2 730:13(작성 중), S8 754:54(리뷰 없음)
     return (
       <section id="reviews" className="scroll-mt-16 px-4 pt-[34px]" aria-label="리뷰">
-        <h2 className="text-[18px] font-black tracking-[-0.3px] text-ink">
+        <h2 className="text-[18px] font-black leading-[22px] tracking-[-0.3px] text-ink">
           리뷰 <span className="text-brand">{reviewCount}</span>
         </h2>
 

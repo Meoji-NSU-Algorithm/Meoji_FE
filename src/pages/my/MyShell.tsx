@@ -76,11 +76,11 @@ function MobileProfileFull() {
       <div className="flex items-center gap-2 pt-4">
         <dl className="contents">
           <div className="flex w-16 flex-col-reverse items-center gap-px tracking-[-0.2px]">
-            <dt className="text-[11px] text-ink-muted">찜한 행사</dt>
+            <dt className="text-[11px] leading-[13px] text-ink-muted">찜한 행사</dt>
             <dd className="text-[18px] font-black leading-6 text-ink">{bookmarks.data?.totalCount ?? 0}</dd>
           </div>
           <div className="flex w-16 flex-col-reverse items-center gap-px tracking-[-0.2px]">
-            <dt className="text-[11px] text-ink-muted">작성한 리뷰</dt>
+            <dt className="text-[11px] leading-[13px] text-ink-muted">작성한 리뷰</dt>
             <dd className="text-[18px] font-black leading-6 text-ink">{reviews.data?.length ?? 0}</dd>
           </div>
         </dl>
@@ -126,7 +126,7 @@ function MobileShell({ tab, tabs, children }: { tab: MyTab; tabs: TabItem[]; chi
   return (
     <div className="pb-6">
       <LoginRequired>
-        <h1 className="px-4 pb-[14px] pt-5 text-[23px] font-black tracking-[-0.6px] text-ink">마이페이지</h1>
+        <h1 className="px-4 pb-[14px] pt-5 text-[23px] font-black leading-7 tracking-[-0.6px] text-ink">마이페이지</h1>
         <div className="px-4">{tab === 'bookmarks' ? <MobileProfileFull /> : <MobileProfileCompact />}</div>
         <div className={`px-4 ${tab === 'bookmarks' ? 'pt-[22px]' : 'pt-[18px]'}`}>
           <nav aria-label="마이페이지 탭" className="flex gap-[22px] border-b border-line">

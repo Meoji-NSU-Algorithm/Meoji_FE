@@ -172,7 +172,7 @@ export default function Terms() {
           type="button"
           aria-label={`${label} 보기`}
           onClick={() => setViewing(policy)}
-          className={`flex h-11 shrink-0 items-center text-[12.5px] tracking-[-0.2px] text-ink-muted underline ${desc ? '-mt-3' : ''}`}
+          className={`relative flex h-11 shrink-0 items-center text-[12.5px] after:absolute after:-inset-x-[11px] after:inset-y-0 after:content-[''] tracking-[-0.2px] text-ink-muted underline ${desc ? '-mt-3' : ''}`}
         >
           보기
         </button>
@@ -187,7 +187,7 @@ export default function Terms() {
             <br />
             약관에 동의해 주세요
           </h1>
-          <p className="pt-[6px] text-[13.5px] tracking-[-0.2px] text-ink-muted">처음 한 번만 받아요</p>
+          <p className="pt-[6px] text-[13.5px] leading-4 tracking-[-0.2px] text-ink-muted">처음 한 번만 받아요</p>
         </div>
         <div className="px-4 pt-7">
           <button
@@ -226,7 +226,7 @@ export default function Terms() {
           </div>
         )}
         <div className="px-[30px] pt-2">
-          <button type="button" onClick={() => void cancel()} className="flex h-11 items-center text-[12px] text-ink-subtle underline">
+          <button type="button" onClick={() => void cancel()} className="relative flex h-11 items-center text-[12px] text-ink-subtle underline after:absolute after:-inset-x-[11px] after:inset-y-0 after:content-['']">
             취소
           </button>
         </div>

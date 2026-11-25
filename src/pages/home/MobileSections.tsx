@@ -168,7 +168,7 @@ function MobileFreeCard({ event }: { event: EventCard }) {
   const liked = isLiked(event.id)
   const sub = [event.sido, formatDateRange(event.start_date, event.end_date)].filter(Boolean).join(' · ')
   return (
-    <article className="relative flex w-[196px] shrink-0 flex-col overflow-hidden rounded-[14px] border border-line-soft bg-surface">
+    <article className="relative flex w-[196px] shrink-0 flex-col overflow-hidden rounded-[14px] border border-line-soft bg-surface pb-[18px]">
       <div className="px-[13px] pb-[10px] pt-3">
         <p className="text-[11px] font-bold leading-[13px] tracking-[-0.2px] text-primary">
           {['무료', event.category].filter(Boolean).join(' · ')}
